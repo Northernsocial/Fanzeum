@@ -1,0 +1,451 @@
+{
+  "entities": {
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted administrator membership marker provisioned out-of-band.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the administrator."
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when admin privilege was granted."
+        }
+      },
+      "required": ["uid", "grantedAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public collector, expert, or store profile without PII.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "handle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32,
+          "pattern": "^[a-z0-9_\\-]+$",
+          "description": "Unique-style lowercase collector handle."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Public display name shown on exhibitions."
+        },
+        "bio": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 600,
+          "description": "Curatorial statement and collecting story."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 2048,
+          "description": "Avatar photo URL."
+        },
+        "location": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 80,
+          "description": "General region or city (e.g., London, UK)."
+        },
+        "specialties": {
+          "type": "array",
+          "description": "Up to 10 collecting category slugs."
+        },
+        "goal": {
+          "type": "string",
+          "enum": ["exhibit", "complete_set", "sell", "learn"],
+          "description": "Primary collecting goal chosen during onboarding."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["collector", "expert", "store", "admin"],
+          "description": "Platform role (locked to collector on self-registration)."
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["free", "premium", "store"],
+          "description": "Subscription tier (locked to free on self-registration)."
+        },
+        "isVerifiedExpert": {
+          "type": "boolean",
+          "description": "Whether verified badge has been granted by an admin."
+        },
+        "isPublicProfile": {
+          "type": "boolean",
+          "description": "Whether the profile appears in public collector directories."
+        },
+        "onboardingCompleted": {
+          "type": "boolean",
+          "description": "Whether AI curatorial onboarding has been completed."
+        },
+        "collectionsCount": {
+          "type": "integer",
+          "description": "Count of collections owned by this user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "handle",
+        "displayName",
+        "bio",
+        "avatarUrl",
+        "location",
+        "specialties",
+        "goal",
+        "role",
+        "plan",
+        "isVerifiedExpert",
+        "isPublicProfile",
+        "onboardingCompleted",
+        "collectionsCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserPrivateAccount": {
+      "title": "UserPrivateAccount",
+      "description": "Strictly isolated PII and UK GDPR privacy preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 254,
+          "description": "User email address isolated from public reads."
+        },
+        "analyticsConsent": {
+          "type": "boolean",
+          "description": "GDPR consent for optional analytics cookies."
+        },
+        "marketingConsent": {
+          "type": "boolean",
+          "description": "GDPR consent for collector digest emails."
+        },
+        "aiTrainingOptOut": {
+          "type": "boolean",
+          "description": "Privacy preference opting out of model improvement."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "analyticsConsent",
+        "marketingConsent",
+        "aiTrainingOptOut",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Collection": {
+      "title": "Collection",
+      "description": "A curated collection or exhibition of collectible items.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the collection owner."
+        },
+        "ownerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Display name of the curator."
+        },
+        "ownerHandle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32,
+          "pattern": "^[a-z0-9_\\-]+$",
+          "description": "Handle of the curator."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Exhibition or collection title."
+        },
+        "story": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 2500,
+          "description": "Curatorial essay or provenance narrative."
+        },
+        "coverImageUrl": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 180000,
+          "description": "Cover photograph URL or compressed archival data URI."
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "stamps",
+            "football_cards",
+            "trading_cards",
+            "coins",
+            "comics",
+            "vinyl",
+            "toys",
+            "memorabilia"
+          ],
+          "description": "Primary collecting category."
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "followers", "private"],
+          "description": "Exhibition visibility setting."
+        },
+        "itemCount": {
+          "type": "integer",
+          "description": "Number of catalogued items in the collection."
+        },
+        "setTargetCount": {
+          "type": "integer",
+          "description": "Optional target set size for completion tracking."
+        },
+        "estimatedTotalMinGbp": {
+          "type": "number",
+          "description": "Sum of minimum item valuations in GBP."
+        },
+        "estimatedTotalMaxGbp": {
+          "type": "number",
+          "description": "Sum of maximum item valuations in GBP."
+        },
+        "featured": {
+          "type": "boolean",
+          "description": "System/admin-controlled featured gallery flag."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "ownerName",
+        "ownerHandle",
+        "title",
+        "story",
+        "coverImageUrl",
+        "category",
+        "visibility",
+        "itemCount",
+        "setTargetCount",
+        "estimatedTotalMinGbp",
+        "estimatedTotalMaxGbp",
+        "featured",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CollectibleItem": {
+      "title": "CollectibleItem",
+      "description": "An individual collectible artifact catalogued with AI identification and valuation.",
+      "type": "object",
+      "properties": {
+        "collectionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent collection ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "stamps",
+            "football_cards",
+            "trading_cards",
+            "coins",
+            "comics",
+            "vinyl",
+            "toys",
+            "memorabilia"
+          ],
+          "description": "Category slug."
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "followers", "private"],
+          "description": "Synced visibility matching parent collection."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140,
+          "description": "Item title or catalogue designation."
+        },
+        "year": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 32,
+          "description": "Year or era of issue (e.g., 1840, c. 1966)."
+        },
+        "maker": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100,
+          "description": "Issuing authority, mint, printer, or manufacturer."
+        },
+        "series": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 100,
+          "description": "Series, set name, or sovereign reign."
+        },
+        "setNumber": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 60,
+          "description": "Catalogue number or card number (e.g., SG 2, #42)."
+        },
+        "condition": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Assessed preservation grade."
+        },
+        "valueMinGbp": {
+          "type": "number",
+          "description": "Estimated low valuation in GBP."
+        },
+        "valueMaxGbp": {
+          "type": "number",
+          "description": "Estimated high valuation in GBP."
+        },
+        "aiConfidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low", "manual"],
+          "description": "Confidence level of AI photo identification."
+        },
+        "curatorialNote": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 1200,
+          "description": "Curatorial provenance, variety details, or personal story."
+        },
+        "imageUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180000,
+          "description": "Firebase Storage photo URL or compressed archival JPEG data URI."
+        },
+        "forSale": {
+          "type": "boolean",
+          "description": "Reserved flag for future marketplace listing."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "collectionId",
+        "ownerId",
+        "category",
+        "visibility",
+        "name",
+        "year",
+        "maker",
+        "series",
+        "setNumber",
+        "condition",
+        "valueMinGbp",
+        "valueMaxGbp",
+        "aiConfidence",
+        "curatorialNote",
+        "imageUrl",
+        "forSale",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Out-of-band administrator registry."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Public collector profiles without PII."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateAccount" },
+      "description": "Strictly owner/admin-readable PII and UK GDPR consent records."
+    },
+    "/collections/{collectionId}": {
+      "schema": { "$ref": "#/entities/Collection" },
+      "description": "Curated collector exhibitions with public/followers/private visibility."
+    },
+    "/items/{itemId}": {
+      "schema": { "$ref": "#/entities/CollectibleItem" },
+      "description": "Individual collectible items linked to a parent collection."
+    }
+  }
+}

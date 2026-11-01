@@ -1,0 +1,10 @@
+{
+  "name": "Fanzeum Gallery",
+  "description": "The curatorial home for collectors, stores, and experts to exhibit, identify, and value stamps, trading cards, coins, vinyl, and memorabilia.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

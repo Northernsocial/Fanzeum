@@ -1,0 +1,486 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'fifestreet@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidCategory(cat) {
+      return cat is string && cat.size() <= 32 && cat in [
+        'stamps',
+        'football_cards',
+        'trading_cards',
+        'coins',
+        'comics',
+        'vinyl',
+        'toys',
+        'memorabilia'
+      ];
+    }
+
+    function isValidVisibility(vis) {
+      return vis is string && vis.size() <= 16 && vis in ['public', 'followers', 'private'];
+    }
+
+    // Validation Blueprint: UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid',
+          'handle',
+          'displayName',
+          'bio',
+          'avatarUrl',
+          'location',
+          'specialties',
+          'goal',
+          'role',
+          'plan',
+          'isVerifiedExpert',
+          'isPublicProfile',
+          'onboardingCompleted',
+          'collectionsCount',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'handle',
+          'displayName',
+          'bio',
+          'avatarUrl',
+          'location',
+          'specialties',
+          'goal',
+          'role',
+          'plan',
+          'isVerifiedExpert',
+          'isPublicProfile',
+          'onboardingCompleted',
+          'collectionsCount',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.handle is string && data.handle.size() >= 2 && data.handle.size() <= 32 && data.handle.matches('^[a-z0-9_\\-]+$') &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+        data.bio is string && data.bio.size() <= 600 &&
+        data.avatarUrl is string && data.avatarUrl.size() <= 2048 &&
+        data.location is string && data.location.size() <= 80 &&
+        data.specialties is list && data.specialties.size() <= 10 &&
+        (data.specialties.size() == 0 || (data.specialties[0] is string && data.specialties[0].size() <= 32)) &&
+        data.goal is string && data.goal.size() <= 24 && data.goal in ['exhibit', 'complete_set', 'sell', 'learn'] &&
+        data.role is string && data.role.size() <= 16 && data.role in ['collector', 'expert', 'store', 'admin'] &&
+        data.plan is string && data.plan.size() <= 16 && data.plan in ['free', 'premium', 'store'] &&
+        data.isVerifiedExpert is bool &&
+        data.isPublicProfile is bool &&
+        data.onboardingCompleted is bool &&
+        data.collectionsCount is int && data.collectionsCount >= 0 && data.collectionsCount <= 10000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: UserPrivateAccount (PII Isolated)
+    function isValidUserPrivateAccount(data) {
+      return data.keys().hasAll([
+          'uid',
+          'email',
+          'analyticsConsent',
+          'marketingConsent',
+          'aiTrainingOptOut',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'email',
+          'analyticsConsent',
+          'marketingConsent',
+          'aiTrainingOptOut',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+        data.analyticsConsent is bool &&
+        data.marketingConsent is bool &&
+        data.aiTrainingOptOut is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Collection
+    function isValidCollection(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'ownerName',
+          'ownerHandle',
+          'title',
+          'story',
+          'coverImageUrl',
+          'category',
+          'visibility',
+          'itemCount',
+          'setTargetCount',
+          'estimatedTotalMinGbp',
+          'estimatedTotalMaxGbp',
+          'featured',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId',
+          'ownerName',
+          'ownerHandle',
+          'title',
+          'story',
+          'coverImageUrl',
+          'category',
+          'visibility',
+          'itemCount',
+          'setTargetCount',
+          'estimatedTotalMinGbp',
+          'estimatedTotalMaxGbp',
+          'featured',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.ownerId) &&
+        data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 80 &&
+        data.ownerHandle is string && data.ownerHandle.size() >= 2 && data.ownerHandle.size() <= 32 && data.ownerHandle.matches('^[a-z0-9_\\-]+$') &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 120 &&
+        data.story is string && data.story.size() <= 2500 &&
+        data.coverImageUrl is string && data.coverImageUrl.size() <= 180000 &&
+        isValidCategory(data.category) &&
+        isValidVisibility(data.visibility) &&
+        data.itemCount is int && data.itemCount >= 0 && data.itemCount <= 50000 &&
+        data.setTargetCount is int && data.setTargetCount >= 0 && data.setTargetCount <= 50000 &&
+        (data.estimatedTotalMinGbp is int || data.estimatedTotalMinGbp is float) && data.estimatedTotalMinGbp >= 0 &&
+        (data.estimatedTotalMaxGbp is int || data.estimatedTotalMaxGbp is float) && data.estimatedTotalMaxGbp >= data.estimatedTotalMinGbp &&
+        data.featured is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: CollectibleItem
+    function isValidCollectibleItem(data) {
+      return data.keys().hasAll([
+          'collectionId',
+          'ownerId',
+          'category',
+          'visibility',
+          'name',
+          'year',
+          'maker',
+          'series',
+          'setNumber',
+          'condition',
+          'valueMinGbp',
+          'valueMaxGbp',
+          'aiConfidence',
+          'curatorialNote',
+          'imageUrl',
+          'forSale',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'collectionId',
+          'ownerId',
+          'category',
+          'visibility',
+          'name',
+          'year',
+          'maker',
+          'series',
+          'setNumber',
+          'condition',
+          'valueMinGbp',
+          'valueMaxGbp',
+          'aiConfidence',
+          'curatorialNote',
+          'imageUrl',
+          'forSale',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.collectionId) &&
+        isValidId(data.ownerId) &&
+        isValidCategory(data.category) &&
+        isValidVisibility(data.visibility) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 140 &&
+        data.year is string && data.year.size() <= 32 &&
+        data.maker is string && data.maker.size() <= 100 &&
+        data.series is string && data.series.size() <= 100 &&
+        data.setNumber is string && data.setNumber.size() <= 60 &&
+        data.condition is string && data.condition.size() >= 1 && data.condition.size() <= 80 &&
+        (data.valueMinGbp is int || data.valueMinGbp is float) && data.valueMinGbp >= 0 &&
+        (data.valueMaxGbp is int || data.valueMaxGbp is float) && data.valueMaxGbp >= data.valueMinGbp &&
+        data.aiConfidence is string && data.aiConfidence.size() <= 16 && data.aiConfidence in ['high', 'medium', 'low', 'manual'] &&
+        data.curatorialNote is string && data.curatorialNote.size() <= 1200 &&
+        data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 180000 &&
+        data.forSale is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // 1. Out-of-band Admin Registry
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    // 2. Public Collector Profiles (Zero PII)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (
+        (isSignedIn() && request.auth.uid == userId) ||
+        (resource != null && resource.data.isPublicProfile == true) ||
+        isAdmin()
+      );
+      allow list: if resource.data.isPublicProfile == true ||
+        (isSignedIn() && resource.data.uid == request.auth.uid) ||
+        isAdmin();
+
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().role == 'collector' &&
+        incoming().plan == 'free' &&
+        incoming().isVerifiedExpert == false &&
+        incoming().collectionsCount == 0 &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming()) && (
+          isAdmin() ||
+          // Action 1: Owner edits public profile details
+          (
+            request.auth.uid == userId &&
+            existing().uid == request.auth.uid &&
+            incoming().uid == existing().uid &&
+            incoming().role == existing().role &&
+            incoming().plan == existing().plan &&
+            incoming().isVerifiedExpert == existing().isVerifiedExpert &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'handle',
+              'displayName',
+              'bio',
+              'avatarUrl',
+              'location',
+              'specialties',
+              'goal',
+              'isPublicProfile',
+              'onboardingCompleted',
+              'collectionsCount',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(userId) &&
+        (request.auth.uid == userId || isAdmin());
+
+      // 3. Isolated Private Account & UK GDPR Consent Subcollection (Master Gate + PII Isolation)
+      match /private/{docId} {
+        allow get: if isSignedIn() &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          (request.auth.uid == userId || isAdmin()) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow list: if false;
+
+        allow create: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          request.auth.uid == userId &&
+          isValidUserPrivateAccount(incoming()) &&
+          incoming().uid == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          (
+            exists(/databases/$(database)/documents/users/$(userId)) ||
+            existsAfter(/databases/$(database)/documents/users/$(userId))
+          );
+
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          isValidUserPrivateAccount(incoming()) && (
+            isAdmin() ||
+            (
+              request.auth.uid == userId &&
+              existing().uid == request.auth.uid &&
+              incoming().uid == existing().uid &&
+              incoming().createdAt == existing().createdAt &&
+              incoming().updatedAt == request.time &&
+              exists(/databases/$(database)/documents/users/$(userId)) &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'email',
+                'analyticsConsent',
+                'marketingConsent',
+                'aiTrainingOptOut',
+                'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          (request.auth.uid == userId || isAdmin());
+      }
+    }
+
+    // 4. Collections & Exhibitions
+    match /collections/{collectionId} {
+      allow get: if isValidId(collectionId) && (
+        (resource != null && resource.data.visibility == 'public') ||
+        (isSignedIn() && resource != null && resource.data.ownerId == request.auth.uid) ||
+        isAdmin()
+      );
+      allow list: if resource.data.visibility == 'public' ||
+        (isSignedIn() && resource.data.ownerId == request.auth.uid) ||
+        isAdmin();
+
+      allow create: if isVerifiedUser() &&
+        isValidId(collectionId) &&
+        isValidCollection(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().featured == false &&
+        incoming().itemCount == 0 &&
+        incoming().estimatedTotalMinGbp == 0 &&
+        incoming().estimatedTotalMaxGbp == 0 &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update: if isVerifiedUser() &&
+        isValidId(collectionId) &&
+        isValidCollection(incoming()) && (
+          isAdmin() ||
+          // Action 1: Owner updates curatorial details or item/valuation aggregates
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().ownerId == existing().ownerId &&
+            incoming().featured == existing().featured &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'ownerName',
+              'ownerHandle',
+              'title',
+              'story',
+              'coverImageUrl',
+              'category',
+              'visibility',
+              'itemCount',
+              'setTargetCount',
+              'estimatedTotalMinGbp',
+              'estimatedTotalMaxGbp',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(collectionId) &&
+        (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 5. Collectible Items
+    match /items/{itemId} {
+      allow get: if isValidId(itemId) && (
+        (resource != null && resource.data.visibility == 'public') ||
+        (isSignedIn() && resource != null && resource.data.ownerId == request.auth.uid) ||
+        isAdmin()
+      );
+      allow list: if resource.data.visibility == 'public' ||
+        (isSignedIn() && resource.data.ownerId == request.auth.uid) ||
+        isAdmin();
+
+      allow create: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidCollectibleItem(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/collections/$(incoming().collectionId)) &&
+        get(/databases/$(database)/documents/collections/$(incoming().collectionId)).data.ownerId == request.auth.uid;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidCollectibleItem(incoming()) && (
+          isAdmin() ||
+          // Action 1: Owner updates item identification, valuation, or curatorial metadata
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().ownerId == existing().ownerId &&
+            incoming().collectionId == existing().collectionId &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            exists(/databases/$(database)/documents/collections/$(existing().collectionId)) &&
+            get(/databases/$(database)/documents/collections/$(existing().collectionId)).data.ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'category',
+              'visibility',
+              'name',
+              'year',
+              'maker',
+              'series',
+              'setNumber',
+              'condition',
+              'valueMinGbp',
+              'valueMaxGbp',
+              'aiConfidence',
+              'curatorialNote',
+              'imageUrl',
+              'forSale',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        (existing().ownerId == request.auth.uid || isAdmin());
+    }
+  }
+}

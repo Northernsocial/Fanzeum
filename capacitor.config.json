@@ -1,0 +1,8 @@
+{
+  "appId": "uk.co.fanzeum.app",
+  "appName": "Fanzeum",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
