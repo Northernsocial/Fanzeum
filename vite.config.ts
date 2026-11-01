@@ -20,12 +20,12 @@ export default defineConfig(() => {
         ],
         manifest: {
           id: '/',
-          name: 'Fanzeum — Curate & Exhibit Collections',
+          name: 'Fanzeum — Show off what you collect',
           short_name: 'Fanzeum',
           description:
-            'Curate, exhibit, identify, and value collections of stamps, cards, coins, vinyl, and memorabilia.',
-          theme_color: '#FBF9F5',
-          background_color: '#FBF9F5',
+            "Snap any card, coin, stamp, comic or record. Fanzeum tells you what it is, what it's worth, and gives it the display it deserves.",
+          theme_color: '#0E0F12',
+          background_color: '#0E0F12',
           display: 'standalone',
           start_url: '/',
           scope: '/',
@@ -52,7 +52,7 @@ export default defineConfig(() => {
         },
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,woff,woff2}'],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,webp,woff,woff2}'],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

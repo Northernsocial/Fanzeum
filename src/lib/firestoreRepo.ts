@@ -12,34 +12,219 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './firebase';
-import { sanitizeHandle } from './entitlements';
+import { getItemPlacardParts, type CategorySlug } from '../config/categories';
+import { DEMO_COLLECTIONS, DEMO_ITEMS, DEMO_USERS } from '../data/demoCatalog';
 import type {
   AIConfidence,
-  CategorySlug,
   CollectibleItemRecord,
   CollectionRecord,
   CollectorGoal,
+  ConfidenceLevel,
+  ItemPhoto,
+  ItemPrivateRecord,
+  MediaCredit,
   UserPrivateAccount,
   UserProfile,
   VisibilityLevel,
 } from '../types/domain';
-import { DEMO_COLLECTIONS, DEMO_ITEMS } from '../data/demoExhibitions';
+import { canUse, sanitizeHandle } from './entitlements';
+import { db, handleFirestoreError, OperationType } from './firebase';
+import {
+  dataUrlToBlob,
+  deleteAllUserStorageFiles,
+  deleteItemStoragePhotos,
+  processCollectiblePhoto,
+  uploadProcessedItemPhoto,
+} from './imageUtils';
+import { buildCollectorArtDataUrl } from './placeholderArt';
 
-function makeSafeId(prefix: string): string {
+const HIDE_DEMO_STORAGE_KEY = 'fanzeum_hide_demo_catalog';
+
+export function isBuiltinDemoHidden(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(HIDE_DEMO_STORAGE_KEY) === 'true';
+}
+
+export function setBuiltinDemoHidden(hidden: boolean): void {
+  if (typeof window === 'undefined') return;
+  if (hidden) {
+    window.localStorage.setItem(HIDE_DEMO_STORAGE_KEY, 'true');
+  } else {
+    window.localStorage.removeItem(HIDE_DEMO_STORAGE_KEY);
+  }
+}
+
+export function makeSafeId(prefix: string): string {
   const rand = Math.random().toString(36).slice(2, 10);
   return `${prefix}_${Date.now()}_${rand}`.replace(/[^a-zA-Z0-9_-]/g, '');
 }
 
-// 1. User Profile & Isolated Private GDPR Account
+function clampUrl(url: string | undefined, fallbackCategory: CategorySlug, fallbackTitle: string): string {
+  const trimmed = (url || '').trim();
+  if (trimmed && trimmed.length <= 2048) return trimmed;
+  return buildCollectorArtDataUrl({
+    category: fallbackCategory,
+    title: fallbackTitle || 'Piece',
+  }).slice(0, 2048);
+}
+
+function currentMonthYearLabel(): string {
+  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(new Date());
+}
+
+function normalizeItemDoc(id: string, raw: Record<string, unknown>): CollectibleItemRecord {
+  const category = (raw.category as CategorySlug) || 'memorabilia';
+  const title = String(raw.title || raw.name || 'Untitled Piece');
+  const imageUrl = String(raw.imageUrl || '');
+  const thumbUrl = String(raw.thumbUrl || imageUrl);
+  const rawPhotos = Array.isArray(raw.photos) ? (raw.photos as ItemPhoto[]) : [];
+  const photos: ItemPhoto[] =
+    rawPhotos.length > 0
+      ? rawPhotos
+      : [
+          {
+            url: imageUrl,
+            thumbUrl,
+            width: 800,
+            height: 1000,
+            label: 'Front',
+          },
+        ];
+
+  return {
+    id,
+    collectionId: String(raw.collectionId || ''),
+    ownerId: String(raw.ownerId || ''),
+    ownerHandle: String(raw.ownerHandle || 'collector'),
+    category,
+    visibility: (raw.visibility as VisibilityLevel) || 'public',
+    title,
+    titleLower: String(raw.titleLower || title.toLowerCase()),
+    story: String(raw.story ?? raw.curatorialNote ?? ''),
+    imageUrl,
+    thumbUrl,
+    photos,
+    attributes:
+      raw.attributes && typeof raw.attributes === 'object'
+        ? (raw.attributes as Record<string, string | boolean>)
+        : {},
+    fieldConfidences:
+      raw.fieldConfidences && typeof raw.fieldConfidences === 'object'
+        ? (raw.fieldConfidences as Record<string, ConfidenceLevel>)
+        : {},
+    year: String(raw.year || ''),
+    maker: String(raw.maker || ''),
+    setNumber: String(raw.setNumber || ''),
+    condition: String(raw.condition || 'Good'),
+    valueMinGbp: Number(raw.valueMinGbp) || 0,
+    valueMaxGbp: Number(raw.valueMaxGbp) || 0,
+    valuationReason: String(raw.valuationReason || ''),
+    aiConfidence: (raw.aiConfidence as AIConfidence) || 'manual',
+    grail: Boolean(raw.grail),
+    tags: Array.isArray(raw.tags) ? raw.tags.map(String) : [],
+    customOrder: Number(raw.customOrder) || 0,
+    forSale: Boolean(raw.forSale),
+    mediaCredit: raw.mediaCredit as MediaCredit | undefined,
+    isDemo: Boolean(raw.isDemo),
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+function normalizeUserDoc(raw: Record<string, unknown>): UserProfile {
+  return {
+    uid: String(raw.uid || ''),
+    handle: String(raw.handle || 'collector'),
+    displayName: String(raw.displayName || 'Collector'),
+    bio: String(raw.bio || ''),
+    avatarUrl: String(raw.avatarUrl || ''),
+    location: String(raw.location || ''),
+    specialties: Array.isArray(raw.specialties) ? (raw.specialties as CategorySlug[]) : [],
+    goal: (raw.goal as CollectorGoal) || 'exhibit',
+    role: (raw.role as UserProfile['role']) || 'collector',
+    plan: (raw.plan as UserProfile['plan']) || 'free',
+    isVerifiedExpert: Boolean(raw.isVerifiedExpert),
+    isPublicProfile: raw.isPublicProfile !== false,
+    hideValues: Boolean(raw.hideValues),
+    hideLocation: Boolean(raw.hideLocation),
+    onboardingCompleted: Boolean(raw.onboardingCompleted),
+    collectionsCount: Number(raw.collectionsCount) || 0,
+    piecesCount: Number(raw.piecesCount) || 0,
+    joinedLabel: String(raw.joinedLabel || '2025'),
+    isDemo: Boolean(raw.isDemo),
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+// 1. User Profiles & Handles
 export async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
+  if (!isBuiltinDemoHidden()) {
+    const demo = DEMO_USERS.find((u) => u.uid === uid);
+    if (demo) return demo;
+  }
+
   const path = `users/${uid}`;
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     if (!snap.exists()) return null;
-    return snap.data() as UserProfile;
+    return normalizeUserDoc(snap.data() as Record<string, unknown>);
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
+  }
+}
+
+export async function fetchUserByHandle(
+  rawHandle: string,
+  viewerProfile?: UserProfile | null,
+): Promise<UserProfile | null> {
+  const clean = rawHandle.replace(/^@+/, '').toLowerCase().trim();
+  if (!clean) return null;
+
+  if (viewerProfile && viewerProfile.handle.toLowerCase() === clean) {
+    return viewerProfile;
+  }
+
+  const path = 'users';
+  try {
+    const q = query(
+      collection(db, 'users'),
+      where('handle', '==', clean),
+      where('isPublicProfile', '==', true),
+      limit(1),
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return normalizeUserDoc(snap.docs[0].data() as Record<string, unknown>);
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+
+  if (!isBuiltinDemoHidden()) {
+    const demo = DEMO_USERS.find((u) => u.handle.toLowerCase() === clean);
+    if (demo) return demo;
+  }
+
+  return null;
+}
+
+export async function isHandleAvailable(handle: string, excludeUid?: string): Promise<boolean> {
+  const clean = sanitizeHandle(handle);
+  if (DEMO_USERS.some((u) => u.handle === clean && u.uid !== excludeUid)) {
+    return false;
+  }
+  try {
+    const q = query(
+      collection(db, 'users'),
+      where('handle', '==', clean),
+      where('isPublicProfile', '==', true),
+      limit(2),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.every((d) => d.id === excludeUid);
+  } catch {
+    return true;
   }
 }
 
@@ -65,9 +250,15 @@ export async function bootstrapVerifiedUserProfile(params: {
   const cleanName = (params.displayName || params.email.split('@')[0] || 'Collector')
     .trim()
     .slice(0, 80);
-  const cleanHandle = sanitizeHandle(cleanName);
+  const baseHandle = sanitizeHandle(cleanName);
+  const available = await isHandleAvailable(baseHandle, params.uid);
+  const cleanHandle = available
+    ? baseHandle
+    : sanitizeHandle(`${baseHandle.slice(0, 22)}_${Math.floor(10 + Math.random() * 89)}`);
+
   const safeAvatar = (params.avatarUrl || '').slice(0, 2048);
   const safeEmail = (params.email || 'collector@example.co.uk').trim().slice(0, 254);
+  const joinedLabel = currentMonthYearLabel();
 
   const profilePayload = {
     uid: params.uid,
@@ -75,15 +266,20 @@ export async function bootstrapVerifiedUserProfile(params: {
     displayName: cleanName || 'Collector',
     bio: '',
     avatarUrl: safeAvatar,
-    location: 'United Kingdom',
+    location: '',
     specialties: [] as CategorySlug[],
     goal: 'exhibit' as CollectorGoal,
     role: 'collector' as const,
     plan: 'free' as const,
     isVerifiedExpert: false,
     isPublicProfile: true,
+    hideValues: false,
+    hideLocation: false,
     onboardingCompleted: false,
     collectionsCount: 0,
+    piecesCount: 0,
+    joinedLabel,
+    isDemo: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -124,8 +320,12 @@ export async function updateUserPublicProfile(
     specialties: CategorySlug[];
     goal: CollectorGoal;
     isPublicProfile: boolean;
+    hideValues: boolean;
+    hideLocation: boolean;
     onboardingCompleted: boolean;
     collectionsCount: number;
+    piecesCount: number;
+    joinedLabel: string;
   }>,
 ): Promise<void> {
   const path = `users/${uid}`;
@@ -143,11 +343,19 @@ export async function updateUserPublicProfile(
   if (updates.specialties !== undefined) payload.specialties = updates.specialties.slice(0, 10);
   if (updates.goal !== undefined) payload.goal = updates.goal;
   if (updates.isPublicProfile !== undefined) payload.isPublicProfile = updates.isPublicProfile;
+  if (updates.hideValues !== undefined) payload.hideValues = updates.hideValues;
+  if (updates.hideLocation !== undefined) payload.hideLocation = updates.hideLocation;
   if (updates.onboardingCompleted !== undefined) {
     payload.onboardingCompleted = updates.onboardingCompleted;
   }
   if (updates.collectionsCount !== undefined) {
     payload.collectionsCount = Math.max(0, Math.min(10000, Math.round(updates.collectionsCount)));
+  }
+  if (updates.piecesCount !== undefined) {
+    payload.piecesCount = Math.max(0, Math.min(100000, Math.round(updates.piecesCount)));
+  }
+  if (updates.joinedLabel !== undefined) {
+    payload.joinedLabel = updates.joinedLabel.slice(0, 40);
   }
 
   try {
@@ -176,8 +384,9 @@ export async function updateUserPrivacySettings(
   }
 }
 
-export async function listPublicCurators(maxResults = 24): Promise<UserProfile[]> {
+export async function listPublicCollectors(maxResults = 30): Promise<UserProfile[]> {
   const path = 'users';
+  let live: UserProfile[] = [];
   try {
     const q = query(
       collection(db, 'users'),
@@ -185,15 +394,24 @@ export async function listPublicCurators(maxResults = 24): Promise<UserProfile[]
       limit(maxResults),
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as UserProfile);
+    live = snap.docs.map((d) => normalizeUserDoc(d.data() as Record<string, unknown>));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
   }
+
+  if (isBuiltinDemoHidden()) return live;
+  const seen = new Set(live.map((u) => u.uid));
+  const combined = [...live];
+  for (const demo of DEMO_USERS) {
+    if (!seen.has(demo.uid)) combined.push(demo);
+  }
+  return combined.slice(0, maxResults);
 }
 
-// 2. Collections & Exhibitions
-export async function listPublicCollections(maxResults = 24): Promise<CollectionRecord[]> {
+// 2. Collections
+export async function listPublicCollections(maxResults = 40): Promise<CollectionRecord[]> {
   const path = 'collections';
+  let live: CollectionRecord[] = [];
   try {
     const q = query(
       collection(db, 'collections'),
@@ -201,26 +419,49 @@ export async function listPublicCollections(maxResults = 24): Promise<Collection
       limit(maxResults),
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({
+    live = snap.docs.map((d) => ({
       id: d.id,
       ...(d.data() as Omit<CollectionRecord, 'id'>),
     }));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
   }
+
+  if (isBuiltinDemoHidden()) return live;
+  const seen = new Set(live.map((c) => c.id));
+  const combined = [...live];
+  for (const demo of DEMO_COLLECTIONS) {
+    if (!seen.has(demo.id)) combined.push(demo);
+  }
+  return combined.slice(0, maxResults);
+}
+
+export async function listFeaturedCollections(): Promise<CollectionRecord[]> {
+  const all = await listPublicCollections(40);
+  const featured = all.filter((c) => c.featured);
+  return featured.length > 0 ? featured : all.slice(0, 3);
 }
 
 export async function listOwnerCollections(
   ownerId: string,
+  viewerUid?: string | null,
   maxResults = 50,
 ): Promise<CollectionRecord[]> {
+  if (!isBuiltinDemoHidden() && ownerId.startsWith('demo_')) {
+    return DEMO_COLLECTIONS.filter((c) => c.ownerId === ownerId);
+  }
+
   const path = 'collections';
+  const isSelf = Boolean(viewerUid && viewerUid === ownerId);
   try {
-    const q = query(
-      collection(db, 'collections'),
-      where('ownerId', '==', ownerId),
-      limit(maxResults),
-    );
+    const q = isSelf
+      ? query(collection(db, 'collections'), where('ownerId', '==', ownerId), limit(maxResults))
+      : query(
+          collection(db, 'collections'),
+          where('ownerId', '==', ownerId),
+          where('visibility', '==', 'public'),
+          limit(maxResults),
+        );
     const snap = await getDocs(q);
     return snap.docs.map((d) => ({
       id: d.id,
@@ -232,8 +473,10 @@ export async function listOwnerCollections(
 }
 
 export async function fetchCollectionById(collectionId: string): Promise<CollectionRecord | null> {
-  const demoMatch = DEMO_COLLECTIONS.find((c) => c.id === collectionId);
-  if (demoMatch) return demoMatch;
+  if (!isBuiltinDemoHidden()) {
+    const demoMatch = DEMO_COLLECTIONS.find((c) => c.id === collectionId);
+    if (demoMatch) return demoMatch;
+  }
 
   const path = `collections/${collectionId}`;
   try {
@@ -257,11 +500,20 @@ export async function createCollectionRecord(params: {
   setTargetCount?: number;
   coverImageUrl?: string;
 }): Promise<CollectionRecord> {
+  const check = canUse('create_collection', params.profile, {
+    currentCollectionsCount: params.profile.collectionsCount,
+  });
+  if (!check.allowed) {
+    throw new Error(check.reason || 'Collection limit reached.');
+  }
+
   const collectionId = makeSafeId('col');
   const path = `collections/${collectionId}`;
 
   const cleanTitle = params.title.trim().slice(0, 120);
-  const safeTitle = cleanTitle.length >= 2 ? cleanTitle : 'Curated Archive';
+  const safeTitle = cleanTitle.length >= 2 ? cleanTitle : 'My Collection';
+  const safeCover =
+    params.coverImageUrl && params.coverImageUrl.length <= 2048 ? params.coverImageUrl : '';
 
   const recordData = {
     ownerId: params.profile.uid,
@@ -269,7 +521,7 @@ export async function createCollectionRecord(params: {
     ownerHandle: sanitizeHandle(params.profile.handle),
     title: safeTitle,
     story: params.story.trim().slice(0, 2500),
-    coverImageUrl: (params.coverImageUrl || '').slice(0, 180000),
+    coverImageUrl: safeCover,
     category: params.category,
     visibility: params.visibility,
     itemCount: 0,
@@ -277,6 +529,7 @@ export async function createCollectionRecord(params: {
     estimatedTotalMinGbp: 0,
     estimatedTotalMaxGbp: 0,
     featured: false,
+    isDemo: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -298,6 +551,8 @@ export async function createCollectionRecord(params: {
 export async function updateCollectionDetails(
   collectionId: string,
   updates: Partial<{
+    ownerName: string;
+    ownerHandle: string;
     title: string;
     story: string;
     coverImageUrl: string;
@@ -313,13 +568,17 @@ export async function updateCollectionDetails(
   const payload: Record<string, unknown> = {
     updatedAt: serverTimestamp(),
   };
+  if (updates.ownerName !== undefined) payload.ownerName = updates.ownerName.slice(0, 80);
+  if (updates.ownerHandle !== undefined) {
+    payload.ownerHandle = sanitizeHandle(updates.ownerHandle);
+  }
   if (updates.title !== undefined) {
     const t = updates.title.trim().slice(0, 120);
-    payload.title = t.length >= 2 ? t : 'Curated Archive';
+    payload.title = t.length >= 2 ? t : 'My Collection';
   }
   if (updates.story !== undefined) payload.story = updates.story.slice(0, 2500);
   if (updates.coverImageUrl !== undefined) {
-    payload.coverImageUrl = updates.coverImageUrl.slice(0, 180000);
+    payload.coverImageUrl = updates.coverImageUrl.length <= 2048 ? updates.coverImageUrl : '';
   }
   if (updates.category !== undefined) payload.category = updates.category;
   if (updates.visibility !== undefined) payload.visibility = updates.visibility;
@@ -343,13 +602,77 @@ export async function updateCollectionDetails(
   }
 }
 
-// 3. Collectible Items & Aggregate Sync
+// 3. Collectible Pieces & Private Acquisition Records
+export async function fetchItemById(itemId: string): Promise<CollectibleItemRecord | null> {
+  if (!isBuiltinDemoHidden()) {
+    const demo = DEMO_ITEMS.find((i) => i.id === itemId);
+    if (demo) return demo;
+  }
+
+  const path = `items/${itemId}`;
+  try {
+    const snap = await getDoc(doc(db, 'items', itemId));
+    if (!snap.exists()) return null;
+    return normalizeItemDoc(snap.id, snap.data() as Record<string, unknown>);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+}
+
+export async function fetchItemPrivateRecord(
+  uid: string,
+  itemId: string,
+): Promise<ItemPrivateRecord | null> {
+  const path = `users/${uid}/itemPrivate/${itemId}`;
+  try {
+    const snap = await getDoc(doc(db, 'users', uid, 'itemPrivate', itemId));
+    if (!snap.exists()) return null;
+    return snap.data() as ItemPrivateRecord;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+}
+
+export async function upsertItemPrivateRecord(params: {
+  uid: string;
+  itemId: string;
+  acquiredDate: string;
+  acquiredPriceGbp: number;
+  privateNotes: string;
+}): Promise<void> {
+  const path = `users/${params.uid}/itemPrivate/${params.itemId}`;
+  const docRef = doc(db, 'users', params.uid, 'itemPrivate', params.itemId);
+  try {
+    const existingSnap = await getDoc(docRef);
+    if (existingSnap.exists()) {
+      await updateDoc(docRef, {
+        acquiredDate: params.acquiredDate.trim().slice(0, 40),
+        acquiredPriceGbp: Math.max(0, Number(params.acquiredPriceGbp) || 0),
+        privateNotes: params.privateNotes.slice(0, 1000),
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await setDoc(docRef, {
+        uid: params.uid,
+        itemId: params.itemId,
+        acquiredDate: params.acquiredDate.trim().slice(0, 40),
+        acquiredPriceGbp: Math.max(0, Number(params.acquiredPriceGbp) || 0),
+        privateNotes: params.privateNotes.slice(0, 1000),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
 export async function listCollectionItems(
   collectionRecord: CollectionRecord,
   currentUid?: string | null,
-  maxResults = 100,
+  maxResults = 150,
 ): Promise<CollectibleItemRecord[]> {
-  if (collectionRecord.isDemo) {
+  if (!isBuiltinDemoHidden() && collectionRecord.id.startsWith('demo_')) {
     return DEMO_ITEMS.filter((i) => i.collectionId === collectionRecord.id);
   }
 
@@ -372,83 +695,249 @@ export async function listCollectionItems(
         );
 
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<CollectibleItemRecord, 'id'>),
-    }));
+    return snap.docs.map((d) => normalizeItemDoc(d.id, d.data() as Record<string, unknown>));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
   }
+}
+
+export async function listOwnerItems(
+  ownerId: string,
+  maxResults = 120,
+): Promise<CollectibleItemRecord[]> {
+  if (!isBuiltinDemoHidden() && ownerId.startsWith('demo_')) {
+    return DEMO_ITEMS.filter((i) => i.ownerId === ownerId).slice(0, maxResults);
+  }
+
+  const path = 'items';
+  try {
+    const q = query(collection(db, 'items'), where('ownerId', '==', ownerId), limit(maxResults));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => normalizeItemDoc(d.id, d.data() as Record<string, unknown>));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
+export async function explorePublicItems(params: {
+  category?: CategorySlug | 'all';
+  search?: string;
+  sortBy?: 'newest' | 'value_desc';
+  pageSize?: number;
+  pageIndex?: number;
+}): Promise<{
+  items: CollectibleItemRecord[];
+  totalCount: number;
+  hasMore: boolean;
+}> {
+  const pageSize = params.pageSize || 24;
+  const pageIndex = params.pageIndex || 0;
+  const searchTerm = (params.search || '').trim().toLowerCase();
+
+  let liveItems: CollectibleItemRecord[] = [];
+  try {
+    const q =
+      params.category && params.category !== 'all'
+        ? query(
+            collection(db, 'items'),
+            where('visibility', '==', 'public'),
+            where('category', '==', params.category),
+            limit(200),
+          )
+        : query(collection(db, 'items'), where('visibility', '==', 'public'), limit(200));
+
+    const snap = await getDocs(q);
+    liveItems = snap.docs.map((d) => normalizeItemDoc(d.id, d.data() as Record<string, unknown>));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, 'items');
+  }
+
+  const seen = new Set(liveItems.map((i) => i.id));
+  const combined = [...liveItems];
+
+  if (!isBuiltinDemoHidden()) {
+    for (const demo of DEMO_ITEMS) {
+      if (seen.has(demo.id)) continue;
+      if (params.category && params.category !== 'all' && demo.category !== params.category) {
+        continue;
+      }
+      combined.push(demo);
+    }
+  }
+
+  const filtered = searchTerm
+    ? combined.filter((item) => {
+        if (item.titleLower.includes(searchTerm)) return true;
+        if (item.maker.toLowerCase().includes(searchTerm)) return true;
+        if (item.setNumber.toLowerCase().includes(searchTerm)) return true;
+        if (item.year.toLowerCase().includes(searchTerm)) return true;
+        if (item.ownerHandle.toLowerCase().includes(searchTerm)) return true;
+        return item.tags.some((t) => t.toLowerCase().includes(searchTerm));
+      })
+    : combined;
+
+  if (params.sortBy === 'value_desc') {
+    filtered.sort((a, b) => b.valueMaxGbp - a.valueMaxGbp);
+  } else {
+    // Newest first: live non-demo items appear ahead of demo items, sorted by createdAt seconds if available
+    filtered.sort((a, b) => {
+      const aLive = a.isDemo ? 0 : 1;
+      const bLive = b.isDemo ? 0 : 1;
+      if (aLive !== bLive) return bLive - aLive;
+      const aSec = (a.createdAt as { seconds?: number } | undefined)?.seconds || 0;
+      const bSec = (b.createdAt as { seconds?: number } | undefined)?.seconds || 0;
+      return bSec - aSec;
+    });
+  }
+
+  const end = (pageIndex + 1) * pageSize;
+  return {
+    items: filtered.slice(0, end),
+    totalCount: filtered.length,
+    hasMore: end < filtered.length,
+  };
 }
 
 export async function recomputeAndSyncCollectionStats(
   collectionRecord: CollectionRecord,
   ownerId: string,
 ): Promise<void> {
-  const items = await listCollectionItems(collectionRecord, ownerId, 200);
+  const items = await listCollectionItems(collectionRecord, ownerId, 250);
   const itemCount = items.length;
   const minSum = items.reduce((acc, item) => acc + (Number(item.valueMinGbp) || 0), 0);
   const maxSum = items.reduce(
     (acc, item) => acc + Math.max(Number(item.valueMinGbp) || 0, Number(item.valueMaxGbp) || 0),
     0,
   );
-  const nextCover = collectionRecord.coverImageUrl || items[0]?.imageUrl || '';
+  const candidateCover =
+    collectionRecord.coverImageUrl && collectionRecord.coverImageUrl.length <= 2048
+      ? collectionRecord.coverImageUrl
+      : items[0]?.thumbUrl || items[0]?.imageUrl || '';
 
   await updateCollectionDetails(collectionRecord.id, {
     itemCount,
     estimatedTotalMinGbp: minSum,
     estimatedTotalMaxGbp: Math.max(minSum, maxSum),
-    coverImageUrl: nextCover,
+    coverImageUrl: candidateCover.length <= 2048 ? candidateCover : '',
   });
 }
 
 export async function addCollectibleItemRecord(params: {
   collectionRecord: CollectionRecord;
-  ownerId: string;
-  name: string;
+  profile: UserProfile;
+  title: string;
+  story: string;
   category: CategorySlug;
-  year: string;
-  maker: string;
-  series: string;
-  setNumber: string;
-  condition: string;
+  photos: ItemPhoto[];
+  attributes: Record<string, string | boolean>;
+  fieldConfidences?: Record<string, ConfidenceLevel>;
   valueMinGbp: number;
   valueMaxGbp: number;
+  valuationReason: string;
   aiConfidence: AIConfidence;
-  curatorialNote: string;
-  imageUrl: string;
+  grail?: boolean;
+  tags?: string[];
+  acquiredDate?: string;
+  acquiredPriceGbp?: number;
+  privateNotes?: string;
   customItemId?: string;
 }): Promise<CollectibleItemRecord> {
   const itemId = params.customItemId || makeSafeId('itm');
   const path = `items/${itemId}`;
 
-  const minGbp = Math.max(0, Number(params.valueMinGbp) || 0);
-  const maxGbp = Math.max(minGbp, Number(params.valueMaxGbp) || minGbp);
+  const cleanTitle = (params.title.trim() || 'Untitled Piece').slice(0, 140);
+  const placard = getItemPlacardParts(params.category, params.attributes);
+  const minGbp = Math.max(0, Math.round(Number(params.valueMinGbp) || 0));
+  const maxGbp = Math.max(minGbp, Math.round(Number(params.valueMaxGbp) || minGbp));
+
+  const safePhotos: ItemPhoto[] =
+    params.photos.length > 0
+      ? params.photos.slice(0, 6).map((p) => ({
+          url: clampUrl(p.url, params.category, cleanTitle),
+          thumbUrl: clampUrl(p.thumbUrl || p.url, params.category, cleanTitle),
+          width: Math.max(1, Math.min(12000, Math.round(p.width || 800))),
+          height: Math.max(1, Math.min(12000, Math.round(p.height || 1000))),
+          ...(p.label ? { label: p.label.slice(0, 40) } : {}),
+          ...(p.blurDataUrl && p.blurDataUrl.length <= 600
+            ? { blurDataUrl: p.blurDataUrl }
+            : {}),
+        }))
+      : [
+          {
+            url: clampUrl('', params.category, cleanTitle),
+            thumbUrl: clampUrl('', params.category, cleanTitle),
+            width: 800,
+            height: 1000,
+            label: 'Front',
+          },
+        ];
+
+  const cleanTags = (params.tags || [])
+    .map((t) => t.toLowerCase().trim().slice(0, 40))
+    .filter(Boolean)
+    .slice(0, 12);
 
   const itemData = {
     collectionId: params.collectionRecord.id,
-    ownerId: params.ownerId,
+    ownerId: params.profile.uid,
+    ownerHandle: sanitizeHandle(params.profile.handle),
     category: params.category,
     visibility: params.collectionRecord.visibility,
-    name: (params.name.trim() || 'Untitled Artefact').slice(0, 140),
-    year: params.year.trim().slice(0, 32),
-    maker: params.maker.trim().slice(0, 100),
-    series: params.series.trim().slice(0, 100),
-    setNumber: params.setNumber.trim().slice(0, 60),
-    condition: (params.condition.trim() || 'Good').slice(0, 80),
+    title: cleanTitle,
+    titleLower: cleanTitle.toLowerCase(),
+    story: params.story.trim().slice(0, 1500),
+    imageUrl: safePhotos[0].url,
+    thumbUrl: safePhotos[0].thumbUrl,
+    photos: safePhotos,
+    attributes: params.attributes,
+    fieldConfidences: params.fieldConfidences || {},
+    year: placard.year.slice(0, 32),
+    maker: placard.maker.slice(0, 120),
+    setNumber: placard.catNumber.slice(0, 80),
+    condition: (placard.condition || 'Good').slice(0, 80),
     valueMinGbp: minGbp,
     valueMaxGbp: maxGbp,
+    valuationReason: params.valuationReason.trim().slice(0, 320),
     aiConfidence: params.aiConfidence,
-    curatorialNote: params.curatorialNote.trim().slice(0, 1200),
-    imageUrl: params.imageUrl.slice(0, 180000),
+    grail: Boolean(params.grail),
+    tags: cleanTags,
+    customOrder: Math.max(0, params.collectionRecord.itemCount || 0),
     forSale: false,
+    isDemo: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
 
   try {
-    await setDoc(doc(db, 'items', itemId), itemData);
-    await recomputeAndSyncCollectionStats(params.collectionRecord, params.ownerId);
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'items', itemId), itemData);
+
+    const hasPrivate =
+      Boolean(params.acquiredDate?.trim()) ||
+      (params.acquiredPriceGbp !== undefined && params.acquiredPriceGbp > 0) ||
+      Boolean(params.privateNotes?.trim());
+
+    if (hasPrivate) {
+      batch.set(doc(db, 'users', params.profile.uid, 'itemPrivate', itemId), {
+        uid: params.profile.uid,
+        itemId,
+        acquiredDate: (params.acquiredDate || '').trim().slice(0, 40),
+        acquiredPriceGbp: Math.max(0, Number(params.acquiredPriceGbp) || 0),
+        privateNotes: (params.privateNotes || '').slice(0, 1000),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
+
+    await Promise.all([
+      recomputeAndSyncCollectionStats(params.collectionRecord, params.profile.uid),
+      updateUserPublicProfile(params.profile.uid, {
+        piecesCount: (params.profile.piecesCount || 0) + 1,
+      }),
+    ]);
+
     return {
       id: itemId,
       ...itemData,
@@ -458,14 +947,112 @@ export async function addCollectibleItemRecord(params: {
   }
 }
 
+export async function updateCollectibleItemRecord(params: {
+  item: CollectibleItemRecord;
+  collectionRecord: CollectionRecord;
+  title: string;
+  story: string;
+  category: CategorySlug;
+  attributes: Record<string, string | boolean>;
+  valueMinGbp: number;
+  valueMaxGbp: number;
+  valuationReason: string;
+  grail: boolean;
+  tags: string[];
+}): Promise<void> {
+  const path = `items/${params.item.id}`;
+  const cleanTitle = (params.title.trim() || 'Untitled Piece').slice(0, 140);
+  const placard = getItemPlacardParts(params.category, params.attributes);
+  const minGbp = Math.max(0, Math.round(Number(params.valueMinGbp) || 0));
+  const maxGbp = Math.max(minGbp, Math.round(Number(params.valueMaxGbp) || minGbp));
+
+  try {
+    await updateDoc(doc(db, 'items', params.item.id), {
+      title: cleanTitle,
+      titleLower: cleanTitle.toLowerCase(),
+      story: params.story.trim().slice(0, 1500),
+      category: params.category,
+      attributes: params.attributes,
+      year: placard.year.slice(0, 32),
+      maker: placard.maker.slice(0, 120),
+      setNumber: placard.catNumber.slice(0, 80),
+      condition: (placard.condition || 'Good').slice(0, 80),
+      valueMinGbp: minGbp,
+      valueMaxGbp: maxGbp,
+      valuationReason: params.valuationReason.trim().slice(0, 320),
+      grail: params.grail,
+      tags: params.tags
+        .map((t) => t.toLowerCase().trim().slice(0, 40))
+        .filter(Boolean)
+        .slice(0, 12),
+      updatedAt: serverTimestamp(),
+    });
+    await recomputeAndSyncCollectionStats(params.collectionRecord, params.item.ownerId);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+export async function reorderCollectionItems(orderedItems: CollectibleItemRecord[]): Promise<void> {
+  if (orderedItems.length === 0) return;
+  const batch = writeBatch(db);
+  orderedItems.forEach((item, index) => {
+    if (!item.isDemo) {
+      batch.update(doc(db, 'items', item.id), {
+        customOrder: index,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
+  try {
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, 'items');
+  }
+}
+
+export async function moveItemToCollection(params: {
+  item: CollectibleItemRecord;
+  sourceCollection: CollectionRecord;
+  targetCollection: CollectionRecord;
+}): Promise<void> {
+  const path = `items/${params.item.id}`;
+  try {
+    await updateDoc(doc(db, 'items', params.item.id), {
+      collectionId: params.targetCollection.id,
+      visibility: params.targetCollection.visibility,
+      customOrder: params.targetCollection.itemCount || 0,
+      updatedAt: serverTimestamp(),
+    });
+    await Promise.all([
+      recomputeAndSyncCollectionStats(params.sourceCollection, params.item.ownerId),
+      recomputeAndSyncCollectionStats(params.targetCollection, params.item.ownerId),
+    ]);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
 export async function deleteCollectibleItemRecord(
   item: CollectibleItemRecord,
   collectionRecord: CollectionRecord,
+  profile?: UserProfile | null,
 ): Promise<void> {
   const path = `items/${item.id}`;
   try {
+    await deleteItemStoragePhotos(item.ownerId, item.id);
+    const privRef = doc(db, 'users', item.ownerId, 'itemPrivate', item.id);
+    const privSnap = await getDoc(privRef).catch(() => null);
+    if (privSnap && privSnap.exists()) {
+      await deleteDoc(privRef);
+    }
     await deleteDoc(doc(db, 'items', item.id));
     await recomputeAndSyncCollectionStats(collectionRecord, item.ownerId);
+    if (profile && profile.uid === item.ownerId) {
+      await updateUserPublicProfile(profile.uid, {
+        piecesCount: Math.max(0, (profile.piecesCount || 1) - 1),
+      });
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -475,10 +1062,16 @@ export async function deleteEntireCollection(
   collectionRecord: CollectionRecord,
   profile: UserProfile,
 ): Promise<void> {
-  const items = await listCollectionItems(collectionRecord, profile.uid, 200);
+  const items = await listCollectionItems(collectionRecord, profile.uid, 250);
   for (const item of items) {
+    await deleteItemStoragePhotos(profile.uid, item.id);
     const itemPath = `items/${item.id}`;
     try {
+      const privRef = doc(db, 'users', profile.uid, 'itemPrivate', item.id);
+      const privSnap = await getDoc(privRef).catch(() => null);
+      if (privSnap && privSnap.exists()) {
+        await deleteDoc(privRef);
+      }
       await deleteDoc(doc(db, 'items', item.id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, itemPath);
@@ -490,80 +1083,89 @@ export async function deleteEntireCollection(
     await deleteDoc(doc(db, 'collections', collectionRecord.id));
     await updateUserPublicProfile(profile.uid, {
       collectionsCount: Math.max(0, (profile.collectionsCount || 1) - 1),
+      piecesCount: Math.max(0, (profile.piecesCount || items.length) - items.length),
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, colPath);
   }
 }
 
-// 4. Seed Sample UK Collection into Tester's Firestore Account
-export async function seedSampleCabinetForUser(profile: UserProfile): Promise<CollectionRecord> {
-  const sampleCol = await createCollectionRecord({
-    profile,
-    title: 'Selected British Cabinet Study (Starter Archive)',
-    story:
-      'A personal starter cabinet seeded to explore Fanzeum’s gallery lighting, accession records, and GBP valuation tracking. Add your own photographs or edit any entry at your leisure.',
-    category: 'stamps',
-    visibility: 'public',
-    setTargetCount: 10,
-    coverImageUrl: DEMO_ITEMS[0].imageUrl,
-  });
-
-  await addCollectibleItemRecord({
-    collectionRecord: sampleCol,
-    ownerId: profile.uid,
-    name: DEMO_ITEMS[0].name,
-    category: 'stamps',
-    year: DEMO_ITEMS[0].year,
-    maker: DEMO_ITEMS[0].maker,
-    series: DEMO_ITEMS[0].series,
-    setNumber: DEMO_ITEMS[0].setNumber,
-    condition: DEMO_ITEMS[0].condition,
-    valueMinGbp: DEMO_ITEMS[0].valueMinGbp,
-    valueMaxGbp: DEMO_ITEMS[0].valueMaxGbp,
-    aiConfidence: 'high',
-    curatorialNote: DEMO_ITEMS[0].curatorialNote,
-    imageUrl: DEMO_ITEMS[0].imageUrl,
-  });
-
-  await addCollectibleItemRecord({
-    collectionRecord: sampleCol,
-    ownerId: profile.uid,
-    name: DEMO_ITEMS[2].name,
-    category: 'coins',
-    year: DEMO_ITEMS[2].year,
-    maker: DEMO_ITEMS[2].maker,
-    series: DEMO_ITEMS[2].series,
-    setNumber: DEMO_ITEMS[2].setNumber,
-    condition: DEMO_ITEMS[2].condition,
-    valueMinGbp: DEMO_ITEMS[2].valueMinGbp,
-    valueMaxGbp: DEMO_ITEMS[2].valueMaxGbp,
-    aiConfidence: 'high',
-    curatorialNote: DEMO_ITEMS[2].curatorialNote,
-    imageUrl: DEMO_ITEMS[2].imageUrl,
-  });
-
-  return sampleCol;
+/**
+ * Automatically migrates any legacy base64 data:image/jpeg strings (>2048 chars)
+ * from the earlier Phase 1 skeleton into Firebase Storage WebP objects.
+ */
+export async function migrateLegacyBase64Images(uid: string): Promise<number> {
+  let migrated = 0;
+  try {
+    const q = query(collection(db, 'items'), where('ownerId', '==', uid), limit(100));
+    const snap = await getDocs(q);
+    for (const d of snap.docs) {
+      const raw = d.data() as Record<string, unknown>;
+      const img = String(raw.imageUrl || '');
+      if (img.startsWith('data:image/') && img.length > 2048) {
+        const blob = dataUrlToBlob(img);
+        const processed = await processCollectiblePhoto(blob, { label: 'Front' });
+        const uploaded = await uploadProcessedItemPhoto(uid, d.id, 0, processed);
+        const normalized = normalizeItemDoc(d.id, raw);
+        await setDoc(doc(db, 'items', d.id), {
+          collectionId: normalized.collectionId,
+          ownerId: uid,
+          ownerHandle: normalized.ownerHandle || 'collector',
+          category: normalized.category,
+          visibility: normalized.visibility,
+          title: normalized.title.slice(0, 140),
+          titleLower: normalized.titleLower.slice(0, 140),
+          story: normalized.story.slice(0, 1500),
+          imageUrl: uploaded.url,
+          thumbUrl: uploaded.thumbUrl,
+          photos: [uploaded],
+          attributes: normalized.attributes,
+          fieldConfidences: normalized.fieldConfidences,
+          year: normalized.year.slice(0, 32),
+          maker: normalized.maker.slice(0, 120),
+          setNumber: normalized.setNumber.slice(0, 80),
+          condition: (normalized.condition || 'Good').slice(0, 80),
+          valueMinGbp: normalized.valueMinGbp,
+          valueMaxGbp: normalized.valueMaxGbp,
+          valuationReason: normalized.valuationReason.slice(0, 320),
+          aiConfidence: normalized.aiConfidence,
+          grail: normalized.grail,
+          tags: normalized.tags.slice(0, 12),
+          customOrder: normalized.customOrder,
+          forSale: normalized.forSale,
+          isDemo: false,
+          createdAt: raw.createdAt || serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        migrated += 1;
+      }
+    }
+  } catch {
+    // Non-blocking background migration
+  }
+  return migrated;
 }
 
-// 5. UK GDPR Data Export & Full Account Data Erasure
+// 4. UK GDPR Full Export & Complete Account + Storage Erasure
 export async function exportAllUserData(uid: string) {
-  const [profile, privateAccount, collections] = await Promise.all([
+  const [profile, privateAccount, collections, items] = await Promise.all([
     fetchUserProfile(uid),
     fetchUserPrivateAccount(uid),
-    listOwnerCollections(uid, 100),
+    listOwnerCollections(uid, uid, 200),
+    listOwnerItems(uid, 500),
   ]);
 
-  const itemsQuery = query(collection(db, 'items'), where('ownerId', '==', uid), limit(500));
-  let items: CollectibleItemRecord[] = [];
+  let itemPrivateRecords: ItemPrivateRecord[] = [];
   try {
-    const snap = await getDocs(itemsQuery);
-    items = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<CollectibleItemRecord, 'id'>),
-    }));
-  } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, 'items');
+    const privQ = query(
+      collection(db, 'users', uid, 'itemPrivate'),
+      where('uid', '==', uid),
+      limit(500),
+    );
+    const snap = await getDocs(privQ);
+    itemPrivateRecords = snap.docs.map((d) => d.data() as ItemPrivateRecord);
+  } catch {
+    // Optional subcollection
   }
 
   return {
@@ -574,13 +1176,30 @@ export async function exportAllUserData(uid: string) {
     privateAccount,
     collections,
     items,
+    itemPrivateRecords,
   };
 }
 
 export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
-  const itemsQuery = query(collection(db, 'items'), where('ownerId', '==', uid), limit(500));
+  await deleteAllUserStorageFiles(uid);
+
   try {
-    const itemSnap = await getDocs(itemsQuery);
+    const privItemsQ = query(
+      collection(db, 'users', uid, 'itemPrivate'),
+      where('uid', '==', uid),
+      limit(500),
+    );
+    const privItemsSnap = await getDocs(privItemsQ);
+    for (const d of privItemsSnap.docs) {
+      await deleteDoc(doc(db, 'users', uid, 'itemPrivate', d.id));
+    }
+  } catch {
+    // Proceed with remaining cleanup
+  }
+
+  try {
+    const itemsQ = query(collection(db, 'items'), where('ownerId', '==', uid), limit(500));
+    const itemSnap = await getDocs(itemsQ);
     for (const d of itemSnap.docs) {
       await deleteDoc(doc(db, 'items', d.id));
     }
@@ -588,7 +1207,7 @@ export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, 'items');
   }
 
-  const cols = await listOwnerCollections(uid, 100);
+  const cols = await listOwnerCollections(uid, uid, 200);
   for (const col of cols) {
     try {
       await deleteDoc(doc(db, 'collections', col.id));

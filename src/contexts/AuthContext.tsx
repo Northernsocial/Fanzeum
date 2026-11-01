@@ -8,7 +8,7 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
   updateProfile,
-  User,
+  type User,
 } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 import {
@@ -16,13 +16,17 @@ import {
   eraseAllUserFirestoreData,
   fetchUserPrivateAccount,
   fetchUserProfile,
+  migrateLegacyBase64Images,
 } from '../lib/firestoreRepo';
 import type { UserPrivateAccount, UserProfile } from '../types/domain';
+
+const ADMIN_EMAIL = 'fifestreet@gmail.com';
 
 interface AuthContextValue {
   firebaseUser: User | null;
   profile: UserProfile | null;
   privateAccount: UserPrivateAccount | null;
+  isAdminUser: boolean;
   isAuthReady: boolean;
   needsEmailVerification: boolean;
   authModalOpen: boolean;
@@ -59,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(existingProfile);
       const priv = await fetchUserPrivateAccount(user.uid);
       setPrivateAccount(priv);
+      void migrateLegacyBase64Images(user.uid);
     } else {
       const savedCookie = window.localStorage.getItem('fanzeum_cookie_consent');
       const analyticsConsent = savedCookie === 'all';
@@ -160,6 +165,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const needsEmailVerification = Boolean(firebaseUser && !firebaseUser.emailVerified);
+  const isAdminUser = Boolean(
+    firebaseUser?.emailVerified &&
+      (firebaseUser.email?.toLowerCase() === ADMIN_EMAIL || profile?.role === 'admin'),
+  );
 
   return (
     <AuthContext.Provider
@@ -167,6 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         firebaseUser,
         profile,
         privateAccount,
+        isAdminUser,
         isAuthReady,
         needsEmailVerification,
         authModalOpen,

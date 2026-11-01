@@ -1,8 +1,10 @@
 import type { PlanTier, UserProfile } from '../types/domain';
 
+export type GatedFeature = 'identify' | 'create_collection' | 'bulk_upload';
+
 export interface PlanEntitlements {
   maxCollections: number;
-  maxMonthlyAiIdentifications: number;
+  hourlyAiIdentifications: number;
   canBulkUpload: boolean;
   commissionRatePercent: number;
   label: string;
@@ -10,25 +12,25 @@ export interface PlanEntitlements {
 
 const PLAN_LIMITS: Record<PlanTier, PlanEntitlements> = {
   free: {
-    maxCollections: 5,
-    maxMonthlyAiIdentifications: 25,
-    canBulkUpload: true,
+    maxCollections: 10,
+    hourlyAiIdentifications: 20,
+    canBulkUpload: false,
     commissionRatePercent: 8.5,
     label: 'Collector (Free)',
   },
   premium: {
     maxCollections: 9999,
-    maxMonthlyAiIdentifications: 9999,
+    hourlyAiIdentifications: 100,
     canBulkUpload: true,
     commissionRatePercent: 4.5,
-    label: 'Patron (Premium)',
+    label: 'Collector Plus',
   },
   store: {
     maxCollections: 9999,
-    maxMonthlyAiIdentifications: 9999,
+    hourlyAiIdentifications: 500,
     canBulkUpload: true,
     commissionRatePercent: 3.5,
-    label: 'Gallery & Store',
+    label: 'Dealer & Store',
   },
 };
 
@@ -37,20 +39,42 @@ export function getEntitlements(profile: UserProfile | null | undefined): PlanEn
   return PLAN_LIMITS[tier];
 }
 
-export function canCreateCollection(
-  profile: UserProfile | null | undefined,
-  currentCount: number,
+export function canUse(
+  feature: GatedFeature,
+  user: UserProfile | null | undefined,
+  context?: { currentCollectionsCount?: number },
 ): { allowed: boolean; reason?: string } {
-  if (!profile) {
-    return { allowed: false, reason: 'Sign in to create a collection.' };
+  if (!user) {
+    return { allowed: false, reason: 'Sign in first to use this feature.' };
   }
-  const entitlements = getEntitlements(profile);
-  if (currentCount >= entitlements.maxCollections) {
-    return {
-      allowed: false,
-      reason: `Free collector accounts include up to ${entitlements.maxCollections} collections. Upgrade in Phase 6 for unlimited galleries.`,
-    };
+
+  const limits = getEntitlements(user);
+
+  if (feature === 'create_collection') {
+    const count = context?.currentCollectionsCount ?? user.collectionsCount ?? 0;
+    if (count >= limits.maxCollections) {
+      return {
+        allowed: false,
+        reason: `Free collector cabinets include up to ${limits.maxCollections} collections.`,
+      };
+    }
+    return { allowed: true };
   }
+
+  if (feature === 'identify') {
+    return { allowed: true };
+  }
+
+  if (feature === 'bulk_upload') {
+    if (!limits.canBulkUpload) {
+      return {
+        allowed: false,
+        reason: 'Bulk spreadsheet and multi-tray upload arrives with Collector Plus and Dealer plans.',
+      };
+    }
+    return { allowed: true };
+  }
+
   return { allowed: true };
 }
 
@@ -63,17 +87,18 @@ export function formatGbp(amount: number): string {
 }
 
 export function formatGbpRange(min: number, max: number): string {
-  if (min <= 0 && max <= 0) return 'Unvalued';
+  if (min <= 0 && max <= 0) return 'No estimate';
   if (min === max) return formatGbp(min);
-  return `${formatGbp(min)} – ${formatGbp(max)}`;
+  return `${formatGbp(min)}–${formatGbp(max)}`;
 }
 
 export function sanitizeHandle(raw: string): string {
   const cleaned = raw
     .toLowerCase()
+    .replace(/^@+/, '')
     .replace(/[^a-z0-9_-]/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '')
     .slice(0, 28);
-  return cleaned.length >= 2 ? cleaned : `curator_${Math.floor(100 + Math.random() * 900)}`;
+  return cleaned.length >= 2 ? cleaned : `collector_${Math.floor(100 + Math.random() * 900)}`;
 }

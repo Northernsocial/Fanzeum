@@ -1,20 +1,122 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --font-serif: "Cormorant Garamond", Georgia, Cambria, "Times New Roman", serif;
-  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+:root {
+  --bg: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface-raised: #F0EDE6;
+  --border: #E2DED5;
+  --text: #15171C;
+  --text-muted: #5B5F69;
+  --accent: #8E6E2F;
+  --accent-fg: #FFFFFF;
+  --green: #3E8E74;
+  --amber: #D9A441;
+  --red: #D2554B;
+}
+
+.dark {
+  --bg: #0E0F12;
+  --surface: #16181D;
+  --surface-raised: #1E2128;
+  --border: #2A2E37;
+  --text: #F4F1EA;
+  --text-muted: #A3A6AE;
+  --accent: #C9A45C;
+  --accent-fg: #0E0F12;
+  --green: #3E8E74;
+  --amber: #D9A441;
+  --red: #D2554B;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-brass: var(--accent);
+  --color-brass-fg: var(--accent-fg);
+  --color-ok: var(--green);
+  --color-warn: var(--amber);
+  --color-danger: var(--red);
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
+    font-size: 16px;
+    background-color: var(--bg);
+    color: var(--text);
     scroll-behavior: smooth;
   }
 
-  h1, h2, h3, .font-editorial {
-    font-family: var(--font-serif);
+  body {
+    font-size: 1rem;
+    line-height: 1.6;
+    background-color: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
     text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+@keyframes scan-sweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(320%);
+    opacity: 0.2;
+  }
+}
+
+.animate-scan-sweep {
+  animation: scan-sweep 2.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.after-hours-spotlight {
+  background: radial-gradient(
+    circle at 50% 42%,
+    color-mix(in srgb, var(--accent) 16%, transparent) 0%,
+    transparent 68%
+  );
+}
+
+.stamp-perforated-mat {
+  background-image: radial-gradient(var(--bg) 4px, transparent 4.5px);
+  background-size: 16px 16px;
+  background-position: -8px -8px;
+}
+
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

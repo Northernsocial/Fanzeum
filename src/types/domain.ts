@@ -1,12 +1,6 @@
-export type CategorySlug =
-  | 'stamps'
-  | 'football_cards'
-  | 'trading_cards'
-  | 'coins'
-  | 'comics'
-  | 'vinyl'
-  | 'toys'
-  | 'memorabilia';
+import type { CategorySlug } from '../config/categories';
+
+export type { CategorySlug };
 
 export type VisibilityLevel = 'public' | 'followers' | 'private';
 
@@ -16,7 +10,24 @@ export type UserRole = 'collector' | 'expert' | 'store' | 'admin';
 
 export type PlanTier = 'free' | 'premium' | 'store';
 
-export type AIConfidence = 'high' | 'medium' | 'low' | 'manual';
+export type ConfidenceLevel = 'high' | 'medium' | 'low';
+
+export type AIConfidence = ConfidenceLevel | 'manual';
+
+export interface ItemPhoto {
+  url: string;
+  thumbUrl: string;
+  width: number;
+  height: number;
+  label?: string; // e.g. 'Front / Obverse', 'Back / Reverse'
+  blurDataUrl?: string;
+}
+
+export interface MediaCredit {
+  sourceUrl: string;
+  author: string;
+  licence: string;
+}
 
 export interface UserProfile {
   uid: string;
@@ -31,8 +42,13 @@ export interface UserProfile {
   plan: PlanTier;
   isVerifiedExpert: boolean;
   isPublicProfile: boolean;
+  hideValues: boolean;
+  hideLocation: boolean;
   onboardingCompleted: boolean;
   collectionsCount: number;
+  piecesCount: number;
+  joinedLabel?: string;
+  isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
@@ -71,37 +87,60 @@ export interface CollectibleItemRecord {
   id: string;
   collectionId: string;
   ownerId: string;
+  ownerHandle: string;
   category: CategorySlug;
   visibility: VisibilityLevel;
-  name: string;
+  title: string;
+  titleLower: string;
+  story: string;
+  imageUrl: string;
+  thumbUrl: string;
+  photos: ItemPhoto[];
+  attributes: Record<string, string | boolean>;
+  fieldConfidences: Record<string, ConfidenceLevel>;
   year: string;
   maker: string;
-  series: string;
   setNumber: string;
   condition: string;
   valueMinGbp: number;
   valueMaxGbp: number;
+  valuationReason: string;
   aiConfidence: AIConfidence;
-  curatorialNote: string;
-  imageUrl: string;
+  grail: boolean;
+  tags: string[];
+  customOrder: number;
   forSale: boolean;
+  mediaCredit?: MediaCredit;
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
 
+export interface ItemPrivateRecord {
+  uid: string;
+  itemId: string;
+  acquiredDate: string;
+  acquiredPriceGbp: number;
+  privateNotes: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface AIIdentifyFieldEntry {
+  value: string | boolean;
+  confidence: ConfidenceLevel;
+}
+
 export interface AIIdentificationResult {
-  name: string;
+  title: string;
   category: CategorySlug;
-  year: string;
-  maker: string;
-  series: string;
-  setNumber: string;
-  conditionGuess: string;
+  whatYouveGot: string;
   valueMinGbp: number;
   valueMaxGbp: number;
-  confidence: 'high' | 'medium' | 'low';
-  curatorialNote: string;
+  valuationReason: string;
+  overallConfidence: ConfidenceLevel;
+  fields: Record<string, AIIdentifyFieldEntry>;
+  suggestedTags: string[];
 }
 
 export interface AIOnboardingResponse {
@@ -109,70 +148,24 @@ export interface AIOnboardingResponse {
   suggestedCollectionTitle: string;
   suggestedCollectionStory: string;
   suggestedBio: string;
-  photographyTip: string;
+  photoTip: string;
 }
 
-export const CATEGORY_METADATA: Record<
-  CategorySlug,
-  { label: string; shortLabel: string; curatorDepartment: string }
-> = {
-  stamps: {
-    label: 'Philately & Stamps',
-    shortLabel: 'Stamps',
-    curatorDepartment: 'Department of British & Commonwealth Philately',
-  },
-  football_cards: {
-    label: 'Football Cards',
-    shortLabel: 'Football Cards',
-    curatorDepartment: 'Archive of Sporting Trade Cards',
-  },
-  trading_cards: {
-    label: 'Trading Cards',
-    shortLabel: 'Trading Cards',
-    curatorDepartment: 'Cabinet of Illustrated Trade Issues',
-  },
-  coins: {
-    label: 'Coins & Numismatics',
-    shortLabel: 'Coins',
-    curatorDepartment: 'Cabinet of Sovereign & Hammered Coinage',
-  },
-  comics: {
-    label: 'Comics & Graphic Editions',
-    shortLabel: 'Comics',
-    curatorDepartment: 'Archive of Sequential Print',
-  },
-  vinyl: {
-    label: 'Vinyl & First Pressings',
-    shortLabel: 'Vinyl',
-    curatorDepartment: 'Recorded Sound & Sleeve Archive',
-  },
-  toys: {
-    label: 'Vintage Toys & Die-Cast',
-    shortLabel: 'Toys',
-    curatorDepartment: 'Industrial & Tinplate Toy Collection',
-  },
-  memorabilia: {
-    label: 'Cultural Memorabilia',
-    shortLabel: 'Memorabilia',
-    curatorDepartment: 'Ephemera & Historical Artefacts',
-  },
-};
-
-export const GOAL_LABELS: Record<CollectorGoal, { title: string; subtitle: string }> = {
+export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: string }> = {
   exhibit: {
-    title: 'Curate & Exhibit',
-    subtitle: 'Present pieces in a museum-grade public or private gallery.',
+    title: 'Show off my pieces',
+    subtitle: 'Display cards, coins, stamps or records properly and share my cabinet.',
   },
   complete_set: {
-    title: 'Complete a Set',
-    subtitle: 'Track missing catalogue numbers and monitor set completion.',
-  },
-  sell: {
-    title: 'Value & Prepare to Sell',
-    subtitle: 'Catalogue condition and GBP valuation ranges for future sales.',
+    title: 'Complete sets',
+    subtitle: 'Track missing numbers, variants, and watch my set ring hit 100%.',
   },
   learn: {
-    title: 'Study & Identify',
-    subtitle: 'Uncover makers, dates, plates, and provenance with AI assistance.',
+    title: "Find out what things are worth",
+    subtitle: 'Snap pieces to check printings, grades, and realistic UK £ prices.',
+  },
+  sell: {
+    title: 'Buy and sell later',
+    subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };

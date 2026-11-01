@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default deny across bucket
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Collector item photographs and avatars under their own UID path
+    match /users/{uid}/{allPaths=**} {
+      // Public read allowed for item display and cabinet avatars
+      allow read: if true;
+
+      // Write restricted strictly to authenticated owner, image MIME types only, max 10MB
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      // Delete restricted to authenticated owner (e.g. item removal or GDPR account deletion)
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

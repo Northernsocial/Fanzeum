@@ -5,38 +5,46 @@ import type {
   CollectorGoal,
 } from '../types/domain';
 
-export async function identifyCollectibleByPhoto(params: {
-  imageBase64: string;
+export interface IdentifyPhotoPayload {
+  base64: string;
   mimeType: string;
+  label?: string;
+}
+
+export async function identifyCollectibleByPhoto(params: {
+  photos: IdentifyPhotoPayload[];
   categoryHint?: CategorySlug;
   userNotes?: string;
+  userId?: string;
 }): Promise<AIIdentificationResult> {
   const res = await fetch('/api/ai/identify-item', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.error || 'AI identification failed.');
+    throw new Error(
+      data?.error || 'Could not identify this photo right now. You can fill in the details below.',
+    );
   }
   return data as AIIdentificationResult;
 }
 
-export async function generateCuratorialOnboarding(params: {
+export async function generateOnboardingGuide(params: {
   displayName: string;
   specialties: CategorySlug[];
   goal: CollectorGoal;
-  personalNote?: string;
+  location?: string;
 }): Promise<AIOnboardingResponse> {
   const res = await fetch('/api/ai/onboarding', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.error || 'Could not generate curatorial onboarding guide.');
+    throw new Error(data?.error || 'Could not generate starter collection suggestion.');
   }
   return data as AIOnboardingResponse;
 }
@@ -51,9 +59,9 @@ export async function polishCollectionStory(params: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.error || 'Could not refine story right now.');
+    throw new Error(data?.error || 'Could not tidy up your story right now.');
   }
   return String(data.story || params.draftStory);
 }

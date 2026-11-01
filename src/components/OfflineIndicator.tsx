@@ -10,10 +10,10 @@ export const OfflineIndicator: React.FC = () => {
   return (
     <div
       role="status"
-      className="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-lg bg-[#1C1917] dark:bg-[#F5F2EB] text-[#FBF9F5] dark:text-[#1C1917] px-3.5 py-2 text-xs font-medium shadow-md border border-stone-700 dark:border-stone-300"
+      className="fixed bottom-20 md:bottom-4 left-4 z-40 flex items-center gap-2 rounded-xl bg-surface-raised text-ink px-3.5 py-2 text-xs font-medium border border-brass/50 shadow-lg"
     >
-      <WifiOff className="w-3.5 h-3.5 shrink-0" />
-      <span>Offline Archive Mode — Viewing cached gallery records</span>
+      <WifiOff className="w-4 h-4 text-brass shrink-0" strokeWidth={1.5} />
+      <span>Offline — showing cached cabinets</span>
     </div>
   );
 };

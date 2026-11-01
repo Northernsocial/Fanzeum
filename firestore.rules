@@ -52,6 +52,27 @@ service cloud.firestore {
       return vis is string && vis.size() <= 16 && vis in ['public', 'followers', 'private'];
     }
 
+    function isValidMediaCredit(mc) {
+      return mc is map &&
+        mc.keys().hasAll(['sourceUrl', 'author', 'licence']) &&
+        mc.keys().hasOnly(['sourceUrl', 'author', 'licence']) &&
+        mc.sourceUrl is string && mc.sourceUrl.size() <= 512 &&
+        mc.author is string && mc.author.size() <= 160 &&
+        mc.licence is string && mc.licence.size() <= 80;
+    }
+
+    function isValidPhotoEntry(photo) {
+      return photo is map &&
+        photo.keys().hasAll(['url', 'thumbUrl', 'width', 'height']) &&
+        photo.keys().hasOnly(['url', 'thumbUrl', 'width', 'height', 'label', 'blurDataUrl']) &&
+        photo.url is string && photo.url.size() >= 1 && photo.url.size() <= 2048 &&
+        photo.thumbUrl is string && photo.thumbUrl.size() >= 1 && photo.thumbUrl.size() <= 2048 &&
+        photo.width is int && photo.width >= 1 && photo.width <= 12000 &&
+        photo.height is int && photo.height >= 1 && photo.height <= 12000 &&
+        (!('label' in photo) || (photo.label is string && photo.label.size() <= 40)) &&
+        (!('blurDataUrl' in photo) || (photo.blurDataUrl is string && photo.blurDataUrl.size() <= 600));
+    }
+
     // Validation Blueprint: UserProfile
     function isValidUserProfile(data) {
       return data.keys().hasAll([
@@ -67,8 +88,13 @@ service cloud.firestore {
           'plan',
           'isVerifiedExpert',
           'isPublicProfile',
+          'hideValues',
+          'hideLocation',
           'onboardingCompleted',
           'collectionsCount',
+          'piecesCount',
+          'joinedLabel',
+          'isDemo',
           'createdAt',
           'updatedAt'
         ]) &&
@@ -85,8 +111,13 @@ service cloud.firestore {
           'plan',
           'isVerifiedExpert',
           'isPublicProfile',
+          'hideValues',
+          'hideLocation',
           'onboardingCompleted',
           'collectionsCount',
+          'piecesCount',
+          'joinedLabel',
+          'isDemo',
           'createdAt',
           'updatedAt'
         ]) &&
@@ -103,8 +134,13 @@ service cloud.firestore {
         data.plan is string && data.plan.size() <= 16 && data.plan in ['free', 'premium', 'store'] &&
         data.isVerifiedExpert is bool &&
         data.isPublicProfile is bool &&
+        data.hideValues is bool &&
+        data.hideLocation is bool &&
         data.onboardingCompleted is bool &&
         data.collectionsCount is int && data.collectionsCount >= 0 && data.collectionsCount <= 10000 &&
+        data.piecesCount is int && data.piecesCount >= 0 && data.piecesCount <= 100000 &&
+        data.joinedLabel is string && data.joinedLabel.size() <= 40 &&
+        data.isDemo is bool &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -138,6 +174,35 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    // Validation Blueprint: ItemPrivateRecord (Owner-only purchase price & notes)
+    function isValidItemPrivateRecord(data) {
+      return data.keys().hasAll([
+          'uid',
+          'itemId',
+          'acquiredDate',
+          'acquiredPriceGbp',
+          'privateNotes',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'itemId',
+          'acquiredDate',
+          'acquiredPriceGbp',
+          'privateNotes',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        isValidId(data.itemId) &&
+        data.acquiredDate is string && data.acquiredDate.size() <= 40 &&
+        (data.acquiredPriceGbp is int || data.acquiredPriceGbp is float) && data.acquiredPriceGbp >= 0 && data.acquiredPriceGbp <= 100000000 &&
+        data.privateNotes is string && data.privateNotes.size() <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
     // Validation Blueprint: Collection
     function isValidCollection(data) {
       return data.keys().hasAll([
@@ -154,6 +219,7 @@ service cloud.firestore {
           'estimatedTotalMinGbp',
           'estimatedTotalMaxGbp',
           'featured',
+          'isDemo',
           'createdAt',
           'updatedAt'
         ]) &&
@@ -171,6 +237,7 @@ service cloud.firestore {
           'estimatedTotalMinGbp',
           'estimatedTotalMaxGbp',
           'featured',
+          'isDemo',
           'createdAt',
           'updatedAt'
         ]) &&
@@ -179,7 +246,7 @@ service cloud.firestore {
         data.ownerHandle is string && data.ownerHandle.size() >= 2 && data.ownerHandle.size() <= 32 && data.ownerHandle.matches('^[a-z0-9_\\-]+$') &&
         data.title is string && data.title.size() >= 2 && data.title.size() <= 120 &&
         data.story is string && data.story.size() <= 2500 &&
-        data.coverImageUrl is string && data.coverImageUrl.size() <= 180000 &&
+        data.coverImageUrl is string && data.coverImageUrl.size() <= 2048 &&
         isValidCategory(data.category) &&
         isValidVisibility(data.visibility) &&
         data.itemCount is int && data.itemCount >= 0 && data.itemCount <= 50000 &&
@@ -187,6 +254,7 @@ service cloud.firestore {
         (data.estimatedTotalMinGbp is int || data.estimatedTotalMinGbp is float) && data.estimatedTotalMinGbp >= 0 &&
         (data.estimatedTotalMaxGbp is int || data.estimatedTotalMaxGbp is float) && data.estimatedTotalMaxGbp >= data.estimatedTotalMinGbp &&
         data.featured is bool &&
+        data.isDemo is bool &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -196,59 +264,93 @@ service cloud.firestore {
       return data.keys().hasAll([
           'collectionId',
           'ownerId',
+          'ownerHandle',
           'category',
           'visibility',
-          'name',
+          'title',
+          'titleLower',
+          'story',
+          'imageUrl',
+          'thumbUrl',
+          'photos',
+          'attributes',
+          'fieldConfidences',
           'year',
           'maker',
-          'series',
           'setNumber',
           'condition',
           'valueMinGbp',
           'valueMaxGbp',
+          'valuationReason',
           'aiConfidence',
-          'curatorialNote',
-          'imageUrl',
+          'grail',
+          'tags',
+          'customOrder',
           'forSale',
+          'isDemo',
           'createdAt',
           'updatedAt'
         ]) &&
         data.keys().hasOnly([
           'collectionId',
           'ownerId',
+          'ownerHandle',
           'category',
           'visibility',
-          'name',
+          'title',
+          'titleLower',
+          'story',
+          'imageUrl',
+          'thumbUrl',
+          'photos',
+          'attributes',
+          'fieldConfidences',
           'year',
           'maker',
-          'series',
           'setNumber',
           'condition',
           'valueMinGbp',
           'valueMaxGbp',
+          'valuationReason',
           'aiConfidence',
-          'curatorialNote',
-          'imageUrl',
+          'grail',
+          'tags',
+          'customOrder',
           'forSale',
+          'mediaCredit',
+          'isDemo',
           'createdAt',
           'updatedAt'
         ]) &&
         isValidId(data.collectionId) &&
         isValidId(data.ownerId) &&
+        data.ownerHandle is string && data.ownerHandle.size() >= 2 && data.ownerHandle.size() <= 32 && data.ownerHandle.matches('^[a-z0-9_\\-]+$') &&
         isValidCategory(data.category) &&
         isValidVisibility(data.visibility) &&
-        data.name is string && data.name.size() >= 1 && data.name.size() <= 140 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.titleLower is string && data.titleLower.size() >= 1 && data.titleLower.size() <= 140 &&
+        data.story is string && data.story.size() <= 1500 &&
+        data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 2048 &&
+        data.thumbUrl is string && data.thumbUrl.size() >= 1 && data.thumbUrl.size() <= 2048 &&
+        data.photos is list && data.photos.size() >= 1 && data.photos.size() <= 6 &&
+        isValidPhotoEntry(data.photos[0]) &&
+        data.attributes is map && data.attributes.size() <= 24 &&
+        data.fieldConfidences is map && data.fieldConfidences.size() <= 24 &&
         data.year is string && data.year.size() <= 32 &&
-        data.maker is string && data.maker.size() <= 100 &&
-        data.series is string && data.series.size() <= 100 &&
-        data.setNumber is string && data.setNumber.size() <= 60 &&
+        data.maker is string && data.maker.size() <= 120 &&
+        data.setNumber is string && data.setNumber.size() <= 80 &&
         data.condition is string && data.condition.size() >= 1 && data.condition.size() <= 80 &&
         (data.valueMinGbp is int || data.valueMinGbp is float) && data.valueMinGbp >= 0 &&
         (data.valueMaxGbp is int || data.valueMaxGbp is float) && data.valueMaxGbp >= data.valueMinGbp &&
+        data.valuationReason is string && data.valuationReason.size() <= 320 &&
         data.aiConfidence is string && data.aiConfidence.size() <= 16 && data.aiConfidence in ['high', 'medium', 'low', 'manual'] &&
-        data.curatorialNote is string && data.curatorialNote.size() <= 1200 &&
-        data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 180000 &&
+        data.grail is bool &&
+        data.tags is list && data.tags.size() <= 12 &&
+        (data.tags.size() == 0 || (data.tags[0] is string && data.tags[0].size() <= 40)) &&
+        data.customOrder is int && data.customOrder >= 0 && data.customOrder <= 100000 &&
         data.forSale is bool &&
+        (!('mediaCredit' in data) || isValidMediaCredit(data.mediaCredit)) &&
+        data.isDemo is bool &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -273,21 +375,27 @@ service cloud.firestore {
 
       allow create: if isVerifiedUser() &&
         isValidId(userId) &&
-        request.auth.uid == userId &&
         isValidUserProfile(incoming()) &&
-        incoming().uid == request.auth.uid &&
-        incoming().role == 'collector' &&
-        incoming().plan == 'free' &&
-        incoming().isVerifiedExpert == false &&
-        incoming().collectionsCount == 0 &&
+        incoming().uid == userId &&
         incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time;
+        incoming().updatedAt == request.time && (
+          (
+            request.auth.uid == userId &&
+            incoming().role == 'collector' &&
+            incoming().plan == 'free' &&
+            incoming().isVerifiedExpert == false &&
+            incoming().isDemo == false &&
+            incoming().collectionsCount == 0 &&
+            incoming().piecesCount == 0
+          ) ||
+          (isAdmin() && incoming().isDemo == true)
+        );
 
       allow update: if isVerifiedUser() &&
         isValidId(userId) &&
         isValidUserProfile(incoming()) && (
           isAdmin() ||
-          // Action 1: Owner edits public profile details
+          // Action 1: Owner edits public cabinet details and privacy preferences
           (
             request.auth.uid == userId &&
             existing().uid == request.auth.uid &&
@@ -295,6 +403,7 @@ service cloud.firestore {
             incoming().role == existing().role &&
             incoming().plan == existing().plan &&
             incoming().isVerifiedExpert == existing().isVerifiedExpert &&
+            incoming().isDemo == existing().isDemo &&
             incoming().createdAt == existing().createdAt &&
             incoming().updatedAt == request.time &&
             incoming().diff(existing()).affectedKeys().hasOnly([
@@ -306,8 +415,12 @@ service cloud.firestore {
               'specialties',
               'goal',
               'isPublicProfile',
+              'hideValues',
+              'hideLocation',
               'onboardingCompleted',
               'collectionsCount',
+              'piecesCount',
+              'joinedLabel',
               'updatedAt'
             ])
           )
@@ -366,9 +479,70 @@ service cloud.firestore {
           isValidId(docId) &&
           (request.auth.uid == userId || isAdmin());
       }
+
+      // 4. Isolated Private Item Acquisition Notes & Price Paid (Owner/Admin Only)
+      match /itemPrivate/{itemId} {
+        allow get: if isSignedIn() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          (request.auth.uid == userId || isAdmin()) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow list: if isSignedIn() &&
+          (
+            (request.auth.uid == userId && resource.data.uid == request.auth.uid) ||
+            isAdmin()
+          );
+
+        allow create: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          request.auth.uid == userId &&
+          isValidItemPrivateAccountGate(userId, itemId);
+
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          isValidItemPrivateRecord(incoming()) && (
+            isAdmin() ||
+            (
+              request.auth.uid == userId &&
+              existing().uid == request.auth.uid &&
+              incoming().uid == existing().uid &&
+              incoming().itemId == existing().itemId &&
+              incoming().createdAt == existing().createdAt &&
+              incoming().updatedAt == request.time &&
+              exists(/databases/$(database)/documents/users/$(userId)) &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'acquiredDate',
+                'acquiredPriceGbp',
+                'privateNotes',
+                'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          (request.auth.uid == userId || isAdmin());
+      }
     }
 
-    // 4. Collections & Exhibitions
+    function isValidItemPrivateAccountGate(userId, itemId) {
+      return isValidItemPrivateRecord(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().uid == userId &&
+        incoming().itemId == itemId &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(userId)) &&
+        (
+          exists(/databases/$(database)/documents/items/$(itemId)) ||
+          existsAfter(/databases/$(database)/documents/items/$(itemId))
+        );
+    }
+
+    // 5. Collections
     match /collections/{collectionId} {
       allow get: if isValidId(collectionId) && (
         (resource != null && resource.data.visibility == 'public') ||
@@ -382,24 +556,34 @@ service cloud.firestore {
       allow create: if isVerifiedUser() &&
         isValidId(collectionId) &&
         isValidCollection(incoming()) &&
-        incoming().ownerId == request.auth.uid &&
-        incoming().featured == false &&
-        incoming().itemCount == 0 &&
-        incoming().estimatedTotalMinGbp == 0 &&
-        incoming().estimatedTotalMaxGbp == 0 &&
         incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+        incoming().updatedAt == request.time && (
+          (
+            incoming().ownerId == request.auth.uid &&
+            incoming().featured == false &&
+            incoming().isDemo == false &&
+            incoming().itemCount == 0 &&
+            incoming().estimatedTotalMinGbp == 0 &&
+            incoming().estimatedTotalMaxGbp == 0 &&
+            exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          ) ||
+          (
+            isAdmin() &&
+            incoming().isDemo == true &&
+            exists(/databases/$(database)/documents/users/$(incoming().ownerId))
+          )
+        );
 
       allow update: if isVerifiedUser() &&
         isValidId(collectionId) &&
         isValidCollection(incoming()) && (
           isAdmin() ||
-          // Action 1: Owner updates curatorial details or item/valuation aggregates
+          // Action 1: Owner updates collection details or piece/valuation totals
           (
             existing().ownerId == request.auth.uid &&
             incoming().ownerId == existing().ownerId &&
             incoming().featured == existing().featured &&
+            incoming().isDemo == existing().isDemo &&
             incoming().createdAt == existing().createdAt &&
             incoming().updatedAt == request.time &&
             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -425,7 +609,7 @@ service cloud.firestore {
         (existing().ownerId == request.auth.uid || isAdmin());
     }
 
-    // 5. Collectible Items
+    // 6. Collectible Pieces
     match /items/{itemId} {
       allow get: if isValidId(itemId) && (
         (resource != null && resource.data.visibility == 'public') ||
@@ -439,40 +623,77 @@ service cloud.firestore {
       allow create: if isVerifiedUser() &&
         isValidId(itemId) &&
         isValidCollectibleItem(incoming()) &&
-        incoming().ownerId == request.auth.uid &&
         incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time &&
-        exists(/databases/$(database)/documents/collections/$(incoming().collectionId)) &&
-        get(/databases/$(database)/documents/collections/$(incoming().collectionId)).data.ownerId == request.auth.uid;
+        incoming().updatedAt == request.time && (
+          (
+            incoming().ownerId == request.auth.uid &&
+            incoming().isDemo == false &&
+            exists(/databases/$(database)/documents/collections/$(incoming().collectionId)) &&
+            get(/databases/$(database)/documents/collections/$(incoming().collectionId)).data.ownerId == request.auth.uid
+          ) ||
+          (
+            isAdmin() &&
+            incoming().isDemo == true &&
+            exists(/databases/$(database)/documents/collections/$(incoming().collectionId))
+          )
+        );
 
       allow update: if isVerifiedUser() &&
         isValidId(itemId) &&
         isValidCollectibleItem(incoming()) && (
           isAdmin() ||
-          // Action 1: Owner updates item identification, valuation, or curatorial metadata
+          // Action 1: Owner edits piece details, category fields, valuation, or custom sort order
           (
             existing().ownerId == request.auth.uid &&
             incoming().ownerId == existing().ownerId &&
             incoming().collectionId == existing().collectionId &&
+            incoming().isDemo == existing().isDemo &&
             incoming().createdAt == existing().createdAt &&
             incoming().updatedAt == request.time &&
             exists(/databases/$(database)/documents/collections/$(existing().collectionId)) &&
             get(/databases/$(database)/documents/collections/$(existing().collectionId)).data.ownerId == request.auth.uid &&
             incoming().diff(existing()).affectedKeys().hasOnly([
+              'ownerHandle',
               'category',
               'visibility',
-              'name',
+              'title',
+              'titleLower',
+              'story',
+              'imageUrl',
+              'thumbUrl',
+              'photos',
+              'attributes',
+              'fieldConfidences',
               'year',
               'maker',
-              'series',
               'setNumber',
               'condition',
               'valueMinGbp',
               'valueMaxGbp',
+              'valuationReason',
               'aiConfidence',
-              'curatorialNote',
-              'imageUrl',
+              'grail',
+              'tags',
+              'customOrder',
               'forSale',
+              'mediaCredit',
+              'updatedAt'
+            ])
+          ) ||
+          // Action 2: Owner moves piece to another collection owned by the same user
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().ownerId == existing().ownerId &&
+            incoming().collectionId != existing().collectionId &&
+            incoming().isDemo == existing().isDemo &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            exists(/databases/$(database)/documents/collections/$(incoming().collectionId)) &&
+            get(/databases/$(database)/documents/collections/$(incoming().collectionId)).data.ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'collectionId',
+              'visibility',
+              'customOrder',
               'updatedAt'
             ])
           )
