@@ -5,10 +5,10 @@ import {
   CATEGORY_LIST,
   type CategoryFieldDef,
   type CategorySlug,
-} from '../../config/categories';
-import type { AIIdentificationResult, ConfidenceLevel } from '../../types/domain';
-import { createGeminiClient, generateContentWithRetry } from './client';
-import { GEMINI_FLASH_MODEL, MAX_IMAGE_BYTES } from './constants';
+} from '../../config/categories.ts';
+import type { AIIdentificationResult, ConfidenceLevel } from '../../types/domain.ts';
+import { createGeminiClient, generateContentWithRetry } from './client.ts';
+import { GEMINI_FLASH_MODEL, MAX_IMAGE_BYTES } from './constants.ts';
 
 const CATEGORY_SLUGS = [
   'football_cards',

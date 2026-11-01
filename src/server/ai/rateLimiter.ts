@@ -1,4 +1,4 @@
-import { IDENTIFY_HOURLY_LIMIT, IDENTIFY_WINDOW_MS } from './constants';
+import { IDENTIFY_HOURLY_LIMIT, IDENTIFY_WINDOW_MS } from './constants.ts';
 
 const buckets = new Map<string, number[]>();
 

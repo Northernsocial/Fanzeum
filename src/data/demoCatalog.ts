@@ -10,9 +10,9 @@ import type {
 } from '../types/domain';
 
 // Local studio-shot high-resolution JPEGs
-const LOCAL_PENNY_BLACK = '/src/assets/images/stamp_penny_black_1793568551174.jpg';
-const LOCAL_SOVEREIGN = '/src/assets/images/coin_gold_sovereign_1793568554640.jpg';
-const LOCAL_SEAHORSE = '/src/assets/images/stamp_seahorse_highvalue_1793568555029.jpg';
+const LOCAL_PENNY_BLACK = '/images/demo/stamp_penny_black.jpg';
+const LOCAL_SOVEREIGN = '/images/demo/coin_gold_sovereign.jpg';
+const LOCAL_SEAHORSE = '/images/demo/stamp_seahorse_highvalue.jpg';
 
 // Verified Wikimedia Commons public-domain & CC images with full credits
 const WIKI = {

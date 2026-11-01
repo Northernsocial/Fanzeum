@@ -3,8 +3,8 @@ export {
   IDENTIFY_HOURLY_LIMIT,
   IDENTIFY_WINDOW_MS,
   MAX_IMAGE_BYTES,
-} from './constants';
-export { checkIdentifyRateLimit, type RateLimitResult } from './rateLimiter';
-export { identifyItem, IdentifyRequestSchema, type IdentifyRequestInput } from './identifyItem';
-export { onboardingSuggest, OnboardingInputSchema } from './onboardingSuggest';
-export { enhanceStory, EnhanceStoryInputSchema } from './enhanceStory';
+} from './constants.ts';
+export { checkIdentifyRateLimit, type RateLimitResult } from './rateLimiter.ts';
+export { identifyItem, IdentifyRequestSchema, type IdentifyRequestInput } from './identifyItem.ts';
+export { onboardingSuggest, OnboardingInputSchema } from './onboardingSuggest.ts';
+export { enhanceStory, EnhanceStoryInputSchema } from './enhanceStory.ts';

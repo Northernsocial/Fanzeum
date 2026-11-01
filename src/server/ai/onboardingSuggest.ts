@@ -1,8 +1,8 @@
 import { Type } from '@google/genai';
 import { z } from 'zod';
-import type { AIOnboardingResponse } from '../../types/domain';
-import { createGeminiClient, generateContentWithRetry } from './client';
-import { GEMINI_FLASH_MODEL } from './constants';
+import type { AIOnboardingResponse } from '../../types/domain.ts';
+import { createGeminiClient, generateContentWithRetry } from './client.ts';
+import { GEMINI_FLASH_MODEL } from './constants.ts';
 
 export const OnboardingInputSchema = z.object({
   displayName: z.string().max(80).optional(),

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { createGeminiClient, generateContentWithRetry } from './client';
-import { GEMINI_FLASH_MODEL } from './constants';
+import { createGeminiClient, generateContentWithRetry } from './client.ts';
+import { GEMINI_FLASH_MODEL } from './constants.ts';
 
 export const EnhanceStoryInputSchema = z.object({
   title: z.string().max(140).optional(),

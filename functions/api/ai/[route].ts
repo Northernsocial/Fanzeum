@@ -4,7 +4,7 @@ import {
   enhanceStory,
   identifyItem,
   onboardingSuggest,
-} from '../../../src/server/ai/index';
+} from '../../../src/server/ai/index.ts';
 
 interface CloudflareEnv {
   GEMINI_API_KEY?: string;

@@ -1,4 +1,4 @@
-import type { CategorySlug } from '../config/categories';
+import type { CategorySlug } from '../config/categories.ts';
 
 export type { CategorySlug };
 

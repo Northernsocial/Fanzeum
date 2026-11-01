@@ -3,7 +3,7 @@ import {
   type GenerateContentParameters,
   type GenerateContentResponse,
 } from '@google/genai';
-import { GEMINI_FLASH_FALLBACK_MODEL } from './constants';
+import { GEMINI_FLASH_FALLBACK_MODEL } from './constants.ts';
 
 export function createGeminiClient(apiKey?: string): GoogleGenAI {
   const resolvedKey = apiKey?.trim();
