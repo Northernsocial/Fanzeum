@@ -24,7 +24,7 @@ export const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
 
   useDocumentMeta({
-    title: 'Set Up Your Collector Cabinet',
+    title: 'Set Up Your Collector Showcase',
     description: 'Pick what you collect, claim your @handle, and create your starter collection.',
   });
 
@@ -55,7 +55,7 @@ export const OnboardingPage: React.FC = () => {
   const moveToStep3 = async () => {
     setStep(3);
     const primaryCat = CATEGORIES[specialties[0] || 'football_cards'];
-    setStarterTitle((prev) => prev || `My ${primaryCat.shortLabel} Cabinet`);
+    setStarterTitle((prev) => prev || `My ${primaryCat.shortLabel} Showcase`);
     if (!profile) return;
 
     setLoadingSuggestion(true);
@@ -137,7 +137,7 @@ export const OnboardingPage: React.FC = () => {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-8 py-16">
         <EmptyState
-          title="Sign in to set up your cabinet"
+          title="Sign in to set up your showcase"
           description="Takes under a minute—pick what you collect, claim your @handle, and snap your first piece."
           action={<Button onClick={openAuthModal}>Sign in</Button>}
         />
@@ -359,7 +359,7 @@ export const OnboardingPage: React.FC = () => {
             </Button>
             <Button type="submit" size="lg" disabled={submitting}>
               <Camera className="w-4 h-4" strokeWidth={1.5} />
-              <span>{submitting ? 'Setting up…' : 'Create cabinet & add first piece'}</span>
+              <span>{submitting ? 'Setting up…' : 'Create showcase & add first piece'}</span>
             </Button>
           </div>
         </form>

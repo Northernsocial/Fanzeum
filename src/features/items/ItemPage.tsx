@@ -284,7 +284,7 @@ export const ItemPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-16">
         <EmptyState
           title="Piece not found"
-          description="This piece may belong to a private cabinet or may have been deleted."
+          description="This piece may belong to a private showcase or may have been deleted."
           action={<Button onClick={() => navigate('/explore')}>Explore pieces</Button>}
         />
       </div>
@@ -624,7 +624,7 @@ export const ItemPage: React.FC = () => {
               onChange={(e) => setEditGrail(e.target.checked)}
               className="w-4 h-4 accent-brass"
             />
-            <span>Mark as a Grail piece in my cabinet</span>
+            <span>Mark as a Grail piece in my showcase</span>
           </label>
 
           <div className="grid grid-cols-2 gap-3">
@@ -852,7 +852,7 @@ export const ItemPage: React.FC = () => {
       >
         <div className="space-y-4">
           <p className="text-base text-muted">
-            Delete <strong className="text-ink">{item.title}</strong> from your cabinet?
+            Delete <strong className="text-ink">{item.title}</strong> from your showcase?
           </p>
           {itemError && (
             <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">

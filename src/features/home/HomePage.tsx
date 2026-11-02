@@ -44,7 +44,7 @@ export const HomePage: React.FC = () => {
   const [myRecentItems, setMyRecentItems] = useState<CollectibleItemRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [spotlightIndex, setSpotlightIndex] = useState(0);
-  const [maskCabinetValue, setMaskCabinetValue] = useState(false);
+  const [maskShowcaseValue, setMaskShowcaseValue] = useState(false);
 
   const spotlightPieces = useMemo(
     () => (FEATURED_DEMO_PIECES.length > 0 ? FEATURED_DEMO_PIECES : []),
@@ -60,7 +60,7 @@ export const HomePage: React.FC = () => {
   }, [spotlightPieces.length]);
 
   useEffect(() => {
-    setMaskCabinetValue(Boolean(profile?.hideValues));
+    setMaskShowcaseValue(Boolean(profile?.hideValues));
   }, [profile?.hideValues]);
 
   useEffect(() => {
@@ -105,7 +105,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-16 sm:space-y-24 pb-24">
-      {/* Logged-in Personal Cabinet Strip OR Logged-out After Hours Hero */}
+      {/* Logged-in Personal Showcase Strip OR Logged-out After Hours Hero */}
       {firebaseUser && profile ? (
         <section className="border-b border-border bg-surface/60">
           <div className="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-12 space-y-8">
@@ -133,7 +133,7 @@ export const HomePage: React.FC = () => {
                 )}
                 <Button variant="secondary" onClick={() => navigate(`/@${profile.handle}`)}>
                   <FolderPlus className="w-4 h-4" strokeWidth={1.5} />
-                  <span>My cabinet</span>
+                  <span>My showcase</span>
                 </Button>
                 <Button onClick={() => navigate('/add')}>
                   <Camera className="w-4 h-4" strokeWidth={1.5} />
@@ -158,9 +158,9 @@ export const HomePage: React.FC = () => {
               </Card>
               <Card raised className="p-5 flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-sm text-muted">Estimated cabinet value</div>
+                  <div className="text-sm text-muted">Estimated showcase value</div>
                   <div className="text-2xl font-mono font-semibold tabular-nums text-brass mt-1">
-                    {maskCabinetValue
+                    {maskShowcaseValue
                       ? 'Hidden'
                       : myTotals.max > 0
                         ? formatGbpRange(myTotals.min, myTotals.max)
@@ -169,11 +169,11 @@ export const HomePage: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setMaskCabinetValue((v) => !v)}
-                  aria-label={maskCabinetValue ? 'Show cabinet value' : 'Hide cabinet value'}
+                  onClick={() => setMaskShowcaseValue((v) => !v)}
+                  aria-label={maskShowcaseValue ? 'Show showcase value' : 'Hide showcase value'}
                   className="min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-xl text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer"
                 >
-                  {maskCabinetValue ? (
+                  {maskShowcaseValue ? (
                     <EyeOff className="w-4 h-4" strokeWidth={1.5} />
                   ) : (
                     <Eye className="w-4 h-4" strokeWidth={1.5} />
@@ -201,7 +201,7 @@ export const HomePage: React.FC = () => {
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Button size="lg" onClick={openAuthModal}>
-                  <span>Start your cabinet</span>
+                  <span>Start your showcase</span>
                   <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
                 </Button>
                 <Button variant="secondary" size="lg" onClick={() => navigate('/explore')}>
@@ -210,7 +210,7 @@ export const HomePage: React.FC = () => {
               </div>
 
               <div className="pt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-                <span>Free collector cabinets</span>
+                <span>Free collector showcases</span>
                 <span aria-hidden="true">·</span>
                 <span>Valuations in £ GBP</span>
                 <span aria-hidden="true">·</span>
@@ -273,7 +273,7 @@ export const HomePage: React.FC = () => {
                 Your collections
               </h2>
               <p className="text-base text-muted mt-1">
-                Sets and binders in your cabinet.
+                Sets and binders in your showcase.
               </p>
             </div>
             {profile && (
@@ -281,7 +281,7 @@ export const HomePage: React.FC = () => {
                 to={`/@${profile.handle}`}
                 className="text-sm font-medium text-brass hover:underline whitespace-nowrap"
               >
-                Open full cabinet →
+                Open full showcase →
               </Link>
             )}
           </div>
@@ -323,7 +323,7 @@ export const HomePage: React.FC = () => {
                           {col.itemCount} {col.itemCount === 1 ? 'piece' : 'pieces'}
                         </span>
                       )}
-                      {!maskCabinetValue && col.estimatedTotalMaxGbp > 0 && (
+                      {!maskShowcaseValue && col.estimatedTotalMaxGbp > 0 && (
                         <span className="text-sm font-mono tabular-nums text-brass">
                           {formatGbpRange(col.estimatedTotalMinGbp, col.estimatedTotalMaxGbp)}
                         </span>
@@ -338,14 +338,14 @@ export const HomePage: React.FC = () => {
           {myRecentItems.length > 0 && (
             <div className="pt-6 space-y-4">
               <h3 className="text-xl font-display font-semibold text-ink">
-                Recently added to your cabinet
+                Recently added to your showcase
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {myRecentItems.slice(0, 3).map((item) => (
                   <Link key={item.id} to={`/i/${item.id}`} className="block group">
                     <div className="space-y-3">
                       <PieceStage item={item} interactive={false} />
-                      <Placard item={item} hideValues={maskCabinetValue} size="sm" />
+                      <Placard item={item} hideValues={maskShowcaseValue} size="sm" />
                     </div>
                   </Link>
                 ))}
@@ -455,7 +455,7 @@ export const HomePage: React.FC = () => {
       <section className="max-w-6xl mx-auto px-4 sm:px-8 space-y-6">
         <div>
           <h2 className="text-2xl sm:text-3xl font-display font-semibold text-ink">
-            Cabinets to explore
+            Showcases to explore
           </h2>
           <p className="text-base text-muted mt-1">
             Six UK collectors sharing graded slabs, sovereign runs, Northern Soul 45s, and Palitoy cardbacks.
@@ -494,7 +494,7 @@ export const HomePage: React.FC = () => {
         <Card raised className="p-6 sm:p-10 space-y-8">
           <div className="max-w-2xl">
             <h2 className="text-2xl sm:text-3xl font-display font-semibold text-ink">
-              From phone snap to lit cabinet in under a minute
+              From phone snap to lit showcase in under a minute
             </h2>
           </div>
 

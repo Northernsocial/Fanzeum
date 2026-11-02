@@ -1,6 +1,6 @@
 {
   "name": "Fanzeum Gallery",
-  "description": "The ultimate cabinet for collectors, stores, and specialists to exhibit, identify by photo, and value cards, coins, stamps, comics, vinyl, and toys in £ GBP.",
+  "description": "The ultimate showcase for collectors, stores, and specialists to exhibit, identify by photo, and value cards, coins, stamps, comics, vinyl, and toys in £ GBP.",
   "requestFramePermissions": [
     "camera"
   ],

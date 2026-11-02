@@ -17,7 +17,7 @@ export const Header: React.FC = () => {
         : 'text-muted border-transparent hover:text-ink'
     }`;
 
-  const cabinetHref = profile?.handle ? `/@${profile.handle}` : '/onboarding';
+  const showcaseHref = profile?.handle ? `/@${profile.handle}` : '/onboarding';
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-bg/90 backdrop-blur-md">
@@ -39,8 +39,8 @@ export const Header: React.FC = () => {
             Explore
           </NavLink>
           {firebaseUser && (
-            <NavLink to={cabinetHref} className={navLinkClass}>
-              My Cabinet
+            <NavLink to={showcaseHref} className={navLinkClass}>
+              My Showcase
             </NavLink>
           )}
           <NavLink to="/settings" className={navLinkClass}>

@@ -55,7 +55,7 @@ export function canUse(
     if (count >= limits.maxCollections) {
       return {
         allowed: false,
-        reason: `Free collector cabinets include up to ${limits.maxCollections} collections.`,
+        reason: `Free collector showcases include up to ${limits.maxCollections} collections.`,
       };
     }
     return { allowed: true };
