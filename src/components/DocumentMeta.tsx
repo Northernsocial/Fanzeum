@@ -8,7 +8,7 @@ interface DocumentMetaOptions {
 
 const DEFAULT_TITLE = 'Fanzeum — Your Collection, Lit Properly';
 const DEFAULT_DESC =
-  'Curate, exhibit, identify by photo, and value your football cards, coins, stamps, comics, vinyl, and toys in £ GBP.';
+  'Organise, display, identify by photo, and value your football cards, coins, stamps, comics, vinyl, and toys in £ GBP.';
 
 function setMetaTag(selector: string, attrName: 'name' | 'property', attrValue: string, content: string) {
   let tag = document.head.querySelector<HTMLMetaElement>(selector);

@@ -934,7 +934,7 @@ const RAW_COLLECTIONS: SeedCollectionSpec[] = [
         ['1840 Great Britain Mulready 1d Black Letter Sheet (Stereo A17)', '1840', 'SG ME1', '1d Postal Stationery', 'On cover', 'Used May 1840 with red Maltese Cross', 460, 680, 'May 1840 usage during the opening fortnight of uniform penny post.'],
       ].map(([title, year, sg, denom, state, margins, min, max, reason]) => ({
         title: String(title),
-        story: 'Hinged on acid-free exhibition album leaf with plate reconstruction notes.',
+        story: 'Hinged on acid-free collector album leaf with plate reconstruction notes.',
         attributes: {
           country: 'Great Britain',
           year: String(year),
@@ -1623,7 +1623,7 @@ const RAW_COLLECTIONS: SeedCollectionSpec[] = [
         },
         valueMinGbp: 12,
         valueMaxGbp: 20,
-        valuationReason: 'Clean Mint-minus archive copy.',
+        valuationReason: 'Clean Mint-minus collector copy.',
         photoUrl: WIKI.chiMai45.url,
         mediaCredit: WIKI.chiMai45.credit,
         tags: ['bbc records', 'uk 45', 'morricone'],

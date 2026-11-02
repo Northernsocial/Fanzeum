@@ -18,6 +18,7 @@ import {
 import { CATEGORIES, CATEGORY_LIST, type CategorySlug } from '../../config/categories';
 import { useAuth } from '../../contexts/AuthContext';
 import { polishCollectionStory } from '../../lib/aiClient';
+import { getFriendlyFirebaseErrorMessage } from '../../lib/firebase';
 import { formatGbpRange } from '../../lib/entitlements';
 import {
   deleteEntireCollection,
@@ -75,6 +76,7 @@ export const CollectionPage: React.FC = () => {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [collectionError, setCollectionError] = useState<string | null>(null);
 
   const isOwner = Boolean(
     firebaseUser?.emailVerified &&
@@ -220,6 +222,7 @@ export const CollectionPage: React.FC = () => {
     setEditVisibility(collectionRecord.visibility);
     setEditTarget(collectionRecord.setTargetCount > 0 ? String(collectionRecord.setTargetCount) : '');
     setEditStory(collectionRecord.story);
+    setCollectionError(null);
     setEditOpen(true);
   };
 
@@ -244,6 +247,7 @@ export const CollectionPage: React.FC = () => {
     e.preventDefault();
     if (!collectionRecord) return;
     setSavingEdit(true);
+    setCollectionError(null);
     try {
       const targetNum = Math.max(0, Number(editTarget) || 0);
       await updateCollectionDetails(collectionRecord.id, {
@@ -266,6 +270,9 @@ export const CollectionPage: React.FC = () => {
           : prev,
       );
       setEditOpen(false);
+    } catch (err) {
+      console.error('Save collection error:', err);
+      setCollectionError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setSavingEdit(false);
     }
@@ -274,10 +281,14 @@ export const CollectionPage: React.FC = () => {
   const handleConfirmDelete = async () => {
     if (!collectionRecord || !viewerProfile) return;
     setDeleting(true);
+    setCollectionError(null);
     try {
       await deleteEntireCollection(collectionRecord, viewerProfile);
       await refreshProfile();
       navigate(`/@${viewerProfile.handle}`);
+    } catch (err) {
+      console.error('Delete collection error:', err);
+      setCollectionError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setDeleting(false);
     }
@@ -582,7 +593,7 @@ export const CollectionPage: React.FC = () => {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Full-screen exhibition view"
+          aria-label="Full-screen view"
           onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
           onTouchEnd={(e) => {
             if (touchStartX === null) return;
@@ -739,6 +750,12 @@ export const CollectionPage: React.FC = () => {
             />
           </div>
 
+          {collectionError && (
+            <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">
+              {collectionError}
+            </p>
+          )}
+
           <div className="pt-3 border-t border-border flex items-center justify-between gap-3">
             <Button
               type="button"
@@ -777,6 +794,12 @@ export const CollectionPage: React.FC = () => {
             You are about to delete <strong className="text-ink">{collectionRecord.title}</strong> (
             {items.length} {items.length === 1 ? 'piece' : 'pieces'}). This cannot be undone.
           </p>
+          {collectionError && (
+            <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">
+              {collectionError}
+            </p>
+          )}
+
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
               Cancel

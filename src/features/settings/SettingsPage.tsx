@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getFriendlyFirebaseErrorMessage } from '../../lib/firebase';
 import {
   removeDemoDataFromFirestore,
   seedDemoDataToFirestore,
@@ -104,14 +105,9 @@ export const SettingsPage: React.FC = () => {
       setDeleteOpen(false);
       navigate('/');
     } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err);
-      if (raw.includes('requires-recent-login')) {
-        setStatusNote(
-          'For security, sign out and sign right back in before permanently deleting your account.',
-        );
-      } else {
-        setStatusNote(raw);
-      }
+      console.error('Delete account error:', err);
+      const friendly = getFriendlyFirebaseErrorMessage(err);
+      setStatusNote(friendly);
       setDeleteOpen(false);
     } finally {
       setDeletingAccount(false);
