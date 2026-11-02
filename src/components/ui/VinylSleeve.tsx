@@ -19,11 +19,11 @@ export const VinylSleeve: React.FC<VinylSleeveProps> = ({
   priority = false,
 }) => {
   return (
-    <div className="group relative aspect-square rounded-2xl bg-surface-raised border border-border p-4 sm:p-6 flex items-center justify-start overflow-hidden after-hours-spotlight">
+    <div className="group relative aspect-square rounded-2xl bg-surface-raised border border-border p-3 sm:p-5 flex items-center justify-start overflow-hidden after-hours-spotlight select-none">
       {/* Peeking Grooved Record Disc */}
       <div
         aria-hidden="true"
-        className="absolute right-3 sm:right-5 w-[74%] aspect-square rounded-full bg-bg border-2 border-border flex items-center justify-center transition-transform duration-200 ease-out group-hover:translate-x-3"
+        className="absolute right-2 sm:right-4 w-[74%] aspect-square rounded-full bg-bg border border-border/80 flex items-center justify-center transition-transform duration-200 ease-out group-hover:translate-x-3 pointer-events-none"
       >
         <div className="w-[78%] aspect-square rounded-full border border-border/60 flex items-center justify-center">
           <div className="w-[42%] aspect-square rounded-full bg-brass flex flex-col items-center justify-center text-brass-fg p-1 text-center">
@@ -38,7 +38,7 @@ export const VinylSleeve: React.FC<VinylSleeveProps> = ({
       </div>
 
       {/* Front Picture / Company Sleeve */}
-      <div className="relative z-10 w-[82%] aspect-square rounded-lg overflow-hidden bg-surface border border-border shadow-md">
+      <div className="relative z-10 w-[82%] aspect-square rounded-xl overflow-hidden bg-surface border border-border shadow-md">
         <CollectorImage
           src={src}
           alt={alt}
@@ -51,7 +51,7 @@ export const VinylSleeve: React.FC<VinylSleeveProps> = ({
           imgClassName="w-full h-full object-cover"
         />
         {mediaGrade && (
-          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-bg/85 backdrop-blur-sm text-[11px] font-mono text-brass">
+          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-bg/90 backdrop-blur-sm text-[11px] font-mono text-brass border border-border/60">
             {mediaGrade}
           </div>
         )}

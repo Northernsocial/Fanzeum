@@ -59,13 +59,13 @@ export const CoinFlip: React.FC<CoinFlipProps> = ({
             />
           </div>
         ) : (
-          <div className="w-full h-full rounded-full border-2 border-brass/50 bg-surface flex flex-col items-center justify-center text-center p-5">
+          <div className="w-full h-full rounded-full border-2 border-brass/50 bg-surface flex flex-col items-center justify-center text-center p-4">
             <span className="text-xs font-mono text-brass">{year || 'Cabinet Ticket'}</span>
-            <span className="text-sm font-display font-semibold text-ink mt-1.5 line-clamp-2">
-              {reference || alt}
+            <span className="text-xs font-mono text-ink mt-1.5 line-clamp-2 break-words">
+              {reference || 'Reverse Unrecorded'}
             </span>
-            {metal && <span className="text-xs text-muted mt-1">{metal}</span>}
-            {grade && <span className="text-xs font-mono text-brass mt-2">{grade}</span>}
+            {metal && <span className="text-[11px] text-muted mt-1">{metal}</span>}
+            {grade && <span className="text-xs font-mono text-brass mt-1.5">{grade}</span>}
           </div>
         )}
       </div>

@@ -40,28 +40,121 @@ const PALETTES: Array<[string, string, string]> = [
  */
 export function buildCollectorArtDataUrl(spec: PlaceholderArtSpec): string {
   const idx = Math.abs(spec.accentSeed ?? spec.title.length) % PALETTES.length;
-  const [bg, accent, fg] = PALETTES[idx];
-  const t1 = escapeXml(truncateText(spec.title, 34));
-  const sub = escapeXml(truncateText(spec.subtitle || '', 36));
-  const yr = escapeXml(truncateText(spec.year || '', 12));
-  const code = escapeXml(truncateText(spec.code || '', 18));
-  const grade = escapeXml(truncateText(spec.grade || '', 18));
+  const [bg, accent] = PALETTES[idx];
 
   let svg = '';
 
   if (spec.category === 'football_cards' || spec.category === 'trading_cards') {
-    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" width="720" height="960"><rect width="360" height="480" rx="18" fill="#13151A"/><rect x="16" y="16" width="328" height="58" rx="8" fill="#1E2128" stroke="${accent}" stroke-width="1.5"/><text x="30" y="39" fill="${accent}" font-family="monospace" font-size="11" font-weight="700">${yr} · ${code}</text><text x="330" y="54" text-anchor="end" fill="${fg}" font-family="monospace" font-size="14" font-weight="700">${grade}</text><rect x="24" y="88" width="312" height="364" rx="12" fill="${bg}" stroke="${accent}" stroke-width="2"/><circle cx="180" cy="230" r="76" fill="none" stroke="${accent}" stroke-opacity="0.35" stroke-width="1.5"/><path d="M140 255 L180 175 L220 255 Z" fill="none" stroke="${accent}" stroke-width="2"/><text x="180" y="368" text-anchor="middle" fill="${fg}" font-family="Georgia,serif" font-size="17" font-weight="600">${t1}</text><text x="180" y="395" text-anchor="middle" fill="${accent}" font-family="sans-serif" font-size="12">${sub}</text></svg>`;
+    // Trading / Football card silhouette: angled layered cards with foil shield emblem
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" width="720" height="960">
+      <defs>
+        <radialGradient id="cg" cx="50%" cy="45%" r="65%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#101217" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="360" height="480" rx="16" fill="#12141A"/>
+      <rect width="360" height="480" rx="16" fill="url(#cg)"/>
+      <g transform="translate(180, 240)" fill="none" stroke="${accent}" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="-85" y="-120" width="170" height="240" rx="12" stroke-width="2.5" fill="#181B22" fill-opacity="0.7"/>
+        <rect x="-70" y="-105" width="140" height="210" rx="8" stroke-width="1.2" stroke-opacity="0.5"/>
+        <path d="M-36 -28 L0 -50 L36 -28 L36 14 C36 40 0 58 0 58 C0 58 -36 40 -36 14 Z" stroke-width="2" fill="${accent}" fill-opacity="0.18"/>
+        <circle cx="0" cy="-6" r="12" stroke-width="1.5" stroke-opacity="0.8"/>
+        <path d="M-55 76 L55 76" stroke-width="1.5" stroke-opacity="0.4"/>
+      </g>
+    </svg>`;
   } else if (spec.category === 'comics') {
-    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 500" width="720" height="1000"><rect width="360" height="500" fill="${bg}"/><rect x="12" y="12" width="336" height="476" fill="none" stroke="${accent}" stroke-width="2"/><rect x="12" y="12" width="68" height="82" fill="#13151A" stroke="${accent}" stroke-width="1.5"/><text x="46" y="44" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="11">${yr}</text><text x="46" y="72" text-anchor="middle" fill="${fg}" font-family="monospace" font-size="15" font-weight="700">${code}</text><text x="214" y="56" text-anchor="middle" fill="${fg}" font-family="Georgia,serif" font-size="19" font-weight="700">${sub}</text><line x1="80" y1="94" x2="348" y2="94" stroke="${accent}" stroke-width="1.5"/><circle cx="180" cy="260" r="84" fill="#13151A" stroke="${accent}" stroke-width="2"/><text x="180" y="266" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="18" font-weight="700">${grade}</text><text x="180" y="424" text-anchor="middle" fill="${fg}" font-family="Georgia,serif" font-size="16" font-weight="600">${t1}</text></svg>`;
+    // Comic book silhouette: cover frame, title banner block, heroic portrait silhouette
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 500" width="720" height="1000">
+      <defs>
+        <radialGradient id="cmg" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#0F1014" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="360" height="500" rx="12" fill="#111318"/>
+      <rect width="360" height="500" rx="12" fill="url(#cmg)"/>
+      <g transform="translate(180, 250)" fill="none" stroke="${accent}" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="-95" y="-145" width="190" height="290" rx="8" stroke-width="2.5" fill="#171A21" fill-opacity="0.8"/>
+        <rect x="-82" y="-132" width="46" height="52" rx="4" stroke-width="1.5" stroke-opacity="0.7"/>
+        <rect x="-24" y="-132" width="106" height="30" rx="4" stroke-width="1.5" stroke-opacity="0.7" fill="${accent}" fill-opacity="0.15"/>
+        <circle cx="0" cy="15" r="54" stroke-width="2" fill="${accent}" fill-opacity="0.12"/>
+        <path d="M-22 36 L0 -14 L22 36 Z" stroke-width="2.5" stroke-linejoin="round"/>
+        <line x1="-80" y1="95" x2="80" y2="95" stroke-width="1.5" stroke-opacity="0.4"/>
+      </g>
+    </svg>`;
   } else if (spec.category === 'vinyl') {
-    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="840" height="840"><rect width="420" height="420" fill="${bg}"/><circle cx="210" cy="210" r="182" fill="#0F1014" stroke="#2A2E37" stroke-width="2"/><circle cx="210" cy="210" r="142" fill="none" stroke="#232730" stroke-width="1"/><circle cx="210" cy="210" r="104" fill="none" stroke="#232730" stroke-width="1"/><circle cx="210" cy="210" r="74" fill="${accent}"/><circle cx="210" cy="210" r="12" fill="#0F1014"/><text x="210" y="182" text-anchor="middle" fill="#0E0F12" font-family="monospace" font-size="10" font-weight="700">${code} · ${yr}</text><text x="210" y="246" text-anchor="middle" fill="#0E0F12" font-family="Georgia,serif" font-size="11" font-weight="700">${sub}</text><rect x="20" y="356" width="380" height="44" rx="6" fill="#13151A" fill-opacity="0.9"/><text x="210" y="383" text-anchor="middle" fill="${fg}" font-family="Georgia,serif" font-size="15">${t1}</text></svg>`;
+    // Vinyl record silhouette: concentric grooves and brass spindle centre
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" width="840" height="840">
+      <rect width="420" height="420" rx="16" fill="#0D0E12"/>
+      <g transform="translate(210, 210)" fill="none" stroke="${accent}" stroke-linecap="round">
+        <circle cx="0" cy="0" r="168" fill="#14161C" stroke-width="3"/>
+        <circle cx="0" cy="0" r="144" stroke-width="1.2" stroke-opacity="0.35"/>
+        <circle cx="0" cy="0" r="120" stroke-width="1.2" stroke-opacity="0.35"/>
+        <circle cx="0" cy="0" r="96" stroke-width="1.2" stroke-opacity="0.35"/>
+        <circle cx="0" cy="0" r="66" fill="${accent}" fill-opacity="0.25" stroke-width="2.5"/>
+        <circle cx="0" cy="0" r="18" fill="#0D0E12" stroke-width="2"/>
+        <circle cx="0" cy="0" r="4" fill="${accent}" stroke="none"/>
+      </g>
+    </svg>`;
   } else if (spec.category === 'coins') {
-    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="800" height="800"><rect width="400" height="400" fill="#121419"/><circle cx="200" cy="186" r="128" fill="${bg}" stroke="${accent}" stroke-width="4"/><circle cx="200" cy="186" r="114" fill="none" stroke="${accent}" stroke-dasharray="4 4" stroke-width="1.5"/><text x="200" y="168" text-anchor="middle" fill="${accent}" font-family="Georgia,serif" font-size="22" font-weight="700">${yr}</text><text x="200" y="198" text-anchor="middle" fill="${fg}" font-family="monospace" font-size="13">${code}</text><text x="200" y="224" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="12">${grade}</text><text x="200" y="356" text-anchor="middle" fill="${fg}" font-family="Georgia,serif" font-size="15">${t1}</text></svg>`;
+    // Ancient / bullion coin silhouette: rim dentils and laurel wreath / profile medallion
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="800" height="800">
+      <defs>
+        <radialGradient id="cng" cx="45%" cy="40%" r="65%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#101115" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="400" height="400" rx="16" fill="#0F1014"/>
+      <rect width="400" height="400" rx="16" fill="url(#cng)"/>
+      <g transform="translate(200, 200)" fill="none" stroke="${accent}" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="0" cy="0" r="142" stroke-width="3.5" fill="#171A21" fill-opacity="0.75"/>
+        <circle cx="0" cy="0" r="126" stroke-width="1.5" stroke-dasharray="5 5" stroke-opacity="0.7"/>
+        <path d="M-42 32 C-60 6, -56 -36, -26 -60 C-2 -78, 32 -74, 52 -50" stroke-width="2" stroke-opacity="0.5"/>
+        <path d="M-18 -15 C-12 -36, 12 -44, 28 -30 C44 -16, 40 10, 22 28 C4 46, -26 40, -32 20 Z" stroke-width="2" fill="${accent}" fill-opacity="0.2"/>
+        <circle cx="0" cy="0" r="62" stroke-width="1.5" stroke-opacity="0.4"/>
+      </g>
+    </svg>`;
   } else if (spec.category === 'stamps') {
-    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 440" width="760" height="880"><rect width="380" height="440" fill="#121419"/><rect x="52" y="42" width="276" height="336" fill="#F4F1EA"/><rect x="68" y="58" width="244" height="304" fill="${bg}" stroke="${accent}" stroke-width="2"/><text x="190" y="102" text-anchor="middle" fill="${accent}" font-family="Georgia,serif" font-size="15" font-weight="700">${sub}</text><text x="190" y="214" text-anchor="middle" fill="${fg}" font-family="Georgia,serif" font-size="26" font-weight="700">${yr}</text><text x="190" y="252" text-anchor="middle" fill="${accent}" font-family="monospace" font-size="14">${code}</text><text x="190" y="330" text-anchor="middle" fill="${fg}" font-family="sans-serif" font-size="13">${t1}</text></svg>`;
+    // Stamp silhouette: perforated postage silhouette with classic profile medallion
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 440" width="760" height="880">
+      <defs>
+        <radialGradient id="stg" cx="50%" cy="45%" r="60%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#101116" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="380" height="440" rx="14" fill="#101217"/>
+      <rect width="380" height="440" rx="14" fill="url(#stg)"/>
+      <g transform="translate(190, 220)" fill="none" stroke="${accent}" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="-95" y="-125" width="190" height="250" rx="4" stroke-width="2.5" fill="#181B24" fill-opacity="0.8"/>
+        <rect x="-80" y="-110" width="160" height="220" rx="2" stroke-width="1.2" stroke-opacity="0.5"/>
+        <circle cx="0" cy="-6" r="54" stroke-width="2" fill="${accent}" fill-opacity="0.18"/>
+        <path d="M-22 -14 C-14 -32, 14 -32, 22 -14 C28 4, 18 20, 0 30 C-18 20, -28 4, -22 -14 Z" stroke-width="1.8" stroke-opacity="0.8"/>
+        <line x1="-50" y1="72" x2="50" y2="72" stroke-width="1.5" stroke-opacity="0.5"/>
+      </g>
+    </svg>`;
   } else {
-    // toys & memorabilia plinth / cardback
-    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 460" width="800" height="920"><rect width="400" height="460" rx="16" fill="${bg}"/><rect x="18" y="18" width="364" height="424" rx="10" fill="none" stroke="${accent}" stroke-width="2"/><rect x="28" y="28" width="344" height="48" rx="6" fill="#13151A"/><text x="44" y="57" fill="${accent}" font-family="monospace" font-size="13" font-weight="700">${yr} · ${code}</text><text x="356" y="57" text-anchor="end" fill="${fg}" font-family="monospace" font-size="12">${grade}</text><rect x="86" y="106" width="228" height="218" rx="14" fill="#13151A" stroke="${accent}" stroke-opacity="0.55" stroke-width="1.5"/><text x="200" y="220" text-anchor="middle" fill="${accent}" font-family="Georgia,serif" font-size="16">${sub}</text><text x="200" y="376" text-anchor="middle" fill="${fg}" font-family="Georgia,serif" font-size="16" font-weight="600">${t1}</text></svg>`;
+    // Toys & memorabilia silhouette: display plinth / action figure cardback silhouette
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 460" width="800" height="920">
+      <defs>
+        <radialGradient id="tyg" cx="50%" cy="40%" r="65%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#101116" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="400" height="460" rx="16" fill="#12141A"/>
+      <rect width="400" height="460" rx="16" fill="url(#tyg)"/>
+      <g transform="translate(200, 225)" fill="none" stroke="${accent}" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="-95" y="-135" width="190" height="270" rx="10" stroke-width="2.5" fill="#181B22" fill-opacity="0.75"/>
+        <circle cx="0" cy="-115" r="6" stroke-width="2" fill="#12141A"/>
+        <rect x="-65" y="-75" width="130" height="150" rx="8" stroke-width="1.8" fill="${accent}" fill-opacity="0.12"/>
+        <circle cx="0" cy="-28" r="18" stroke-width="2" stroke-opacity="0.8"/>
+        <path d="M-28 32 C-28 6, 28 6, 28 32 Z" stroke-width="2" stroke-opacity="0.8"/>
+        <line x1="-70" y1="100" x2="70" y2="100" stroke-width="1.5" stroke-opacity="0.4"/>
+      </g>
+    </svg>`;
   }
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;

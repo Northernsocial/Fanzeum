@@ -111,19 +111,21 @@ export const PieceStage: React.FC<PieceStageProps> = ({
 
   // Default Plinth (Vintage Toys & Memorabilia)
   return (
-    <div className="relative aspect-[4/5] rounded-2xl bg-surface-raised border border-border p-4 sm:p-6 flex flex-col items-center justify-center after-hours-spotlight overflow-hidden">
-      <CollectorImage
-        src={src}
-        alt={item.title}
-        category={item.category}
-        width={primaryPhoto?.width || 800}
-        height={primaryPhoto?.height || 920}
-        blurDataUrl={blur}
-        priority={priority}
-        className="w-full h-full"
-        imgClassName="w-full h-full object-contain"
-      />
-      <div className="w-3/4 h-1.5 rounded-full bg-brass/25 mt-3 shrink-0" />
+    <div className="relative aspect-[4/5] rounded-2xl bg-surface-raised border border-border p-4 sm:p-6 flex flex-col items-center justify-center after-hours-spotlight overflow-hidden select-none">
+      <div className="w-full flex-1 min-h-0 flex items-center justify-center">
+        <CollectorImage
+          src={src}
+          alt={item.title}
+          category={item.category}
+          width={primaryPhoto?.width || 800}
+          height={primaryPhoto?.height || 920}
+          blurDataUrl={blur}
+          priority={priority}
+          className="w-full h-full flex items-center justify-center"
+          imgClassName="w-full h-full object-contain drop-shadow-md"
+        />
+      </div>
+      <div className="w-2/3 h-1 rounded-full bg-brass/30 mt-3 shrink-0" />
     </div>
   );
 };
