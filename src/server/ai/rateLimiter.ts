@@ -1,6 +1,12 @@
-import { IDENTIFY_HOURLY_LIMIT, IDENTIFY_WINDOW_MS } from './constants.ts';
+import {
+  IDENTIFY_HOURLY_LIMIT,
+  IDENTIFY_WINDOW_MS,
+  PANEL_DAILY_LIMIT,
+  PANEL_DAILY_WINDOW_MS,
+} from './constants.ts';
 
 const buckets = new Map<string, number[]>();
+const panelDailyBuckets = new Map<string, number[]>();
 
 function pruneBucket(key: string, now: number): number[] {
   const existing = buckets.get(key) || [];
@@ -56,6 +62,59 @@ export function checkIdentifyRateLimit(params: {
     const timestamps = buckets.get(key) || [];
     timestamps.push(now);
     buckets.set(key, timestamps);
+  }
+
+  return {
+    allowed: true,
+    remaining: Math.max(0, minRemaining),
+    retryAfterSeconds: 0,
+  };
+}
+
+export function checkPanelDailyRateLimit(params: {
+  ip?: string | null;
+  userId?: string | null;
+}): RateLimitResult {
+  const now = Date.now();
+  const keys: string[] = [];
+
+  const cleanIp = (params.ip || 'anon-ip').trim().slice(0, 96);
+  keys.push(`panel_ip:${cleanIp}`);
+
+  if (params.userId && params.userId.trim()) {
+    keys.push(`panel_uid:${params.userId.trim().slice(0, 128)}`);
+  }
+
+  let minRemaining = PANEL_DAILY_LIMIT;
+
+  for (const key of keys) {
+    const existing = panelDailyBuckets.get(key) || [];
+    const active = existing.filter((ts) => now - ts < PANEL_DAILY_WINDOW_MS);
+    if (active.length === 0) {
+      panelDailyBuckets.delete(key);
+    } else {
+      panelDailyBuckets.set(key, active);
+    }
+
+    if (active.length >= PANEL_DAILY_LIMIT) {
+      const oldest = active[0] || now;
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((PANEL_DAILY_WINDOW_MS - (now - oldest)) / 1000),
+      );
+      return {
+        allowed: false,
+        remaining: 0,
+        retryAfterSeconds,
+      };
+    }
+    minRemaining = Math.min(minRemaining, PANEL_DAILY_LIMIT - active.length - 1);
+  }
+
+  for (const key of keys) {
+    const timestamps = panelDailyBuckets.get(key) || [];
+    timestamps.push(now);
+    panelDailyBuckets.set(key, timestamps);
   }
 
   return {

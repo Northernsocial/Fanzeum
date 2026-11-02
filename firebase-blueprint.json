@@ -499,6 +499,10 @@
       "schema": { "$ref": "#/entities/AdminRecord" },
       "description": "Out-of-band administrator registry."
     },
+    "/panelChats/{itemId}": {
+      "schema": { "$ref": "#/entities/PanelChatRecord" },
+      "description": "Interactive AI Expert Panel chat and structured card for an item."
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Public collector cabinet profiles (zero PII)."

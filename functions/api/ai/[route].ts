@@ -1,9 +1,11 @@
 import { ZodError } from 'zod';
 import {
   checkIdentifyRateLimit,
+  checkPanelDailyRateLimit,
   enhanceStory,
   identifyItem,
   onboardingSuggest,
+  processPanelChatTurn,
 } from '../../../src/server/ai/index.ts';
 
 interface CloudflareEnv {
@@ -52,6 +54,34 @@ export async function onRequestPost(context: CloudflarePagesContext): Promise<Re
   }
 
   try {
+    if (route === 'panel-chat') {
+      const ip =
+        context.request.headers.get('CF-Connecting-IP') ||
+        context.request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
+        'cf-anon';
+      const userId = typeof body.userId === 'string' ? body.userId : undefined;
+      const limit = checkPanelDailyRateLimit({ ip, userId });
+
+      if (!limit.allowed) {
+        const hoursLeft = Math.ceil(limit.retryAfterSeconds / 3600);
+        return jsonResponse(
+          {
+            error: `You've used your 15 expert panel messages for today on the free plan. Your questions will refresh in ${hoursLeft} hours, or you can save this piece right now to your cabinet.`,
+          },
+          429,
+          {
+            'Retry-After': String(limit.retryAfterSeconds),
+            'X-RateLimit-Remaining': '0',
+          },
+        );
+      }
+
+      const result = await processPanelChatTurn(body, apiKey);
+      return jsonResponse(result, 200, {
+        'X-RateLimit-Remaining': String(limit.remaining),
+      });
+    }
+
     if (route === 'identify-item') {
       const ip =
         context.request.headers.get('CF-Connecting-IP') ||

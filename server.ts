@@ -6,9 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { ZodError } from 'zod';
 import {
   checkIdentifyRateLimit,
+  checkPanelDailyRateLimit,
   enhanceStory,
   identifyItem,
   onboardingSuggest,
+  processPanelChatTurn,
 } from './src/server/ai/index.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +56,32 @@ async function startServer() {
 
   app.get('/healthz', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok' });
+  });
+
+  app.post('/api/ai/panel-chat', async (req: Request, res: Response) => {
+    try {
+      const ip = extractClientIp(req);
+      const userId =
+        req.body && typeof req.body.userId === 'string' ? req.body.userId : undefined;
+      const limit = checkPanelDailyRateLimit({ ip, userId });
+
+      res.setHeader('X-RateLimit-Remaining', String(limit.remaining));
+      if (!limit.allowed) {
+        res.setHeader('Retry-After', String(limit.retryAfterSeconds));
+        const hoursLeft = Math.ceil(limit.retryAfterSeconds / 3600);
+        res.status(429).json({
+          error: `You've used your 15 expert panel messages for today on the free plan. Your questions will refresh in ${hoursLeft} hours, or you can save this piece right now to your cabinet.`,
+        });
+        return;
+      }
+
+      const result = await processPanelChatTurn(req.body, process.env.GEMINI_API_KEY);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('panel-chat error:', error);
+      const { status, message } = formatApiError(error);
+      res.status(status).json({ error: message });
+    }
   });
 
   app.post('/api/ai/identify-item', async (req: Request, res: Response) => {

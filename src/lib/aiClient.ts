@@ -3,12 +3,41 @@ import type {
   AIOnboardingResponse,
   CategorySlug,
   CollectorGoal,
+  PanelCard,
 } from '../types/domain';
+import type { PanelChatTurnResponse } from '../server/ai/panelChat';
 
 export interface IdentifyPhotoPayload {
   base64: string;
   mimeType: string;
   label?: string;
+}
+
+export interface SendPanelChatTurnParams {
+  itemId: string;
+  userId?: string;
+  userMessage?: string;
+  photos?: IdentifyPhotoPayload[];
+  historySummary?: string;
+  currentCard?: PanelCard;
+  personaId?: string;
+}
+
+export async function sendPanelChatTurn(
+  params: SendPanelChatTurnParams,
+): Promise<PanelChatTurnResponse> {
+  const res = await fetch('/api/ai/panel-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      data?.error || 'The expert panel is momentarily busy. Please try your question again in a moment.',
+    );
+  }
+  return data as PanelChatTurnResponse;
 }
 
 export async function identifyCollectibleByPhoto(params: {

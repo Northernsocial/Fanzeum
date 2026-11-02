@@ -23,6 +23,9 @@ import type {
   ItemPhoto,
   ItemPrivateRecord,
   MediaCredit,
+  PanelCard,
+  PanelChatMessage,
+  PanelChatRecord,
   UserPrivateAccount,
   UserProfile,
   VisibilityLevel,
@@ -404,6 +407,84 @@ export async function listPublicCollectors(maxResults = 30): Promise<UserProfile
     if (!seen.has(demo.uid)) combined.push(demo);
   }
   return combined.slice(0, maxResults);
+}
+
+// 1.5 AI Expert Panel Chats (Owner Only)
+export async function fetchPanelChatRecord(itemId: string): Promise<PanelChatRecord | null> {
+  const path = `panelChats/${itemId}`;
+  try {
+    const snap = await getDoc(doc(db, 'panelChats', itemId));
+    if (!snap.exists()) return null;
+    const d = snap.data() as Record<string, unknown>;
+    return {
+      itemId: snap.id,
+      ownerId: String(d.ownerId || ''),
+      personaId: String(d.personaId || 'lead'),
+      messages: Array.isArray(d.messages) ? (d.messages as PanelChatMessage[]) : [],
+      summary: String(d.summary || ''),
+      card: d.card as PanelCard,
+      confidence: (d.confidence as ConfidenceLevel) || 'medium',
+      status: (d.status as PanelChatRecord['status']) || 'active',
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+}
+
+export async function upsertPanelChatRecord(params: {
+  itemId: string;
+  ownerId: string;
+  personaId: string;
+  messages: PanelChatMessage[];
+  summary: string;
+  card: PanelCard;
+  confidence: ConfidenceLevel;
+  status: 'active' | 'saved' | 'closed';
+}): Promise<void> {
+  const path = `panelChats/${params.itemId}`;
+  const docRef = doc(db, 'panelChats', params.itemId);
+
+  const cleanMessages = params.messages.slice(-50).map((m) => ({
+    id: m.id,
+    role: m.role,
+    text: m.text.slice(0, 5000),
+    personaId: m.personaId.slice(0, 64),
+    createdAt: m.createdAt,
+    ...(m.imageUrls && m.imageUrls.length > 0
+      ? { imageUrls: m.imageUrls.slice(0, 4) }
+      : {}),
+  }));
+
+  try {
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      await updateDoc(docRef, {
+        personaId: params.personaId.slice(0, 64),
+        messages: cleanMessages,
+        summary: params.summary.slice(0, 4000),
+        card: params.card,
+        confidence: params.confidence,
+        status: params.status,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await setDoc(docRef, {
+        ownerId: params.ownerId,
+        personaId: params.personaId.slice(0, 64),
+        messages: cleanMessages,
+        summary: params.summary.slice(0, 4000),
+        card: params.card,
+        confidence: params.confidence,
+        status: params.status,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
 }
 
 // 2. Collections
