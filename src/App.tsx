@@ -58,14 +58,18 @@ class AppErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    console.error('App caught error:', error);
     let readable = error.message;
     try {
       const parsed = JSON.parse(error.message);
-      if (parsed?.error && parsed?.operationType) {
-        readable = `Permission check (${parsed.operationType} on ${parsed.path || 'record'}): ${parsed.error}`;
+      if (parsed?.error) {
+        readable = 'Something went wrong while accessing your cabinet. Please check your connection and try again.';
       }
     } catch {
       // Standard error string
+    }
+    if (readable.includes('Missing or insufficient permissions') || readable.includes('permission-denied')) {
+      readable = 'Verify your email to save and view your cabinet pieces.';
     }
     return { hasError: true, message: readable };
   }

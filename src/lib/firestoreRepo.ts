@@ -30,10 +30,8 @@ import type {
 import { canUse, sanitizeHandle } from './entitlements';
 import { db, handleFirestoreError, OperationType } from './firebase';
 import {
-  dataUrlToBlob,
   deleteAllUserStorageFiles,
   deleteItemStoragePhotos,
-  processCollectiblePhoto,
   uploadProcessedItemPhoto,
 } from './imageUtils';
 import { buildCollectorArtDataUrl } from './placeholderArt';
@@ -100,7 +98,7 @@ function normalizeItemDoc(id: string, raw: Record<string, unknown>): Collectible
     visibility: (raw.visibility as VisibilityLevel) || 'public',
     title,
     titleLower: String(raw.titleLower || title.toLowerCase()),
-    story: String(raw.story ?? raw.curatorialNote ?? ''),
+    story: String(raw.story ?? ''),
     imageUrl,
     thumbUrl,
     photos,
@@ -1088,62 +1086,6 @@ export async function deleteEntireCollection(
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, colPath);
   }
-}
-
-/**
- * Automatically migrates any legacy base64 data:image/jpeg strings (>2048 chars)
- * from the earlier Phase 1 skeleton into Firebase Storage WebP objects.
- */
-export async function migrateLegacyBase64Images(uid: string): Promise<number> {
-  let migrated = 0;
-  try {
-    const q = query(collection(db, 'items'), where('ownerId', '==', uid), limit(100));
-    const snap = await getDocs(q);
-    for (const d of snap.docs) {
-      const raw = d.data() as Record<string, unknown>;
-      const img = String(raw.imageUrl || '');
-      if (img.startsWith('data:image/') && img.length > 2048) {
-        const blob = dataUrlToBlob(img);
-        const processed = await processCollectiblePhoto(blob, { label: 'Front' });
-        const uploaded = await uploadProcessedItemPhoto(uid, d.id, 0, processed);
-        const normalized = normalizeItemDoc(d.id, raw);
-        await setDoc(doc(db, 'items', d.id), {
-          collectionId: normalized.collectionId,
-          ownerId: uid,
-          ownerHandle: normalized.ownerHandle || 'collector',
-          category: normalized.category,
-          visibility: normalized.visibility,
-          title: normalized.title.slice(0, 140),
-          titleLower: normalized.titleLower.slice(0, 140),
-          story: normalized.story.slice(0, 1500),
-          imageUrl: uploaded.url,
-          thumbUrl: uploaded.thumbUrl,
-          photos: [uploaded],
-          attributes: normalized.attributes,
-          fieldConfidences: normalized.fieldConfidences,
-          year: normalized.year.slice(0, 32),
-          maker: normalized.maker.slice(0, 120),
-          setNumber: normalized.setNumber.slice(0, 80),
-          condition: (normalized.condition || 'Good').slice(0, 80),
-          valueMinGbp: normalized.valueMinGbp,
-          valueMaxGbp: normalized.valueMaxGbp,
-          valuationReason: normalized.valuationReason.slice(0, 320),
-          aiConfidence: normalized.aiConfidence,
-          grail: normalized.grail,
-          tags: normalized.tags.slice(0, 12),
-          customOrder: normalized.customOrder,
-          forSale: normalized.forSale,
-          isDemo: false,
-          createdAt: raw.createdAt || serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-        migrated += 1;
-      }
-    }
-  } catch {
-    // Non-blocking background migration
-  }
-  return migrated;
 }
 
 // 4. UK GDPR Full Export & Complete Account + Storage Erasure

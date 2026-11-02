@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { CATEGORIES } from '../../config/categories';
 import { useAuth } from '../../contexts/AuthContext';
+import { getFriendlyFirebaseErrorMessage } from '../../lib/firebase';
 import { formatGbp, formatGbpRange } from '../../lib/entitlements';
 import {
   deleteCollectibleItemRecord,
@@ -80,6 +81,7 @@ export const ItemPage: React.FC = () => {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [itemError, setItemError] = useState<string | null>(null);
 
   const isOwner = Boolean(
     firebaseUser?.emailVerified &&
@@ -175,6 +177,7 @@ export const ItemPage: React.FC = () => {
     setEditAcqPrice(privateRecord?.acquiredPriceGbp ? String(privateRecord.acquiredPriceGbp) : '');
     setEditAcqDate(privateRecord?.acquiredDate || '');
     setEditPrivNotes(privateRecord?.privateNotes || '');
+    setItemError(null);
     setEditOpen(true);
   };
 
@@ -182,6 +185,7 @@ export const ItemPage: React.FC = () => {
     e.preventDefault();
     if (!item || !collectionRecord || !firebaseUser) return;
     setSavingEdit(true);
+    setItemError(null);
     try {
       const minGbp = Math.max(0, Number(editMinGbp) || 0);
       const maxGbp = Math.max(minGbp, Number(editMaxGbp) || minGbp);
@@ -212,6 +216,9 @@ export const ItemPage: React.FC = () => {
       if (refreshed) setItem(refreshed);
       setPrivateRecord(refreshedPriv);
       setEditOpen(false);
+    } catch (err) {
+      console.error('Save item error:', err);
+      setItemError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setSavingEdit(false);
     }
@@ -223,6 +230,7 @@ export const ItemPage: React.FC = () => {
     const target = myCollections.find((c) => c.id === targetCollectionId);
     if (!target || target.id === collectionRecord.id) return;
     setMoving(true);
+    setItemError(null);
     try {
       await moveItemToCollection({
         item,
@@ -232,6 +240,9 @@ export const ItemPage: React.FC = () => {
       setCollectionRecord(target);
       setItem((prev) => (prev ? { ...prev, collectionId: target.id } : prev));
       setMoveOpen(false);
+    } catch (err) {
+      console.error('Move item error:', err);
+      setItemError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setMoving(false);
     }
@@ -240,10 +251,14 @@ export const ItemPage: React.FC = () => {
   const handleDelete = async () => {
     if (!item || !collectionRecord) return;
     setDeleting(true);
+    setItemError(null);
     try {
       await deleteCollectibleItemRecord(item, collectionRecord, viewerProfile);
       await refreshProfile();
       navigate(`/c/${collectionRecord.id}`);
+    } catch (err) {
+      console.error('Delete item error:', err);
+      setItemError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setDeleting(false);
     }
@@ -758,6 +773,12 @@ export const ItemPage: React.FC = () => {
             </div>
           </div>
 
+          {itemError && (
+            <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">
+              {itemError}
+            </p>
+          )}
+
           <div className="pt-3 border-t border-border flex items-center justify-between gap-2">
             <Button
               type="button"
@@ -805,6 +826,12 @@ export const ItemPage: React.FC = () => {
                 </option>
               ))}
           </select>
+          {itemError && (
+            <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">
+              {itemError}
+            </p>
+          )}
+
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setMoveOpen(false)}>
               Cancel
@@ -827,6 +854,12 @@ export const ItemPage: React.FC = () => {
           <p className="text-base text-muted">
             Delete <strong className="text-ink">{item.title}</strong> from your cabinet?
           </p>
+          {itemError && (
+            <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">
+              {itemError}
+            </p>
+          )}
+
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
               Cancel

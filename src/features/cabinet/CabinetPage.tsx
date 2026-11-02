@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { CATEGORIES, CATEGORY_LIST, type CategorySlug } from '../../config/categories';
 import { useAuth } from '../../contexts/AuthContext';
+import { getFriendlyFirebaseErrorMessage } from '../../lib/firebase';
 import { canUse, formatGbpRange, sanitizeHandle } from '../../lib/entitlements';
 import {
   createCollectionRecord,
@@ -134,7 +135,8 @@ export const CabinetPage: React.FC = () => {
       await refreshProfile();
       setCabinetOwner((prev) => (prev ? { ...prev, avatarUrl: url } : prev));
     } catch (err) {
-      setProfileError(err instanceof Error ? err.message : 'Could not upload avatar.');
+      console.error('Avatar upload error:', err);
+      setProfileError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setUploadingAvatar(false);
     }
@@ -181,7 +183,8 @@ export const CabinetPage: React.FC = () => {
         );
       }
     } catch (err) {
-      setProfileError(err instanceof Error ? err.message : 'Could not save profile changes.');
+      console.error('Save profile error:', err);
+      setProfileError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setSavingProfile(false);
     }
@@ -205,7 +208,8 @@ export const CabinetPage: React.FC = () => {
       setNewColOpen(false);
       navigate(`/c/${created.id}`);
     } catch (err) {
-      setColError(err instanceof Error ? err.message : 'Could not create collection.');
+      console.error('Create collection error:', err);
+      setColError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setCreatingCol(false);
     }
@@ -627,7 +631,14 @@ export const CabinetPage: React.FC = () => {
         title="New collection"
         subtitle="Create a binder, set checklist, coin tray, or crate."
       >
-        {!canCreate.allowed ? (
+        {!viewerProfile ? (
+          <div className="space-y-4">
+            <p className="text-base text-muted">Verify your email to create collections.</p>
+            <Button fullWidth onClick={() => setNewColOpen(false)}>
+              Close
+            </Button>
+          </div>
+        ) : !canCreate.allowed ? (
           <div className="space-y-4">
             <p className="text-base text-muted">{canCreate.reason}</p>
             <Button fullWidth onClick={() => setNewColOpen(false)}>

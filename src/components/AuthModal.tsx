@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MailCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getFriendlyFirebaseErrorMessage } from '../lib/firebase';
 import { Button } from './ui/Button';
 import { Sheet } from './ui/Sheet';
 import { Tabs } from './ui/Tabs';
@@ -32,13 +33,12 @@ export const AuthModal: React.FC = () => {
     try {
       await signInWithGoogle();
     } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Google sign-in could not be completed.';
-      if (raw.includes('auth/unauthorized-domain')) {
-        setErrorMessage(
-          'This domain is not yet authorised in Firebase Authentication. Add this domain under Firebase Console → Authentication → Settings → Authorised domains.',
-        );
+      console.error('Google sign-in error:', err);
+      const friendly = getFriendlyFirebaseErrorMessage(err);
+      if (friendly === 'Something went wrong. Please try again.') {
+        setErrorMessage('Google sign-in could not be completed. Please try again.');
       } else {
-        setErrorMessage(raw);
+        setErrorMessage(friendly);
       }
     } finally {
       setBusy(false);
@@ -58,17 +58,12 @@ export const AuthModal: React.FC = () => {
         setStatusMessage('Verification link sent. Check your inbox to activate your cabinet.');
       }
     } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err);
-      if (raw.includes('auth/operation-not-allowed')) {
-        setErrorMessage(
-          'Email/Password sign-in is turned off in Firebase. Use Continue with Google, or enable Email/Password in Firebase Console → Authentication → Sign-in method.',
-        );
-      } else if (raw.includes('auth/invalid-credential')) {
-        setErrorMessage('Wrong email or password. Double-check your details and try again.');
-      } else if (raw.includes('auth/email-already-in-use')) {
-        setErrorMessage('That email already has a cabinet. Switch to Sign in instead.');
+      console.error('Email auth error:', err);
+      const friendly = getFriendlyFirebaseErrorMessage(err);
+      if (friendly === 'Something went wrong. Please try again.') {
+        setErrorMessage(mode === 'signin' ? 'Could not sign in with email. Please try again.' : 'Could not create account. Please try again.');
       } else {
-        setErrorMessage(raw);
+        setErrorMessage(friendly);
       }
     } finally {
       setBusy(false);
@@ -78,13 +73,11 @@ export const AuthModal: React.FC = () => {
   return (
     <>
       {needsEmailVerification && (
-        <div className="bg-surface-raised border-b border-brass/40 px-4 py-2.5">
+        <div className="bg-surface-raised border-b border-brass/40 px-4 py-3">
           <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3 text-sm">
-            <div className="flex items-center gap-2 text-ink">
+            <div className="flex items-center gap-2.5 text-ink font-medium">
               <MailCheck className="w-4 h-4 text-brass shrink-0" strokeWidth={1.5} />
-              <span>
-                Verify your email address to unlock photo ID, cloud uploads, and your public cabinet.
-              </span>
+              <span>Check your inbox to verify your email</span>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -94,6 +87,8 @@ export const AuthModal: React.FC = () => {
                   const ok = await refreshVerificationStatus();
                   if (!ok) {
                     setStatusMessage('Still waiting for email verification. Click the link in your inbox first.');
+                  } else {
+                    setStatusMessage('Email verified! Your cabinet is ready.');
                   }
                 }}
               >
@@ -107,7 +102,7 @@ export const AuthModal: React.FC = () => {
                   setStatusMessage('Sent a fresh verification email.');
                 }}
               >
-                Resend link
+                Resend
               </Button>
               <Button variant="ghost" size="sm" onClick={signOut}>
                 Sign out

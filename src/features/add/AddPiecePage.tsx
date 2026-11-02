@@ -15,6 +15,7 @@ import {
 import { CATEGORIES, CATEGORY_LIST, type CategorySlug } from '../../config/categories';
 import { useAuth } from '../../contexts/AuthContext';
 import { identifyCollectibleByPhoto } from '../../lib/aiClient';
+import { getFriendlyFirebaseErrorMessage } from '../../lib/firebase';
 import { canUse, formatGbpRange } from '../../lib/entitlements';
 import {
   addCollectibleItemRecord,
@@ -179,7 +180,8 @@ export const AddPiecePage: React.FC = () => {
         },
       ]);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Could not read that photo.');
+      console.error('Photo read error:', err);
+      setSaveError('Could not read that photo. Please try a different image.');
     } finally {
       setProcessingPhoto(false);
     }
@@ -331,38 +333,15 @@ export const AddPiecePage: React.FC = () => {
       await refreshProfile();
       navigate(`/i/${created.id}`);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Could not save this piece.');
+      console.error('Save piece error:', err);
+      setSaveError(getFriendlyFirebaseErrorMessage(err));
       setSavingItem(false);
       setSaveStatus('');
     }
   };
 
-  if (!firebaseUser) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-8 py-16">
-        <EmptyState
-          icon={<Camera className="w-6 h-6" strokeWidth={1.5} />}
-          title="Sign in to add pieces by photo"
-          description="Snap cards, coins, stamps, or records to identify printings, check realistic UK £ values, and store crisp WebP photos in your cabinet."
-          action={<Button onClick={openAuthModal}>Sign in or create account</Button>}
-        />
-      </div>
-    );
-  }
-
-  if (!firebaseUser.emailVerified || !profile) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-8 py-16">
-        <EmptyState
-          icon={<Info className="w-6 h-6" strokeWidth={1.5} />}
-          title="Verify your email first"
-          description="Click the verification link in your inbox, then tap “I’ve verified” in the bar above to start adding pieces."
-        />
-      </div>
-    );
-  }
-
-  const identifyAllowed = canUse('identify', profile);
+  const isVerified = Boolean(firebaseUser?.emailVerified && profile);
+  const identifyAllowed = !profile || canUse('identify', profile).allowed;
   const catConfig = CATEGORIES[category];
   const frontLabel = category === 'coins' ? 'Obverse (Front)' : 'Front';
   const backLabel = category === 'coins' ? 'Reverse (Back)' : 'Back';
@@ -571,7 +550,7 @@ export const AddPiecePage: React.FC = () => {
 
             <Button
               size="lg"
-              disabled={slots.length === 0 || processingPhoto || !identifyAllowed.allowed}
+              disabled={slots.length === 0 || processingPhoto || !identifyAllowed}
               onClick={handleIdentify}
             >
               <Camera className="w-4 h-4" strokeWidth={1.5} />
@@ -934,10 +913,26 @@ export const AddPiecePage: React.FC = () => {
               ← Back to photos
             </Button>
 
-            <Button type="submit" size="lg" disabled={savingItem}>
-              <Check className="w-4 h-4" strokeWidth={1.5} />
-              <span>{savingItem ? saveStatus || 'Adding…' : 'Looks right, add it'}</span>
-            </Button>
+            {!firebaseUser ? (
+              <Button type="button" size="lg" onClick={openAuthModal}>
+                <Camera className="w-4 h-4" strokeWidth={1.5} />
+                <span>Sign in to save piece</span>
+              </Button>
+            ) : !isVerified ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-warn">
+                  Verify your email to save pieces
+                </span>
+                <Button type="button" size="lg" disabled>
+                  <span>Verify your email to save pieces</span>
+                </Button>
+              </div>
+            ) : (
+              <Button type="submit" size="lg" disabled={savingItem}>
+                <Check className="w-4 h-4" strokeWidth={1.5} />
+                <span>{savingItem ? saveStatus || 'Adding…' : 'Looks right, add it'}</span>
+              </Button>
+            )}
           </div>
         </form>
       )}

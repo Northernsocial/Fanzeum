@@ -16,7 +16,6 @@ import {
   eraseAllUserFirestoreData,
   fetchUserPrivateAccount,
   fetchUserProfile,
-  migrateLegacyBase64Images,
 } from '../lib/firestoreRepo';
 import type { UserPrivateAccount, UserProfile } from '../types/domain';
 
@@ -63,7 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(existingProfile);
       const priv = await fetchUserPrivateAccount(user.uid);
       setPrivateAccount(priv);
-      void migrateLegacyBase64Images(user.uid);
     } else {
       const savedCookie = window.localStorage.getItem('fanzeum_cookie_consent');
       const analyticsConsent = savedCookie === 'all';
@@ -128,6 +126,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshVerificationStatus = async (): Promise<boolean> => {
     if (!auth.currentUser) return false;
     await auth.currentUser.reload();
+    // Force refresh token so request.auth.token.email_verified updates in Firestore
+    await auth.currentUser.getIdToken(true);
     const updatedUser = auth.currentUser;
     setFirebaseUser({ ...updatedUser } as User);
     if (updatedUser.emailVerified) {

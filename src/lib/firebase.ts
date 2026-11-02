@@ -48,6 +48,80 @@ export interface FirestoreErrorInfo {
   };
 }
 
+export function getFriendlyFirebaseErrorMessage(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+
+  // Check if raw is serialized FirestoreErrorInfo
+  let innerMsg = raw;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.error === 'string') {
+      innerMsg = parsed.error;
+    }
+  } catch {
+    // raw was not JSON
+  }
+
+  const lower = innerMsg.toLowerCase();
+
+  if (lower.includes('permission-denied') || lower.includes('missing or insufficient permissions')) {
+    if (!auth.currentUser) {
+      return 'Please sign in to save pieces and collections.';
+    }
+    if (!auth.currentUser.emailVerified) {
+      return 'Verify your email to save pieces and collections.';
+    }
+    return "You don't have permission to perform this action.";
+  }
+
+  if (lower.includes('unavailable') || lower.includes('offline') || lower.includes('failed to get document')) {
+    return 'Network connection issue. Please check your internet connection and try again.';
+  }
+
+  if (lower.includes('not-found')) {
+    return 'The requested record could not be found.';
+  }
+
+  if (lower.includes('already-exists')) {
+    return 'This item or handle already exists.';
+  }
+
+  if (lower.includes('unauthenticated')) {
+    return 'Please sign in to continue.';
+  }
+
+  if (lower.includes('resource-exhausted') || lower.includes('quota')) {
+    return 'Daily limit reached. Please try again later.';
+  }
+
+  if (lower.includes('auth/unauthorized-domain')) {
+    return 'This domain is not yet authorised in Firebase Authentication. Add this domain under Firebase Console → Authentication → Settings → Authorised domains.';
+  }
+
+  if (lower.includes('auth/operation-not-allowed')) {
+    return 'Email/Password sign-in is turned off in Firebase. Use Continue with Google, or enable Email/Password in Firebase Console → Authentication → Sign-in method.';
+  }
+
+  if (lower.includes('auth/invalid-credential') || lower.includes('auth/wrong-password') || lower.includes('auth/user-not-found')) {
+    return 'Wrong email or password. Double-check your details and try again.';
+  }
+
+  if (lower.includes('auth/email-already-in-use')) {
+    return 'That email already has a cabinet. Switch to Sign in instead.';
+  }
+
+  if (lower.includes('auth/weak-password')) {
+    return 'Password is too weak. Please use at least 6 characters.';
+  }
+
+  if (lower.includes('auth/requires-recent-login')) {
+    return 'For security, sign out and sign right back in before continuing.';
+  }
+
+  // Fallback friendly message for any other technical/raw error
+  return 'Something went wrong. Please try again.';
+}
+
 export function handleFirestoreError(
   error: unknown,
   operationType: OperationType,
@@ -70,8 +144,8 @@ export function handleFirestoreError(
     operationType,
     path,
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.error('Firestore Error details:', errInfo);
+  throw new Error(getFriendlyFirebaseErrorMessage(errInfo.error));
 }
 
 async function testConnection() {
