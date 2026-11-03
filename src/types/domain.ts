@@ -120,9 +120,63 @@ export interface CollectibleItemRecord {
   customOrder: number;
   forSale: boolean;
   mediaCredit?: MediaCredit;
+  helpedBy?: string; // Collector handle or note of who contributed ID correction
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
+}
+
+export type IdCorrectionStatus = 'pending' | 'accepted' | 'dismissed';
+
+export interface IdCorrectionRecord {
+  id: string;
+  itemId: string;
+  itemOwnerId: string;
+  suggesterId: string;
+  suggesterHandle: string;
+  suggesterName: string;
+  suggestedCorrection: string; // e.g. "I think this is SG 8, not SG 7"
+  note?: string; // Optional detailed explanation
+  status: IdCorrectionStatus;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export type ItemSignalType = 'got' | 'want';
+
+export interface ItemSignalRecord {
+  id: string;
+  itemId: string;
+  userId: string;
+  signalType: ItemSignalType;
+  createdAt?: unknown;
+}
+
+export interface WantItemRecord {
+  id: string;
+  userId: string;
+  category: CategorySlug;
+  title: string;
+  keyFields: Record<string, string | boolean>;
+  notes: string;
+  maxPriceGbp?: number;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export type NotificationType = 'want_match' | 'id_correction_received' | 'id_correction_accepted';
+
+export interface NotificationRecord {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  itemId: string;
+  itemTitle: string;
+  itemCategory: CategorySlug;
+  read: boolean;
+  createdAt?: unknown;
 }
 
 export interface ItemPrivateRecord {

@@ -450,6 +450,11 @@
           "type": "object",
           "description": "Optional public-domain / Creative Commons attribution."
         },
+        "helpedBy": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional collector handle or note acknowledging community ID correction."
+        },
         "isDemo": {
           "type": "boolean"
         },
@@ -525,6 +530,240 @@
         "targetId",
         "createdAt"
       ]
+    },
+    "IdCorrectionRecord": {
+      "title": "IdCorrectionRecord",
+      "description": "Collector suggested identification correction with optional note.",
+      "type": "object",
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemOwnerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "suggesterId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "suggesterHandle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32,
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "suggesterName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "suggestedCorrection": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "accepted", "dismissed"],
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "itemId",
+        "itemOwnerId",
+        "suggesterId",
+        "suggesterHandle",
+        "suggesterName",
+        "suggestedCorrection",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ItemSignalRecord": {
+      "title": "ItemSignalRecord",
+      "description": "Collector button interaction for Got One and Want One.",
+      "type": "object",
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "signalType": {
+          "type": "string",
+          "enum": ["got", "want"],
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "itemId",
+        "userId",
+        "signalType",
+        "createdAt"
+      ]
+    },
+    "WantItemRecord": {
+      "title": "WantItemRecord",
+      "description": "Collector wantlist entry with category, title, key fields, and notes.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "stamps",
+            "football_cards",
+            "trading_cards",
+            "coins",
+            "comics",
+            "vinyl",
+            "toys",
+            "memorabilia"
+          ],
+          "maxLength": 32
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "keyFields": {
+          "type": "object",
+          "description": "Category-specific key/value specifications for matching."
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "maxPriceGbp": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "category",
+        "title",
+        "keyFields",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "NotificationRecord": {
+      "title": "NotificationRecord",
+      "description": "In-app notifications for want alerts and ID correction events.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["want_match", "id_correction_received", "id_correction_accepted"],
+          "maxLength": 32
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "itemCategory": {
+          "type": "string",
+          "enum": [
+            "stamps",
+            "football_cards",
+            "trading_cards",
+            "coins",
+            "comics",
+            "vinyl",
+            "toys",
+            "memorabilia"
+          ],
+          "maxLength": 32
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "type",
+        "title",
+        "message",
+        "itemId",
+        "itemTitle",
+        "itemCategory",
+        "read",
+        "createdAt"
+      ]
     }
   },
   "firestore": {
@@ -559,6 +798,22 @@
     "/follows/{followId}": {
       "schema": { "$ref": "#/entities/FollowRecord" },
       "description": "Owner-only follow records for categories and collectors."
+    },
+    "/idCorrections/{correctionId}": {
+      "schema": { "$ref": "#/entities/IdCorrectionRecord" },
+      "description": "Suggested ID corrections on items with accept/dismiss states."
+    },
+    "/itemSignals/{signalId}": {
+      "schema": { "$ref": "#/entities/ItemSignalRecord" },
+      "description": "Collector got-one and want-one button signals."
+    },
+    "/wants/{wantId}": {
+      "schema": { "$ref": "#/entities/WantItemRecord" },
+      "description": "Collector wantlist entries with category and key fields."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/NotificationRecord" },
+      "description": "In-app notifications for want alerts and ID correction events."
     }
   }
 }

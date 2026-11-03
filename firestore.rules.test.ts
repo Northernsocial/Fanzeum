@@ -54,6 +54,10 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
         '/collections/{collectionId}',
         '/items/{itemId}',
         '/follows/{followId}',
+        '/idCorrections/{correctionId}',
+        '/itemSignals/{signalId}',
+        '/wants/{wantId}',
+        '/notifications/{notificationId}',
       ]),
     );
     expect(rulesSource).toContain('match /admins/{adminId}');
@@ -64,6 +68,10 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('match /collections/{collectionId}');
     expect(rulesSource).toContain('match /items/{itemId}');
     expect(rulesSource).toContain('match /follows/{followId}');
+    expect(rulesSource).toContain('match /idCorrections/{correctionId}');
+    expect(rulesSource).toContain('match /itemSignals/{signalId}');
+    expect(rulesSource).toContain('match /wants/{wantId}');
+    expect(rulesSource).toContain('match /notifications/{notificationId}');
   });
 
   it('2b. Enforces strict schema and owner-only writes on follows collection', () => {
@@ -71,6 +79,16 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('incoming().followerId == request.auth.uid');
     expect(rulesSource).toContain('allow update: if false;');
     expect(rulesSource).toContain('existing().followerId == request.auth.uid || isAdmin()');
+  });
+
+  it('2c. Enforces strict schema and validation on Phase 2C collections (idCorrections, itemSignals, wants, notifications)', () => {
+    expect(rulesSource).toContain('isValidIdCorrection(incoming())');
+    expect(rulesSource).toContain("incoming().status == 'pending'");
+    expect(rulesSource).toContain('isValidItemSignal(incoming())');
+    expect(rulesSource).toContain('isValidWant(incoming())');
+    expect(rulesSource).toContain('isValidNotification(incoming())');
+    expect(rulesSource).toContain("affectedKeys().hasOnly(['status', 'updatedAt'])");
+    expect(rulesSource).toContain("affectedKeys().hasOnly(['read'])");
   });
 
   it('3. Blocks privilege escalation on registration (locks role=collector, plan=free, isVerifiedExpert=false)', () => {
