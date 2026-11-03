@@ -23,6 +23,7 @@ import type {
   FreshFindRecord,
   ItemPhoto,
   ItemPrivateRecord,
+  MarketplaceListingRecord,
   MediaCredit,
   PanelCard,
   PanelChatMessage,
@@ -129,6 +130,7 @@ function normalizeItemDoc(id: string, raw: Record<string, unknown>): Collectible
     mediaCredit: raw.mediaCredit as MediaCredit | undefined,
     panelStatus: raw.panelStatus as 'none' | 'confirmed' | 'disputed' | undefined,
     panelConfirmedAt: raw.panelConfirmedAt ? String(raw.panelConfirmedAt) : undefined,
+    boughtOnFanzeumItemId: raw.boughtOnFanzeumItemId ? String(raw.boughtOnFanzeumItemId) : undefined,
     isDemo: Boolean(raw.isDemo),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
@@ -536,7 +538,6 @@ export async function listPublicCollections(maxResults = 40): Promise<Collection
 
 export async function listFeaturedCollections(): Promise<CollectionRecord[]> {
   const all = await listPublicCollections(40);
-  // Sort collections so that those with real photos (not data:image/svg) appear first
   const sorted = [...all].sort((a, b) => {
     const aReal = a.coverImageUrl && !a.coverImageUrl.startsWith('data:image/svg') ? 1 : 0;
     const bReal = b.coverImageUrl && !b.coverImageUrl.startsWith('data:image/svg') ? 1 : 0;
@@ -886,7 +887,6 @@ export async function explorePublicItems(params: {
   if (params.sortBy === 'value_desc') {
     filtered.sort((a, b) => b.valueMaxGbp - a.valueMaxGbp);
   } else {
-    // Newest first: live non-demo items appear ahead of demo items, sorted by createdAt seconds if available
     filtered.sort((a, b) => {
       const aLive = a.isDemo ? 0 : 1;
       const bLive = b.isDemo ? 0 : 1;
@@ -950,6 +950,7 @@ export async function addCollectibleItemRecord(params: {
   customItemId?: string;
   panelStatus?: 'none' | 'confirmed' | 'disputed';
   panelConfirmedAt?: string;
+  boughtOnFanzeumItemId?: string;
 }): Promise<CollectibleItemRecord> {
   const itemId = params.customItemId || makeSafeId('itm');
   const path = `items/${itemId}`;
@@ -1014,6 +1015,7 @@ export async function addCollectibleItemRecord(params: {
     forSale: false,
     ...(params.panelStatus ? { panelStatus: params.panelStatus } : {}),
     ...(params.panelConfirmedAt ? { panelConfirmedAt: params.panelConfirmedAt } : {}),
+    ...(params.boughtOnFanzeumItemId ? { boughtOnFanzeumItemId: params.boughtOnFanzeumItemId } : {}),
     isDemo: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -1205,6 +1207,112 @@ export async function deleteEntireCollection(
   }
 }
 
+// 3.4 Marketplace Listings (One-Tap Resell & Buy)
+export async function createMarketplaceListing(params: {
+  item: CollectibleItemRecord;
+  seller: UserProfile;
+  priceGbp: number;
+  allowOffers: boolean;
+}): Promise<MarketplaceListingRecord> {
+  const listingId = makeSafeId('list');
+  const path = `marketplaceListings/${listingId}`;
+
+  const price = Math.max(1, Math.round(Number(params.priceGbp) || params.item.valueMinGbp || 10));
+
+  const recordData = {
+    itemId: params.item.id,
+    sellerId: params.seller.uid,
+    sellerHandle: sanitizeHandle(params.seller.handle),
+    sellerName: params.seller.displayName.slice(0, 80) || 'Collector',
+    category: params.item.category,
+    title: params.item.title.slice(0, 140),
+    thumbUrl: params.item.thumbUrl || params.item.imageUrl,
+    imageUrl: params.item.imageUrl,
+    priceGbp: price,
+    allowOffers: Boolean(params.allowOffers),
+    condition: params.item.condition || 'Good',
+    valuationMinGbp: params.item.valueMinGbp,
+    valuationMaxGbp: params.item.valueMaxGbp,
+    status: 'active' as const,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'marketplaceListings', listingId), recordData);
+    batch.update(doc(db, 'items', params.item.id), {
+      forSale: true,
+      updatedAt: serverTimestamp(),
+    });
+    await batch.commit();
+
+    return {
+      id: listingId,
+      ...recordData,
+    };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export async function fetchMarketplaceListingByItem(itemId: string): Promise<MarketplaceListingRecord | null> {
+  const path = 'marketplaceListings';
+  try {
+    const q = query(
+      collection(db, 'marketplaceListings'),
+      where('itemId', '==', itemId),
+      where('status', '==', 'active'),
+      limit(1),
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return {
+      id: d.id,
+      ...(d.data() as Omit<MarketplaceListingRecord, 'id'>),
+    };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+}
+
+export async function listActiveMarketplaceListings(maxResults = 50): Promise<MarketplaceListingRecord[]> {
+  const path = 'marketplaceListings';
+  try {
+    const q = query(
+      collection(db, 'marketplaceListings'),
+      where('status', '==', 'active'),
+      limit(maxResults),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<MarketplaceListingRecord, 'id'>),
+    }));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
+export async function withdrawMarketplaceListing(listingId: string, itemId: string): Promise<void> {
+  const path = `marketplaceListings/${listingId}`;
+  try {
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'marketplaceListings', listingId), {
+      status: 'withdrawn',
+      updatedAt: serverTimestamp(),
+    });
+    batch.update(doc(db, 'items', itemId), {
+      forSale: false,
+      updatedAt: serverTimestamp(),
+    });
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
 // 3.5 Fresh Finds Collection
 export async function createFreshFindRecord(params: {
   itemId: string;
@@ -1290,7 +1398,6 @@ export async function listFreshFinds(params: {
   const combined = [...liveFinds];
 
   if (!isBuiltinDemoHidden()) {
-    // Import demo catalog fresh finds dynamically/safely
     const { DEMO_FRESH_FINDS } = await import('../data/demoCatalog');
     for (const demo of DEMO_FRESH_FINDS) {
       if (seen.has(demo.id)) continue;
@@ -1301,7 +1408,6 @@ export async function listFreshFinds(params: {
     }
   }
 
-  // Newest first: live non-demo items ahead of demo, sorted by createdAt
   combined.sort((a, b) => {
     const aLive = a.isDemo ? 0 : 1;
     const bLive = b.isDemo ? 0 : 1;

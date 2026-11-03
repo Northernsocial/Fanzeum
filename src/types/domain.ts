@@ -157,6 +157,7 @@ export interface CollectibleItemRecord {
   helpedBy?: string; // Collector handle or note of who contributed ID correction
   panelStatus?: 'none' | 'confirmed' | 'disputed';
   panelConfirmedAt?: string;
+  boughtOnFanzeumItemId?: string; // If bought on Fanzeum marketplace
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -227,6 +228,26 @@ export interface FreshFindRecord {
   panelStatus?: 'none' | 'confirmed' | 'disputed';
   isDemo?: boolean;
   createdAt?: unknown;
+}
+
+export interface MarketplaceListingRecord {
+  id: string;
+  itemId: string;
+  sellerId: string;
+  sellerHandle: string;
+  sellerName: string;
+  category: CategorySlug;
+  title: string;
+  thumbUrl: string;
+  imageUrl: string;
+  priceGbp: number;
+  allowOffers: boolean;
+  condition: string;
+  valuationMinGbp: number;
+  valuationMaxGbp: number;
+  status: 'active' | 'sold' | 'withdrawn';
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 export interface ItemPrivateRecord {

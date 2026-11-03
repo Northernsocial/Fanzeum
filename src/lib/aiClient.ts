@@ -94,3 +94,26 @@ export async function polishCollectionStory(params: {
   }
   return String(data.story || params.draftStory);
 }
+
+export async function parseImportTextContent(params: {
+  text: string;
+  userId?: string;
+}): Promise<{
+  title: string;
+  category: CategorySlug;
+  pricePaidGbp: number;
+  acquiredDate: string;
+  sellerOrSource: string;
+  summary: string;
+}> {
+  const res = await fetch('/api/ai/parse-import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || 'Could not parse import text or URL confirmation.');
+  }
+  return data;
+}

@@ -1,3 +1,4 @@
+=== EXISTING FILE: firestore.rules ===
 rules_version = '2';
 
 service cloud.firestore {
@@ -321,6 +322,62 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    // Validation Blueprint: MarketplaceListingRecord
+    function isValidMarketplaceListing(data) {
+      return data.keys().hasAll([
+          'itemId',
+          'sellerId',
+          'sellerHandle',
+          'sellerName',
+          'category',
+          'title',
+          'thumbUrl',
+          'imageUrl',
+          'priceGbp',
+          'allowOffers',
+          'condition',
+          'valuationMinGbp',
+          'valuationMaxGbp',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'itemId',
+          'sellerId',
+          'sellerHandle',
+          'sellerName',
+          'category',
+          'title',
+          'thumbUrl',
+          'imageUrl',
+          'priceGbp',
+          'allowOffers',
+          'condition',
+          'valuationMinGbp',
+          'valuationMaxGbp',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.itemId) &&
+        isValidId(data.sellerId) &&
+        data.sellerHandle is string && data.sellerHandle.size() >= 2 && data.sellerHandle.size() <= 32 && data.sellerHandle.matches('^[a-z0-9_\\-]+$') &&
+        data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80 &&
+        isValidCategory(data.category) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.thumbUrl is string && data.thumbUrl.size() >= 1 && data.thumbUrl.size() <= 2048 &&
+        data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 2048 &&
+        (data.priceGbp is int || data.priceGbp is float) && data.priceGbp >= 1 && data.priceGbp <= 10000000 &&
+        data.allowOffers is bool &&
+        data.condition is string && data.condition.size() <= 80 &&
+        (data.valuationMinGbp is int || data.valuationMinGbp is float) && data.valuationMinGbp >= 0 &&
+        (data.valuationMaxGbp is int || data.valuationMaxGbp is float) && data.valuationMaxGbp >= data.valuationMinGbp &&
+        data.status is string && data.status in ['active', 'sold', 'withdrawn'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
     // Validation Blueprint: FollowRecord (Owner-only category and collector follows)
     function isValidFollow(data) {
       return data.keys().hasAll(['followerId', 'targetType', 'targetId', 'createdAt']) &&
@@ -475,6 +532,7 @@ service cloud.firestore {
           'helpedBy',
           'panelStatus',
           'panelConfirmedAt',
+          'boughtOnFanzeumItemId',
           'isDemo',
           'createdAt',
           'updatedAt'
@@ -510,6 +568,7 @@ service cloud.firestore {
         (!('helpedBy' in data) || (data.helpedBy is string && data.helpedBy.size() <= 120)) &&
         (!('panelStatus' in data) || (data.panelStatus is string && data.panelStatus in ['none', 'confirmed', 'disputed'])) &&
         (!('panelConfirmedAt' in data) || (data.panelConfirmedAt is string && data.panelConfirmedAt.size() <= 64)) &&
+        (!('boughtOnFanzeumItemId' in data) || isValidId(data.boughtOnFanzeumItemId)) &&
         data.isDemo is bool &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
@@ -686,7 +745,6 @@ service cloud.firestore {
         isValidId(userId) &&
         isValidUserProfile(incoming()) && (
           isAdmin() ||
-          // Action 1: Owner edits public cabinet details and privacy preferences
           (
             request.auth.uid == userId &&
             existing().uid == request.auth.uid &&
@@ -721,7 +779,6 @@ service cloud.firestore {
         isValidId(userId) &&
         (request.auth.uid == userId || isAdmin());
 
-      // 3. Isolated Private Account & UK GDPR Consent Subcollection (Master Gate + PII Isolation)
       match /private/{docId} {
         allow get: if isSignedIn() &&
           isValidId(userId) &&
@@ -771,7 +828,6 @@ service cloud.firestore {
           (request.auth.uid == userId || isAdmin());
       }
 
-      // 4. Isolated Private Item Acquisition Notes & Price Paid (Owner/Admin Only)
       match /itemPrivate/{itemId} {
         allow get: if isSignedIn() &&
           isValidId(userId) &&
@@ -818,7 +874,6 @@ service cloud.firestore {
           (request.auth.uid == userId || isAdmin());
       }
 
-      // 4.5 User Saved Pieces Index
       match /saves/{itemId} {
         allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
 
@@ -890,7 +945,6 @@ service cloud.firestore {
         isValidId(collectionId) &&
         isValidCollection(incoming()) && (
           isAdmin() ||
-          // Action 1: Owner updates collection details or piece/valuation totals
           (
             existing().ownerId == request.auth.uid &&
             incoming().ownerId == existing().ownerId &&
@@ -921,7 +975,7 @@ service cloud.firestore {
         (existing().ownerId == request.auth.uid || isAdmin());
     }
 
-    // 5.5 AI Expert Panel Chats (Strict Owner Only)
+    // 5.5 AI Expert Panel Chats
     match /panelChats/{itemId} {
       allow get: if isVerifiedUser() &&
         isValidId(itemId) &&
@@ -959,6 +1013,39 @@ service cloud.firestore {
         (existing().ownerId == request.auth.uid || isAdmin());
     }
 
+    // 5.6 Marketplace Listings (One-Tap Resell & Buy)
+    match /marketplaceListings/{listingId} {
+      allow get, list: if true;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(listingId) &&
+        isValidMarketplaceListing(incoming()) &&
+        incoming().sellerId == request.auth.uid &&
+        incoming().status == 'active' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/items/$(incoming().itemId)) &&
+        get(/databases/$(database)/documents/items/$(incoming().itemId)).data.ownerId == request.auth.uid;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(listingId) &&
+        isValidMarketplaceListing(incoming()) && (
+          isAdmin() ||
+          (
+            existing().sellerId == request.auth.uid &&
+            incoming().sellerId == existing().sellerId &&
+            incoming().itemId == existing().itemId &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(listingId) &&
+        (existing().sellerId == request.auth.uid || isAdmin());
+    }
+
     // 6. Collectible Pieces
     match /items/{itemId} {
       allow get: if isValidId(itemId) && (
@@ -992,7 +1079,6 @@ service cloud.firestore {
         isValidId(itemId) &&
         isValidCollectibleItem(incoming()) && (
           isAdmin() ||
-          // Action 1: Owner edits piece details, category fields, valuation, or custom sort order
           (
             existing().ownerId == request.auth.uid &&
             incoming().ownerId == existing().ownerId &&
@@ -1030,10 +1116,10 @@ service cloud.firestore {
               'helpedBy',
               'panelStatus',
               'panelConfirmedAt',
+              'boughtOnFanzeumItemId',
               'updatedAt'
             ])
           ) ||
-          // Action 2: Owner moves piece to another collection owned by the same user
           (
             existing().ownerId == request.auth.uid &&
             incoming().ownerId == existing().ownerId &&
@@ -1056,7 +1142,6 @@ service cloud.firestore {
         isValidId(itemId) &&
         (existing().ownerId == request.auth.uid || isAdmin());
 
-      // 6.1 Likes (One like per user per item, enforced by doc id = uid)
       match /likes/{userId} {
         allow get, list: if true;
 
@@ -1078,7 +1163,6 @@ service cloud.firestore {
           (userId == request.auth.uid || isAdmin());
       }
 
-      // 6.2 Saves (One bookmark per user per item, enforced by doc id = uid)
       match /saves/{userId} {
         allow get, list: if true;
 
@@ -1100,7 +1184,6 @@ service cloud.firestore {
           (userId == request.auth.uid || isAdmin());
       }
 
-      // 6.3 Comments (Plain text <= 1,000 chars; author edits/deletes; item owner deletes)
       match /comments/{commentId} {
         allow get, list: if true;
 
@@ -1141,7 +1224,6 @@ service cloud.firestore {
       }
     }
 
-    // 7. Follows (Owner-only writes, public reads for counts and feed query)
     match /follows/{followId} {
       allow get, list: if true;
 
@@ -1155,158 +1237,4 @@ service cloud.firestore {
 
       allow delete: if isVerifiedUser() &&
         isValidId(followId) &&
-        (existing().followerId == request.auth.uid || isAdmin());
-    }
-
-    // 8. Reports (Verified user create, strictly admin read only)
-    match /reports/{reportId} {
-      allow get, list: if isAdmin();
-
-      allow create: if isVerifiedUser() &&
-        isValidId(reportId) &&
-        isValidReport(incoming()) &&
-        incoming().reporterId == request.auth.uid &&
-        incoming().createdAt == request.time;
-
-      allow update, delete: if isAdmin();
-    }
-
-    // 9. Fresh Finds (Public reads, owner-only create & delete, no edits by others or anyone)
-    match /freshFinds/{findId} {
-      allow get, list: if true;
-
-      allow create: if isVerifiedUser() &&
-        isValidId(findId) &&
-        isValidFreshFind(incoming()) &&
-        incoming().createdAt == request.time && (
-          (incoming().ownerId == request.auth.uid && (!('isDemo' in incoming()) || incoming().isDemo == false)) ||
-          (isAdmin() && incoming().isDemo == true)
-        );
-
-      allow update: if false;
-
-      allow delete: if isVerifiedUser() &&
-        isValidId(findId) &&
-        (existing().ownerId == request.auth.uid || isAdmin());
-    }
-
-    // 10. ID Corrections (Any verified user can suggest; item owner can accept/dismiss)
-    match /idCorrections/{correctionId} {
-      allow get, list: if isSignedIn();
-
-      allow create: if isVerifiedUser() &&
-        isValidId(correctionId) &&
-        isValidIdCorrection(incoming()) &&
-        incoming().suggesterId == request.auth.uid &&
-        incoming().status == 'pending' &&
-        incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time;
-
-      allow update: if isVerifiedUser() &&
-        isValidId(correctionId) &&
-        isValidIdCorrection(incoming()) && (
-          isAdmin() ||
-          (
-            existing().itemOwnerId == request.auth.uid &&
-            incoming().itemOwnerId == existing().itemOwnerId &&
-            incoming().itemId == existing().itemId &&
-            incoming().suggesterId == existing().suggesterId &&
-            incoming().createdAt == existing().createdAt &&
-            incoming().updatedAt == request.time &&
-            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
-          )
-        );
-
-      allow delete: if isVerifiedUser() &&
-        isValidId(correctionId) &&
-        (existing().suggesterId == request.auth.uid || existing().itemOwnerId == request.auth.uid || isAdmin());
-    }
-
-    // 11. Item Signals (Got One / Want One)
-    match /itemSignals/{signalId} {
-      allow get, list: if true;
-
-      allow create: if isVerifiedUser() &&
-        isValidId(signalId) &&
-        isValidItemSignal(incoming()) &&
-        incoming().userId == request.auth.uid &&
-        incoming().createdAt == request.time;
-
-      allow update: if false;
-
-      allow delete: if isVerifiedUser() &&
-        isValidId(signalId) &&
-        (existing().userId == request.auth.uid || isAdmin());
-    }
-
-    // 12. Wants (Wantlist items; public reads for Fresh Finds matching by category; owner writes)
-    match /wants/{wantId} {
-      allow get, list: if true;
-
-      allow create: if isVerifiedUser() &&
-        isValidId(wantId) &&
-        isValidWant(incoming()) &&
-        incoming().userId == request.auth.uid &&
-        incoming().createdAt == request.time &&
-        incoming().updatedAt == request.time;
-
-      allow update: if isVerifiedUser() &&
-        isValidId(wantId) &&
-        isValidWant(incoming()) && (
-          isAdmin() ||
-          (
-            existing().userId == request.auth.uid &&
-            incoming().userId == existing().userId &&
-            incoming().createdAt == existing().createdAt &&
-            incoming().updatedAt == request.time &&
-            incoming().diff(existing()).affectedKeys().hasOnly([
-              'category',
-              'title',
-              'keyFields',
-              'notes',
-              'maxPriceGbp',
-              'updatedAt'
-            ])
-          )
-        );
-
-      allow delete: if isVerifiedUser() &&
-        isValidId(wantId) &&
-        (existing().userId == request.auth.uid || isAdmin());
-    }
-
-    // 13. In-App Notifications (Recipients read; verified system/users create; recipient marks read)
-    match /notifications/{notificationId} {
-      allow get: if isSignedIn() && isValidId(notificationId) && (resource.data.userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (
-        (request.query.limit <= 100 && resource.data.userId == request.auth.uid) ||
-        isAdmin()
-      );
-
-      allow create: if isVerifiedUser() &&
-        isValidId(notificationId) &&
-        isValidNotification(incoming()) &&
-        incoming().userId != request.auth.uid &&
-        incoming().read == false &&
-        incoming().createdAt == request.time;
-
-      allow update: if isSignedIn() &&
-        isValidId(notificationId) &&
-        isValidNotification(incoming()) && (
-          isAdmin() ||
-          (
-            existing().userId == request.auth.uid &&
-            incoming().userId == existing().userId &&
-            incoming().type == existing().type &&
-            incoming().itemId == existing().itemId &&
-            incoming().createdAt == existing().createdAt &&
-            incoming().diff(existing()).affectedKeys().hasOnly(['read'])
-          )
-        );
-
-      allow delete: if isSignedIn() &&
-        isValidId(notificationId) &&
-        (existing().userId == request.auth.uid || isAdmin());
-    }
-  }
-}
+        (existing().follower
