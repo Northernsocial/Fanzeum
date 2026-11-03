@@ -3,6 +3,7 @@ import { Award } from 'lucide-react';
 import { getItemPlacardParts } from '../../config/categories';
 import { formatGbpRange } from '../../lib/entitlements';
 import type { CollectibleItemRecord } from '../../types/domain';
+import { PanelConfirmedBadge } from './PanelConfirmedBadge';
 
 interface PlacardProps {
   item: CollectibleItemRecord;
@@ -34,15 +35,24 @@ export const Placard: React.FC<PlacardProps> = ({
     <div className="space-y-1.5 min-w-0 w-full overflow-hidden">
       <div className="flex items-start justify-between gap-2 min-w-0">
         <h3 className={`flex-1 min-w-0 ${titleClasses}`}>{item.title}</h3>
-        {item.grail && (
-          <span
-            title="Grail piece"
-            className="inline-flex items-center gap-1 text-xs font-mono text-brass shrink-0 pt-0.5"
-          >
-            <Award className="w-4 h-4" strokeWidth={1.5} />
-            <span>Grail</span>
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+          {item.panelStatus === 'confirmed' && (
+            <PanelConfirmedBadge
+              date={item.panelConfirmedAt}
+              size={size === 'lg' ? 'md' : 'sm'}
+              compact={size === 'sm'}
+            />
+          )}
+          {item.grail && (
+            <span
+              title="Grail piece"
+              className="inline-flex items-center gap-1 text-xs font-mono text-brass shrink-0"
+            >
+              <Award className="w-4 h-4" strokeWidth={1.5} />
+              <span>Grail</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {metaSegments.length > 0 && (

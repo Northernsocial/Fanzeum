@@ -57,6 +57,7 @@ import { Card } from '../../components/ui/Card';
 import { CollectorImage } from '../../components/ui/CollectorImage';
 import { ConfidenceChip } from '../../components/ui/ConfidenceChip';
 import { EmptyState, Skeleton } from '../../components/ui/EmptyState';
+import { PanelConfirmedBadge } from '../../components/ui/PanelConfirmedBadge';
 import { PieceStage } from '../../components/ui/PieceStage';
 import { Placard } from '../../components/ui/Placard';
 import { Sheet } from '../../components/ui/Sheet';
@@ -591,6 +592,9 @@ export const ItemPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {item.panelStatus === 'confirmed' && (
+              <PanelConfirmedBadge date={item.panelConfirmedAt} size="md" />
+            )}
             <ConfidenceChip confidence={item.aiConfidence} />
 
             {/* Like button */}

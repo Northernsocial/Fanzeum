@@ -59,6 +59,7 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
         '/items/{itemId}/comments/{commentId}',
         '/follows/{followId}',
         '/reports/{reportId}',
+        '/freshFinds/{findId}',
       ]),
     );
     expect(rulesSource).toContain('match /admins/{adminId}');
@@ -73,6 +74,7 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('match /comments/{commentId}');
     expect(rulesSource).toContain('match /follows/{followId}');
     expect(rulesSource).toContain('match /reports/{reportId}');
+    expect(rulesSource).toContain('match /freshFinds/{findId}');
   });
 
   it('2b. Enforces strict schema and owner-only writes on follows collection', () => {
@@ -115,6 +117,21 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('isValidCollectibleItem(incoming())');
     expect(rulesSource).toContain('isValidPanelChatRecord(incoming())');
     expect(rulesSource).toContain('incoming().diff(existing()).affectedKeys().hasOnly(');
+    expect(rulesSource).toContain('isValidFreshFind(incoming())');
+  });
+
+  it('4b. Enforces Fresh Finds rules: anyone can read, owner-only create/delete, no edits', () => {
+    expect(rulesSource).toContain('match /freshFinds/{findId}');
+    expect(rulesSource).toContain('allow get, list: if true;');
+    expect(rulesSource).toContain('incoming().ownerId == request.auth.uid');
+    expect(rulesSource).toContain('existing().ownerId == request.auth.uid || isAdmin()');
+    expect(rulesSource).toMatch(/match \/freshFinds\/\{findId\}\s*\{[\s\S]*?allow update: if false;/);
+  });
+
+  it('4c. Allows panelStatus and panelConfirmedAt on CollectibleItem updates and schema', () => {
+    expect(rulesSource).toContain("'panelStatus'");
+    expect(rulesSource).toContain("'panelConfirmedAt'");
+    expect(rulesSource).toContain("data.panelStatus in ['none', 'confirmed', 'disputed']");
   });
 
   it('5. Prevents unverified admin email spoofing (requires email_verified == true)', () => {

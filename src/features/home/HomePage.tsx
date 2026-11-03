@@ -28,6 +28,7 @@ import { CompletionRing } from '../../components/ui/CompletionRing';
 import { Skeleton } from '../../components/ui/EmptyState';
 import { PieceStage } from '../../components/ui/PieceStage';
 import { FreshFindsFeed } from '../../components/FreshFindsFeed';
+import { FreshFindsStrip } from '../../components/FreshFindsStrip';
 import { Placard } from '../../components/ui/Placard';
 
 export const HomePage: React.FC = () => {
@@ -355,6 +356,9 @@ export const HomePage: React.FC = () => {
           )}
         </section>
       )}
+
+      {/* Fresh Finds Strip */}
+      <FreshFindsStrip />
 
       {/* Featured Collections Row */}
       <section className="max-w-6xl mx-auto px-4 sm:px-8 space-y-6">

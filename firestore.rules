@@ -472,6 +472,8 @@ service cloud.firestore {
           'customOrder',
           'forSale',
           'mediaCredit',
+          'panelStatus',
+          'panelConfirmedAt',
           'isDemo',
           'createdAt',
           'updatedAt'
@@ -504,9 +506,46 @@ service cloud.firestore {
         data.customOrder is int && data.customOrder >= 0 && data.customOrder <= 100000 &&
         data.forSale is bool &&
         (!('mediaCredit' in data) || isValidMediaCredit(data.mediaCredit)) &&
+        (!('panelStatus' in data) || (data.panelStatus is string && data.panelStatus in ['none', 'confirmed', 'disputed'])) &&
+        (!('panelConfirmedAt' in data) || (data.panelConfirmedAt is string && data.panelConfirmedAt.size() <= 64)) &&
         data.isDemo is bool &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: FreshFindRecord
+    function isValidFreshFind(data) {
+      return data.keys().hasAll([
+          'itemId',
+          'ownerId',
+          'ownerHandle',
+          'category',
+          'title',
+          'thumbUrl',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'itemId',
+          'ownerId',
+          'ownerHandle',
+          'category',
+          'title',
+          'thumbUrl',
+          'valueRange',
+          'panelStatus',
+          'isDemo',
+          'createdAt'
+        ]) &&
+        isValidId(data.itemId) &&
+        isValidId(data.ownerId) &&
+        data.ownerHandle is string && data.ownerHandle.size() >= 2 && data.ownerHandle.size() <= 32 && data.ownerHandle.matches('^[a-z0-9_\\-]+$') &&
+        isValidCategory(data.category) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.thumbUrl is string && data.thumbUrl.size() >= 1 && data.thumbUrl.size() <= 2048 &&
+        (!('valueRange' in data) || (data.valueRange is string && data.valueRange.size() <= 80)) &&
+        (!('panelStatus' in data) || (data.panelStatus is string && data.panelStatus in ['none', 'confirmed', 'disputed'])) &&
+        (!('isDemo' in data) || data.isDemo is bool) &&
+        data.createdAt is timestamp;
     }
 
     // 1. Out-of-band Admin Registry
@@ -890,6 +929,8 @@ service cloud.firestore {
               'customOrder',
               'forSale',
               'mediaCredit',
+              'panelStatus',
+              'panelConfirmedAt',
               'updatedAt'
             ])
           ) ||
@@ -1029,6 +1070,25 @@ service cloud.firestore {
         incoming().createdAt == request.time;
 
       allow update, delete: if isAdmin();
+    }
+
+    // 9. Fresh Finds (Public reads, owner-only create & delete, no edits by others or anyone)
+    match /freshFinds/{findId} {
+      allow get, list: if true;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(findId) &&
+        isValidFreshFind(incoming()) &&
+        incoming().createdAt == request.time && (
+          (incoming().ownerId == request.auth.uid && (!('isDemo' in incoming()) || incoming().isDemo == false)) ||
+          (isAdmin() && incoming().isDemo == true)
+        );
+
+      allow update: if false;
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(findId) &&
+        (existing().ownerId == request.auth.uid || isAdmin());
     }
   }
 }
