@@ -24,8 +24,8 @@ export default defineConfig(() => {
           short_name: 'Fanzeum',
           description:
             "Snap any card, coin, stamp, comic or record. Fanzeum tells you what it is, what it's worth, and gives it the display it deserves.",
-          theme_color: '#0E0F12',
-          background_color: '#0E0F12',
+          theme_color: '#0E0D0B',
+          background_color: '#0E0D0B',
           display: 'standalone',
           start_url: '/',
           scope: '/',
