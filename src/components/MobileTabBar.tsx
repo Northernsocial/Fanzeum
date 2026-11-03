@@ -8,10 +8,12 @@ export const MobileTabBar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const cabinetPath = profile?.handle ? `/@${profile.handle}` : '/onboarding';
-  const isCabinetActive =
+  const showcasePath = profile?.handle ? `/@${profile.handle}` : '/onboarding';
+  const isShowcaseActive =
     Boolean(profile?.handle) &&
-    (location.pathname === `/@${profile?.handle}` || location.pathname === `/u/${profile?.handle}`);
+    (location.pathname === `/@${profile?.handle}` ||
+      location.pathname === `/u/${profile?.handle}` ||
+      location.pathname === `/showcase/${profile?.handle}`);
 
   const itemClass = (active: boolean) =>
     `flex flex-col items-center justify-center min-h-[48px] min-w-[56px] px-1 text-[11px] font-medium transition-colors cursor-pointer ${
@@ -59,13 +61,13 @@ export const MobileTabBar: React.FC = () => {
             if (!firebaseUser) {
               openAuthModal();
             } else {
-              navigate(cabinetPath);
+              navigate(showcasePath);
             }
           }}
-          className={itemClass(isCabinetActive)}
+          className={itemClass(isShowcaseActive)}
         >
           <LayoutGrid className="w-5 h-5 mb-0.5" strokeWidth={1.5} />
-          <span>Cabinet</span>
+          <span>Showcase</span>
         </button>
 
         <NavLink to="/settings" className={({ isActive }) => itemClass(isActive)}>

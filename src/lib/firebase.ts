@@ -107,7 +107,7 @@ export function getFriendlyFirebaseErrorMessage(error: unknown): string {
   }
 
   if (lower.includes('auth/email-already-in-use')) {
-    return 'That email already has a cabinet. Switch to Sign in instead.';
+    return 'That email already has a showcase. Switch to Sign in instead.';
   }
 
   if (lower.includes('auth/weak-password')) {

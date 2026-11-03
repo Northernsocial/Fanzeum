@@ -95,7 +95,7 @@ export const AddPiecePage: React.FC = () => {
 
   useDocumentMeta({
     title: 'Add a Piece by Photo',
-    description: 'Snap front and back to identify your piece, check its UK £ value, and add it to your cabinet.',
+    description: 'Snap front and back to identify your piece, check its UK £ value, and add it to your showcase.',
   });
 
   const [step, setStep] = useState<'capture' | 'scanning' | 'review'>('capture');
@@ -259,7 +259,7 @@ export const AddPiecePage: React.FC = () => {
       const msg =
         err instanceof Error
           ? err.message
-          : 'AI photo check is busy right now—fill in the details below and save straight to your cabinet.';
+          : 'AI photo check is busy right now—fill in the details below and save straight to your showcase.';
       setAiFallbackBanner(msg);
       setOverallConfidence('manual');
       setEditingDetails(true);
@@ -308,7 +308,7 @@ export const AddPiecePage: React.FC = () => {
         uploadedPhotos.push(uploaded);
       }
 
-      setSaveStatus('Saving piece to your cabinet…');
+      setSaveStatus('Saving piece to your showcase…');
       const created = await addCollectibleItemRecord({
         customItemId: itemId,
         collectionRecord: targetCollection,
@@ -354,7 +354,7 @@ export const AddPiecePage: React.FC = () => {
             ? 'Step 1 of 2 · Photos & hobby'
             : step === 'scanning'
               ? 'Checking catalogue details…'
-              : 'Step 2 of 2 · Review & add to cabinet'}
+              : 'Step 2 of 2 · Review & add to showcase'}
         </p>
         <h1 className="text-3xl sm:text-4xl font-display font-semibold text-ink">
           {step === 'review' ? 'Our best guess' : 'Add a piece'}

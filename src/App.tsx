@@ -5,7 +5,7 @@
 
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthModal } from './components/AuthModal';
 import { CookieConsentBar } from './components/CookieConsentBar';
@@ -43,6 +43,22 @@ const LegacyExhibitionRedirect: React.FC = () => {
   return <Navigate to={collectionId ? `/c/${collectionId}` : '/explore'} replace />;
 };
 
+const ShowcaseRoute: React.FC = () => {
+  const { profile } = useAuth();
+  if (profile?.handle) {
+    return <Navigate to={`/@${profile.handle}`} replace />;
+  }
+  return <CabinetPage />;
+};
+
+const LegacyCabinetRedirect: React.FC = () => {
+  const { handle } = useParams<{ handle?: string }>();
+  if (handle) {
+    return <Navigate to={`/showcase/${handle}`} replace />;
+  }
+  return <Navigate to="/showcase" replace />;
+};
+
 interface ErrorBoundaryState {
   hasError: boolean;
   message: string;
@@ -63,13 +79,13 @@ class AppErrorBoundary extends React.Component<
     try {
       const parsed = JSON.parse(error.message);
       if (parsed?.error) {
-        readable = 'Something went wrong while accessing your cabinet. Please check your connection and try again.';
+        readable = 'Something went wrong while accessing your showcase. Please check your connection and try again.';
       }
     } catch {
       // Standard error string
     }
     if (readable.includes('Missing or insufficient permissions') || readable.includes('permission-denied')) {
-      readable = 'Verify your email to save and view your cabinet pieces.';
+      readable = 'Verify your email to save and view your showcase pieces.';
     }
     return { hasError: true, message: readable };
   }
@@ -130,6 +146,10 @@ export default function App() {
                     <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
+                    <Route path="/showcase" element={<ShowcaseRoute />} />
+                    <Route path="/showcase/:handle" element={<CabinetPage />} />
+                    <Route path="/cabinet" element={<LegacyCabinetRedirect />} />
+                    <Route path="/cabinet/:handle" element={<LegacyCabinetRedirect />} />
                     <Route path="/u/:handle" element={<CabinetPage />} />
                     <Route path="/:atHandle" element={<CabinetPage />} />
                     <Route
@@ -138,7 +158,7 @@ export default function App() {
                         <div className="max-w-3xl mx-auto px-4 sm:px-8 py-16">
                           <EmptyState
                             title="Page not found"
-                            description="That cabinet, collection, or piece URL does not exist."
+                            description="That showcase, collection, or piece URL does not exist."
                             action={
                               <Link to="/explore">
                                 <Button>Explore pieces</Button>
@@ -159,7 +179,7 @@ export default function App() {
                       Fanzeum
                     </span>
                     <span>
-                      The collector&apos;s cabinet for cards, coins, stamps, comics, vinyl &amp; toys.
+                      The collector&apos;s showcase for cards, coins, stamps, comics, vinyl &amp; toys.
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-6">

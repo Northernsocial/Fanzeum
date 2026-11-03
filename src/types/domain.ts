@@ -154,7 +154,7 @@ export interface AIOnboardingResponse {
 export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: string }> = {
   exhibit: {
     title: 'Show off my pieces',
-    subtitle: 'Display cards, coins, stamps or records properly and share my cabinet.',
+    subtitle: 'Display cards, coins, stamps or records properly and share my showcase.',
   },
   complete_set: {
     title: 'Complete sets',

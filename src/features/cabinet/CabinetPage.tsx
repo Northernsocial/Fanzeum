@@ -71,7 +71,7 @@ export const CabinetPage: React.FC = () => {
   );
 
   useDocumentMeta({
-    title: cabinetOwner ? `${cabinetOwner.displayName} (@${cabinetOwner.handle})` : 'Collector Cabinet',
+    title: cabinetOwner ? `${cabinetOwner.displayName} (@${cabinetOwner.handle})` : 'Collector Showcase',
     description: cabinetOwner?.bio || `Explore @${cleanHandle}'s collections on Fanzeum.`,
     image: cabinetOwner?.avatarUrl,
   });
@@ -222,7 +222,7 @@ export const CabinetPage: React.FC = () => {
       try {
         await navigator.share({
           title: `${cabinetOwner.displayName} (@${cabinetOwner.handle}) on Fanzeum`,
-          text: cabinetOwner.bio || `Check out @${cabinetOwner.handle}'s cabinet on Fanzeum.`,
+          text: cabinetOwner.bio || `Check out @${cabinetOwner.handle}'s showcase on Fanzeum.`,
           url: shareUrl,
         });
         return;
@@ -253,10 +253,10 @@ export const CabinetPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-16">
         <EmptyState
           icon={<UserX className="w-6 h-6" strokeWidth={1.5} />}
-          title="Cabinet not found or private"
-          description="Either nobody has claimed this @handle yet, or the collector has set their cabinet to private."
+          title="Showcase not found or private"
+          description="Either nobody has claimed this @handle yet, or the collector has set their showcase to private."
           action={
-            <Button onClick={() => navigate('/explore')}>Explore public cabinets</Button>
+            <Button onClick={() => navigate('/explore')}>Explore public showcases</Button>
           }
         />
       </div>
@@ -319,7 +319,7 @@ export const CabinetPage: React.FC = () => {
                     <span aria-hidden="true">·</span>
                     <span className="inline-flex items-center gap-1 text-warn">
                       <Lock className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      Private cabinet
+                      Private showcase
                     </span>
                   </>
                 )}

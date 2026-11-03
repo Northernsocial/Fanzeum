@@ -292,7 +292,7 @@ export async function identifyItem(
     category: resolvedCategory,
     whatYouveGot: String(
       rawJson.whatYouveGot ||
-        'A genuine collectible piece ready for your cabinet. Check the highlighted fields below to confirm exact variety and condition.',
+        'A genuine collectible piece ready for your showcase. Check the highlighted fields below to confirm exact variety and condition.',
     )
       .trim()
       .slice(0, 900),

@@ -43,7 +43,7 @@ export const SettingsPage: React.FC = () => {
 
   useDocumentMeta({
     title: 'Settings & UK GDPR Privacy',
-    description: 'Manage your cabinet visibility, lighting theme, JSON data export, and account controls.',
+    description: 'Manage your showcase visibility, lighting theme, JSON data export, and account controls.',
   });
 
   const [busyExport, setBusyExport] = useState(false);
@@ -147,7 +147,7 @@ export const SettingsPage: React.FC = () => {
           Settings &amp; Privacy
         </h1>
         <p className="text-base text-muted">
-          Lighting theme, cabinet privacy, UK GDPR data portability, and account controls.
+          Lighting theme, showcase privacy, UK GDPR data portability, and account controls.
         </p>
       </div>
 
@@ -155,7 +155,7 @@ export const SettingsPage: React.FC = () => {
       <Card className="p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-display font-semibold text-ink">Cabinet lighting</h2>
+            <h2 className="text-xl font-display font-semibold text-ink">Showcase lighting</h2>
             <p className="text-sm text-muted mt-0.5">
               After Hours dark mode lets slabs, coins, and sleeves take centre stage.
             </p>
@@ -195,7 +195,7 @@ export const SettingsPage: React.FC = () => {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-display font-semibold text-ink">
-                  Cabinet visibility (@{profile.handle})
+                  Showcase visibility (@{profile.handle})
                 </h2>
                 <p className="text-sm text-muted mt-0.5">
                   Signed in as {privateAccount?.email || firebaseUser.email}
@@ -210,7 +210,7 @@ export const SettingsPage: React.FC = () => {
             <div className="divide-y divide-border">
               <label className="py-3.5 flex items-center justify-between gap-4 cursor-pointer">
                 <div>
-                  <div className="text-base font-medium text-ink">Public @handle cabinet</div>
+                  <div className="text-base font-medium text-ink">Public @handle showcase</div>
                   <div className="text-sm text-muted">
                     Allow anyone with your link to view your public collections.
                   </div>
@@ -298,7 +298,7 @@ export const SettingsPage: React.FC = () => {
                       Opt out of AI model training
                     </div>
                     <div className="text-sm text-muted">
-                      Mark your cabinet photos and notes as excluded from future training sets.
+                      Mark your showcase photos and notes as excluded from future training sets.
                     </div>
                   </div>
                   <input
@@ -363,7 +363,7 @@ export const SettingsPage: React.FC = () => {
           </h2>
           <p className="text-base text-muted leading-relaxed">
             Sign in to manage your public @handle, hide £ valuations, download a complete JSON
-            copy of your cabinet, or permanently erase your account and cloud photos at any time.
+            copy of your showcase, or permanently erase your account and cloud photos at any time.
           </p>
           <div>
             <Button onClick={openAuthModal}>Sign in to manage account</Button>

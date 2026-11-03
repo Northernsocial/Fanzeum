@@ -33,7 +33,7 @@ export const PWAInstallButton: React.FC = () => {
           open={showIOSGuide}
           onClose={() => setShowIOSGuide(false)}
           title="Install Fanzeum on iPhone or iPad"
-          subtitle="Keep your cabinet one tap away on your Home Screen."
+          subtitle="Keep your showcase one tap away on your Home Screen."
         >
           <ol className="space-y-3 text-base text-muted list-decimal list-inside">
             <li>

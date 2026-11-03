@@ -55,7 +55,7 @@ export const AuthModal: React.FC = () => {
         await signInWithEmail(email, password);
       } else {
         await registerWithEmail(displayName, email, password);
-        setStatusMessage('Verification link sent. Check your inbox to activate your cabinet.');
+        setStatusMessage('Verification link sent. Check your inbox to activate your showcase.');
       }
     } catch (err) {
       console.error('Email auth error:', err);
@@ -88,7 +88,7 @@ export const AuthModal: React.FC = () => {
                   if (!ok) {
                     setStatusMessage('Still waiting for email verification. Click the link in your inbox first.');
                   } else {
-                    setStatusMessage('Email verified! Your cabinet is ready.');
+                    setStatusMessage('Email verified! Your showcase is ready.');
                   }
                 }}
               >
@@ -118,7 +118,7 @@ export const AuthModal: React.FC = () => {
       <Sheet
         open={authModalOpen}
         onClose={closeAuthModal}
-        title={mode === 'signin' ? 'Sign in to your cabinet' : 'Start your collector cabinet'}
+        title={mode === 'signin' ? 'Sign in to your showcase' : 'Start your collector showcase'}
         subtitle="Add pieces by photo, check realistic UK £ values, and exhibit your sets."
       >
         <div className="space-y-5">
