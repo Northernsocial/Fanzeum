@@ -37,12 +37,12 @@ export const FreshFindsStrip: React.FC = () => {
     <section className="max-w-6xl mx-auto px-4 sm:px-8 space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-sm font-mono text-brass">
+          <div className="flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-brass">
             <Flame className="w-4 h-4" strokeWidth={1.5} />
             <span>Community Discoveries</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-display font-semibold text-ink mt-1">
-            Fresh Finds Strip
+            Fresh Finds
           </h2>
           <p className="text-base text-muted mt-1">
             Recent pickups catalogued and shared by UK collectors.
@@ -72,32 +72,32 @@ export const FreshFindsStrip: React.FC = () => {
               to={`/i/${find.itemId}`}
               className="block group h-full"
             >
-              <Card interactive className="overflow-hidden h-full flex flex-col justify-between p-2.5">
-                <div className="aspect-square bg-surface-raised rounded-lg border border-border p-2 flex items-center justify-center relative overflow-hidden">
+              <Card interactive className="overflow-hidden h-full flex flex-col p-0">
+                <div className="aspect-square bg-surface-raised relative overflow-hidden">
                   <CollectorImage
                     src={find.thumbUrl}
                     alt={find.title}
                     category={find.category}
                     className="w-full h-full"
-                    imgClassName="w-full h-full object-contain"
+                    imgClassName="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   {find.panelStatus === 'confirmed' && (
-                    <div className="absolute top-1.5 right-1.5">
-                      <PanelConfirmedBadge size="sm" compact />
+                    <div className="absolute top-2 right-2">
+                      <PanelConfirmedBadge size="sm" iconOnly />
                     </div>
                   )}
                 </div>
 
-                <div className="pt-2 px-1 space-y-1">
-                  <div className="flex items-center gap-1 text-[11px] text-muted">
-                    <CategoryIcon category={find.category} className="w-3 h-3 text-brass" />
+                <div className="p-3 space-y-1.5 flex-1 flex flex-col">
+                  <div className="flex items-center gap-1 text-xs text-muted">
+                    <CategoryIcon category={find.category} className="w-3.5 h-3.5 text-brass" />
                     <span className="truncate">{CATEGORIES[find.category]?.shortLabel}</span>
                   </div>
-                  <h4 className="text-xs font-display font-semibold text-ink line-clamp-1 group-hover:text-brass transition-colors">
+                  <h4 className="text-sm font-display font-semibold leading-snug text-ink line-clamp-2 min-h-[2.5rem] group-hover:text-brass transition-colors">
                     {find.title}
                   </h4>
                   {find.valueRange && (
-                    <p className="text-[11px] font-mono text-brass truncate">
+                    <p className="text-sm font-semibold text-brass truncate mt-auto">
                       {find.valueRange}
                     </p>
                   )}

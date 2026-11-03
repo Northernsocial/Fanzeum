@@ -159,7 +159,7 @@ export const FreshFindsPage: React.FC = () => {
                     />
                     {find.panelStatus === 'confirmed' && (
                       <div className="absolute top-2.5 right-2.5">
-                        <PanelConfirmedBadge size="sm" compact />
+                        <PanelConfirmedBadge size="sm" iconOnly />
                       </div>
                     )}
                   </div>

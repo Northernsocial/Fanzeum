@@ -5,6 +5,7 @@ interface PanelConfirmedBadgeProps {
   date?: string;
   size?: 'sm' | 'md';
   compact?: boolean;
+  iconOnly?: boolean;
   className?: string;
 }
 
@@ -12,6 +13,7 @@ export const PanelConfirmedBadge: React.FC<PanelConfirmedBadgeProps> = ({
   date,
   size = 'md',
   compact = false,
+  iconOnly = false,
   className = '',
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -33,8 +35,18 @@ export const PanelConfirmedBadge: React.FC<PanelConfirmedBadgeProps> = ({
         setShowTooltip((prev) => !prev);
       }}
     >
+      {iconOnly ? (
+        <div
+          className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-brass bg-surface text-brass cursor-pointer"
+          role="status"
+          aria-label={`Panel confirmed${formattedDate ? ` on ${formattedDate}` : ''}. AI estimate, not authentication.`}
+          title="Panel confirmed"
+        >
+          <ShieldCheck className="w-4 h-4" strokeWidth={2} />
+        </div>
+      ) : (
       <div
-        className={`inline-flex items-center gap-1.5 rounded-full border border-brass/40 bg-brass/10 text-brass font-mono font-medium transition-colors cursor-pointer hover:bg-brass/20 ${
+        className={`inline-flex items-center gap-1.5 rounded-full border border-brass/60 bg-surface text-brass font-medium transition-colors cursor-pointer hover:bg-brass/20 ${
           size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'
         }`}
         role="status"
@@ -49,6 +61,7 @@ export const PanelConfirmedBadge: React.FC<PanelConfirmedBadgeProps> = ({
           </>
         )}
       </div>
+      )}
 
       {showTooltip && (
         <div
