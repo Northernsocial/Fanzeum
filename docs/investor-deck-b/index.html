@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0">
+  <title>Fanzeum — Investor Overview (November 2026)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Reset & Print Directives */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    @page {
+      size: 1920px 1080px;
+      margin: 0;
+    }
+
+    html, body {
+      background-color: #0E0D0B;
+      color: #F3EDE2;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Master Slide Frame: exactly 1920x1080 */
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      min-width: 1920px;
+      min-height: 1080px;
+      max-width: 1920px;
+      max-height: 1080px;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+      padding: 88px 120px 72px 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background-color: #0E0D0B;
+      background-image:
+        radial-gradient(ellipse 900px 520px at 85% 15%, rgba(201, 162, 39, 0.055) 0%, transparent 70%),
+        radial-gradient(ellipse 700px 450px at 15% 90%, rgba(184, 137, 43, 0.035) 0%, transparent 65%);
+    }
+
+    /* Typography Defaults */
+    .font-serif {
+      font-family: 'Fraunces', Georgia, serif;
+    }
+
+    .font-sans {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .eyebrow {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #C9A227;
+      margin-bottom: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      display: inline-block;
+      width: 28px;
+      height: 1px;
+      background: #C9A227;
+    }
+
+    .slide-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 54px;
+      line-height: 1.1;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: #F3EDE2;
+      margin-bottom: 20px;
+    }
+
+    .slide-subtitle {
+      font-size: 22px;
+      line-height: 1.45;
+      color: #A39D93;
+      max-width: 1100px;
+      font-weight: 400;
+    }
+
+    /* Footer Standard across all 14 slides */
+    .slide-footer {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-top: 24px;
+      border-top: 1px solid rgba(201, 162, 39, 0.18);
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #7A746B;
+    }
+
+    .slide-footer .source-note {
+      font-size: 12px;
+      color: #6E685F;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* Content Layout Containers */
+    .slide-header {
+      flex-shrink: 0;
+    }
+
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin: 36px 0 24px 0;
+    }
+
+    /* Component: Metric Cards */
+    .stat-row {
+      display: grid;
+      grid-gap: 36px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .card {
+      background: rgba(22, 20, 17, 0.75);
+      border: 1px solid rgba(201, 162, 39, 0.22);
+      border-radius: 4px;
+      padding: 40px 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      position: relative;
+    }
+
+    .card.highlight {
+      background: linear-gradient(135deg, rgba(201, 162, 39, 0.12) 0%, rgba(22, 20, 17, 0.9) 100%);
+      border-color: rgba(201, 162, 39, 0.45);
+    }
+
+    .stat-number {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 68px;
+      line-height: 1.0;
+      color: #C9A227;
+      font-weight: 400;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #D6CEBE;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .stat-desc {
+      font-size: 18px;
+      line-height: 1.5;
+      color: #A39D93;
+    }
+
+    /* Brass badge / chip */
+    .chip {
+      display: inline-block;
+      padding: 5px 12px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      border-radius: 2px;
+      width: fit-content;
+    }
+
+    .chip-live {
+      background: rgba(201, 162, 39, 0.18);
+      color: #E5C358;
+      border: 1px solid #C9A227;
+    }
+
+    .chip-inbuild {
+      background: rgba(184, 137, 43, 0.12);
+      color: #D4AF37;
+      border: 1px solid rgba(201, 162, 39, 0.5);
+    }
+
+    .chip-next {
+      background: rgba(243, 237, 226, 0.08);
+      color: #F3EDE2;
+      border: 1px solid rgba(243, 237, 226, 0.25);
+    }
+
+    .chip-planned {
+      background: transparent;
+      color: #7A746B;
+      border: 1px solid rgba(122, 116, 107, 0.35);
+    }
+
+    /* Table styling for Projections */
+    .table-clean {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 17px;
+    }
+
+    .table-clean th {
+      text-align: left;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 13px;
+      color: #C9A227;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(201, 162, 39, 0.3);
+    }
+
+    .table-clean th:not(:first-child),
+    .table-clean td:not(:first-child) {
+      text-align: right;
+    }
+
+    .table-clean td {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #D6CEBE;
+    }
+
+    .table-clean tr.total-row td {
+      font-weight: 700;
+      color: #F3EDE2;
+      font-size: 19px;
+      border-top: 1px solid #C9A227;
+      border-bottom: 1px solid #C9A227;
+      padding-top: 16px;
+      padding-bottom: 16px;
+    }
+
+    .table-clean tr.total-row td:last-child {
+      color: #E5C358;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 26px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================== -->
+  <!-- SLIDE 1: COVER                             -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-1" style="justify-content: center; align-items: center; text-align: center; padding: 120px;">
+    <div style="position: absolute; top: 88px; left: 120px; right: 120px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 13px; letter-spacing: 0.24em; text-transform: uppercase; color: #C9A227; font-weight: 600;">Fanzeum Technologies</span>
+      <span style="font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: #7A746B;">Private Members' Briefing</span>
+    </div>
+
+    <div style="max-width: 1280px; margin: auto;">
+      <div style="display: inline-flex; align-items: center; gap: 16px; margin-bottom: 32px;">
+        <span style="width: 48px; height: 1px; background: #C9A227;"></span>
+        <span style="font-size: 16px; letter-spacing: 0.28em; text-transform: uppercase; color: #C9A227; font-weight: 600;">Investor Overview · November 2026</span>
+        <span style="width: 48px; height: 1px; background: #C9A227;"></span>
+      </div>
+
+      <h1 class="font-serif" style="font-size: 128px; line-height: 0.95; font-weight: 300; letter-spacing: -0.03em; margin-bottom: 32px; color: #F3EDE2;">
+        Fanzeum
+      </h1>
+
+      <p class="font-serif" style="font-size: 38px; line-height: 1.3; font-style: italic; color: #D6CEBE; max-width: 900px; margin: 0 auto 48px auto;">
+        Every collection deserves an audience.
+      </p>
+
+      <p style="font-size: 19px; line-height: 1.6; color: #9A948A; max-width: 680px; margin: 0 auto;">
+        The all-in-one platform for collectors to identify, catalogue, value, trade, and protect their pieces.
+      </p>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>01 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 2: THE PROBLEM                       -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-2">
+    <div class="slide-header">
+      <div class="eyebrow">The Problem</div>
+      <h2 class="slide-title">Valuable collections sit forgotten in drawers.</h2>
+      <p class="slide-subtitle">Collectors have no dedicated home to catalogue, value, show off, trade, and protect their pieces.</p>
+    </div>
+
+    <div class="slide-body">
+      <div class="stat-row grid-3">
+        <div class="card">
+          <div class="stat-number">50%</div>
+          <div class="stat-label">Uninsured Treasures</div>
+          <p class="stat-desc">Half of all UK collectors carry no insurance on their items. Most mistakenly assume standard home contents cover them.</p>
+        </div>
+
+        <div class="card">
+          <div class="stat-number">£0</div>
+          <div class="stat-label">Guesswork Valuations</div>
+          <p class="stat-desc">Authentic pricing is opaque. Without accessible specialist expertise, owners rely on guesswork or outdated auction catalogues.</p>
+        </div>
+
+        <div class="card">
+          <div class="stat-number">0</div>
+          <div class="stat-label">Zero Audience</div>
+          <p class="stat-desc">Priceless coins, cards, and vinyl remain locked away in boxes, unseen by fellow enthusiasts who share the exact same passion.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>02 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 3: THE SOLUTION                      -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-3">
+    <div class="slide-header">
+      <div class="eyebrow">The Solution</div>
+      <h2 class="slide-title">A single home for everything you collect.</h2>
+      <p class="slide-subtitle">Fanzeum combines instant AI appraisal, curated showcases, social discovery, and seamless commerce.</p>
+    </div>
+
+    <div class="slide-body">
+      <div class="stat-row grid-2" style="gap: 40px;">
+        <div class="card" style="padding: 44px 40px;">
+          <div style="font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: #C9A227; font-weight: 600; margin-bottom: 12px;">Capture & Value</div>
+          <h3 class="font-serif" style="font-size: 32px; font-weight: 400; margin-bottom: 16px; color: #F3EDE2;">AI Expert Panel</h3>
+          <p class="stat-desc">Snap any piece. Specialist AI models identify the maker, mint year, variant, condition, and market value in seconds.</p>
+        </div>
+
+        <div class="card" style="padding: 44px 40px;">
+          <div style="font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: #C9A227; font-weight: 600; margin-bottom: 12px;">Display & Community</div>
+          <h3 class="font-serif" style="font-size: 32px; font-weight: 400; margin-bottom: 16px; color: #F3EDE2;">Showcase & Fresh Finds</h3>
+          <p class="stat-desc">Exhibit your pieces in an After Hours digital showcase. Fresh Finds sparks instant discussion and camaraderie among enthusiasts.</p>
+        </div>
+
+        <div class="card" style="padding: 44px 40px;">
+          <div style="font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: #C9A227; font-weight: 600; margin-bottom: 12px;">Liquidity</div>
+          <h3 class="font-serif" style="font-size: 32px; font-weight: 400; margin-bottom: 16px; color: #F3EDE2;">Frictionless Marketplace</h3>
+          <p class="stat-desc">List verified pieces directly from your showcase with one tap. Low commissions and trusted provenance protect both buyer and seller.</p>
+        </div>
+
+        <div class="card" style="padding: 44px 40px;">
+          <div style="font-size: 14px; letter-spacing: 0.2em; text-transform: uppercase; color: #C9A227; font-weight: 600; margin-bottom: 12px;">Protection</div>
+          <h3 class="font-serif" style="font-size: 32px; font-weight: 400; margin-bottom: 16px; color: #F3EDE2;">Embedded Insurance</h3>
+          <p class="stat-desc">Accurate real-time valuations trigger bespoke insurance referrals to FCA-authorised partners at the exact moment collectors need them.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>03 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 4: HOW IT WORKS                      -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-4">
+    <div class="slide-header">
+      <div class="eyebrow">How It Works</div>
+      <h2 class="slide-title">Four effortless steps from drawer to showcase.</h2>
+      <p class="slide-subtitle">Simple, elegant technology turns scattered personal collections into an organised, protected portfolio.</p>
+    </div>
+
+    <div class="slide-body">
+      <div class="stat-row grid-4" style="gap: 28px;">
+        <!-- Step 1 -->
+        <div class="card" style="padding: 40px 30px;">
+          <div style="width: 56px; height: 56px; margin-bottom: 24px; color: #C9A227;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+          </div>
+          <div style="font-family: 'Fraunces', Georgia, serif; font-size: 20px; color: #C9A227; margin-bottom: 8px;">01</div>
+          <div class="stat-label">Snap</div>
+          <p class="stat-desc" style="font-size: 16px;">Take a clear photo with any smartphone camera. EXIF metadata is automatically stripped for privacy.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="card" style="padding: 40px 30px;">
+          <div style="width: 56px; height: 56px; margin-bottom: 24px; color: #C9A227;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
+          <div style="font-family: 'Fraunces', Georgia, serif; font-size: 20px; color: #C9A227; margin-bottom: 8px;">02</div>
+          <div class="stat-label">Panel Identifies</div>
+          <p class="stat-desc" style="font-size: 16px;">AI specialist personas recognise category, issue, and grade, providing an instant £ valuation estimate.*</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="card" style="padding: 40px 30px;">
+          <div style="width: 56px; height: 56px; margin-bottom: 24px; color: #C9A227;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+          </div>
+          <div style="font-family: 'Fraunces', Georgia, serif; font-size: 20px; color: #C9A227; margin-bottom: 8px;">03</div>
+          <div class="stat-label">Showcase & Finds</div>
+          <p class="stat-desc" style="font-size: 16px;">Curate public or private showcases. Pieces feature in Fresh Finds feeds for peers in your specialty.</p>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="card" style="padding: 40px 30px;">
+          <div style="width: 56px; height: 56px; margin-bottom: 24px; color: #C9A227;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </div>
+          <div style="font-family: 'Fraunces', Georgia, serif; font-size: 20px; color: #C9A227; margin-bottom: 8px;">04</div>
+          <div class="stat-label">Trade & Insure</div>
+          <p class="stat-desc" style="font-size: 16px;">Transact with trusted collectors, track complete sets, and receive seamless one-click insurance referrals.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>
+        <span>Fanzeum · Confidential · Nov 2026</span>
+        <div class="source-note" style="margin-top: 4px;">* AI estimate, not a professional valuation or authentication.</div>
+      </div>
+      <span>04 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 5: MARKET SIZE                       -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-5">
+    <div class="slide-header">
+      <div class="eyebrow">Market Size</div>
+      <h2 class="slide-title">A half-trillion dollar passion economy.</h2>
+      <p class="slide-subtitle">Collectibles represent a vast, resilient market undergoing rapid digital and generational transition.</p>
+    </div>
+
+    <div class="slide-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;">
+        <div style="display: flex; flex-direction: column; gap: 32px;">
+          <div class="card" style="padding: 32px 36px;">
+            <div class="stat-number">$535.5bn</div>
+            <div class="stat-label">Global Collectibles Forecast (2033)</div>
+            <p class="stat-desc">Growing from $320.3bn in 2025 at 6.9% CAGR, fuelled by digital native buyers and alternative asset demand.</p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div class="card" style="padding: 28px;">
+              <div class="stat-number" style="font-size: 52px;">37.3%</div>
+              <div class="stat-label">Europe Share</div>
+              <p class="stat-desc" style="font-size: 15px;">Europe is the largest global region by collector volume and value.</p>
+            </div>
+            <div class="card" style="padding: 28px;">
+              <div class="stat-number" style="font-size: 52px;">$155bn</div>
+              <div class="stat-label">Second-Hand Market</div>
+              <p class="stat-desc" style="font-size: 15px;">Active secondary trading market in 2025, primed for platform liquidity.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inline SVG Market Chart -->
+        <div class="card" style="padding: 40px; display: flex; flex-direction: column; justify-content: center;">
+          <div style="font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: #C9A227; font-weight: 600; margin-bottom: 24px;">
+            Global Collectibles Market Expansion ($bn)
+          </div>
+          <svg viewBox="0 0 640 320" style="width: 100%; height: auto; overflow: visible;">
+            <!-- Grid lines -->
+            <line x1="60" y1="260" x2="600" y2="260" stroke="rgba(201, 162, 39, 0.2)" stroke-width="1" />
+            <line x1="60" y1="170" x2="600" y2="170" stroke="rgba(201, 162, 39, 0.1)" stroke-width="1" stroke-dasharray="4" />
+            <line x1="60" y1="80" x2="600" y2="80" stroke="rgba(201, 162, 39, 0.1)" stroke-width="1" stroke-dasharray="4" />
+
+            <!-- Y Axis Labels -->
+            <text x="45" y="265" fill="#7A746B" font-size="12" font-family="Inter" text-anchor="end">$0bn</text>
+            <text x="45" y="175" fill="#7A746B" font-size="12" font-family="Inter" text-anchor="end">$300bn</text>
+            <text x="45" y="85" fill="#7A746B" font-size="12" font-family="Inter" text-anchor="end">$600bn</text>
+
+            <!-- Bar 2025 -->
+            <rect x="140" y="164" width="130" height="96" rx="3" fill="#B8892B" opacity="0.8" />
+            <text x="205" y="148" fill="#F3EDE2" font-size="20" font-family="Fraunces" text-anchor="middle" font-weight="600">$320.3bn</text>
+            <text x="205" y="290" fill="#D6CEBE" font-size="14" font-family="Inter" text-anchor="middle">2025</text>
+
+            <!-- Bar 2033 Forecast -->
+            <rect x="370" y="99" width="130" height="161" rx="3" fill="url(#brassGrad)" />
+            <text x="435" y="80" fill="#E5C358" font-size="24" font-family="Fraunces" text-anchor="middle" font-weight="600">$535.5bn</text>
+            <text x="435" y="290" fill="#D6CEBE" font-size="14" font-family="Inter" text-anchor="middle">2033 Forecast</text>
+
+            <!-- Growth Arrow Tag -->
+            <path d="M 275 140 Q 320 100 365 110" fill="none" stroke="#E5C358" stroke-width="2" stroke-dasharray="3 3" />
+            <text x="320" y="92" fill="#E5C358" font-size="13" font-family="Inter" text-anchor="middle" font-weight="600">+6.9% CAGR</text>
+
+            <defs>
+              <linearGradient id="brassGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#E5C358" />
+                <stop offset="100%" stop-color="#8E6A1B" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>
+        <span>Fanzeum · Confidential · Nov 2026</span>
+        <div class="source-note" style="margin-top: 4px;">Sources: Grand View Research (Global Collectibles 2025–2033); Global Market Insights (GMI, 2026).</div>
+      </div>
+      <span>05 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 6: THE COLLECTOR                     -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-6">
+    <div class="slide-header">
+      <div class="eyebrow">The Collector</div>
+      <h2 class="slide-title">A mainstream habit with surging individual value.</h2>
+      <p class="slide-subtitle">Collecting spans generations, with younger audiences driving sharp increases in portfolio valuations.</p>
+    </div>
+
+    <div class="slide-body">
+      <div class="stat-row grid-4" style="gap: 28px;">
+        <div class="card" style="padding: 40px 30px;">
+          <div class="stat-number">66%</div>
+          <div class="stat-label">Of UK Adults</div>
+          <p class="stat-desc">Two in three British adults actively consider themselves collectors across books, coins, cards, and vinyl.</p>
+        </div>
+
+        <div class="card" style="padding: 40px 30px;">
+          <div class="stat-number">86%</div>
+          <div class="stat-label">Gen Z Engagement</div>
+          <p class="stat-desc">Younger generations build collections enthusiastically, trading vintage apparel, comics, cards, and figures.</p>
+        </div>
+
+        <div class="card" style="padding: 40px 30px;">
+          <div class="stat-number">+238%</div>
+          <div class="stat-label">Claim Surge</div>
+          <p class="stat-desc">Average UK collection claim value leapt from £4,133 (2022) to £13,966 (2025) as rare item values escalated.</p>
+        </div>
+
+        <div class="card" style="padding: 40px 30px;">
+          <div class="stat-number">40%</div>
+          <div class="stat-label">Significant Value</div>
+          <p class="stat-desc">Nearly 40% of collectors value their holdings between $10,000 and $50,000, creating massive protection needs.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>
+        <span>Fanzeum · Confidential · Nov 2026</span>
+        <div class="source-note" style="margin-top: 4px;">Sources: Aviva Research (UK Collecting & Claims 2022–2026); Jewelers Mutual Collector Report (2025).</div>
+      </div>
+      <span>06 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 7: INSURANCE OPPORTUNITY             -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-7">
+    <div class="slide-header">
+      <div class="eyebrow">Insurance Opportunity</div>
+      <h2 class="slide-title">Closing the massive underinsurance gap.</h2>
+      <p class="slide-subtitle">Collectors want protection but lack easy cataloguing and automated valuation workflows.</p>
+    </div>
+
+    <div class="slide-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: stretch;">
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          <div class="card" style="flex: 1; padding: 32px 36px;">
+            <div class="stat-number" style="font-size: 54px;">50%</div>
+            <div class="stat-label">UK Collectors Uninsured</div>
+            <p class="stat-desc">Half of British collectors have zero specialist insurance covering their pieces against loss, damage, or theft.</p>
+          </div>
+          <div class="card" style="flex: 1; padding: 32px 36px;">
+            <div class="stat-number" style="font-size: 54px;">62%</div>
+            <div class="stat-label">High-Net-Worth Anxiety</div>
+            <p class="stat-desc">62% of affluent collectors actively worry that rapidly appreciating pieces leave them seriously underinsured.</p>
+          </div>
+        </div>
+
+        <div class="card highlight" style="padding: 40px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div class="stat-number" style="font-size: 54px;">46%</div>
+            <div class="stat-label">Misconception, Not Price</div>
+            <p class="stat-desc" style="font-size: 19px; margin-bottom: 24px;">
+              46% of young uninsured collectors mistakenly believe standard home contents insurance covers their items. Only 14% cite cost as a barrier.
+            </p>
+          </div>
+
+          <div style="border-top: 1px solid rgba(201, 162, 39, 0.3); padding-top: 24px;">
+            <div style="font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; color: #E5C358; font-weight: 600; margin-bottom: 8px;">The Fanzeum Advantage</div>
+            <p style="font-size: 17px; line-height: 1.5; color: #F3EDE2;">
+              Because Fanzeum continually tracks each collection's live appraised value, we refer collectors to partner insurers at the exact milestone moment.
+            </p>
+            <p style="font-size: 13px; color: #A39D93; margin-top: 10px; font-style: italic;">
+              * Fanzeum refers to an FCA-authorised partner; it never sells insurance.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>
+        <span>Fanzeum · Confidential · Nov 2026</span>
+        <div class="source-note" style="margin-top: 4px;">Sources: Aviva (2026); Ecclesiastical Art & Collections Survey; Chubb Collector Study (2026).</div>
+      </div>
+      <span>07 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 8: BUSINESS MODEL                    -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-8">
+    <div class="slide-header">
+      <div class="eyebrow">Business Model</div>
+      <h2 class="slide-title">Four diversified, high-margin revenue streams.</h2>
+      <p class="slide-subtitle">SaaS subscriptions paired with marketplace liquidity and embedded affiliate protection fees.</p>
+    </div>
+
+    <div class="slide-body">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+        <span class="chip chip-live">Proposed Pricing</span>
+      </div>
+      <div class="stat-row grid-4" style="gap: 28px;">
+        <div class="card" style="padding: 36px 30px;">
+          <div class="stat-label">Collector Premium</div>
+          <div class="stat-number" style="font-size: 50px;">£4.99<span style="font-size: 22px; color: #A39D93;">/mo</span></div>
+          <div style="font-size: 14px; color: #C9A227; margin-bottom: 16px; font-weight: 600;">or £49 / year</div>
+          <p class="stat-desc" style="font-size: 16px;">Unlimited Expert Panel chats, lower marketplace fees (5%), profile badge, and ad-free browsing.</p>
+        </div>
+
+        <div class="card" style="padding: 36px 30px;">
+          <div class="stat-label">Store Account</div>
+          <div class="stat-number" style="font-size: 50px;">£19.99<span style="font-size: 22px; color: #A39D93;">/mo</span></div>
+          <div style="font-size: 14px; color: #C9A227; margin-bottom: 16px; font-weight: 600;">for verified dealers</div>
+          <p class="stat-desc" style="font-size: 16px;">Bulk catalogue import, custom storefront branding, verified business checkmark, and priority search placement.</p>
+        </div>
+
+        <div class="card" style="padding: 36px 30px;">
+          <div class="stat-label">Marketplace Fee</div>
+          <div class="stat-number" style="font-size: 50px;">5%–8%</div>
+          <div style="font-size: 14px; color: #C9A227; margin-bottom: 16px; font-weight: 600;">per transaction</div>
+          <p class="stat-desc" style="font-size: 16px;">Standard 8% commission on peer-to-peer trades; reduced 5% rate for Premium and Store members.</p>
+        </div>
+
+        <div class="card" style="padding: 36px 30px;">
+          <div class="stat-label">Insurance Referral</div>
+          <div class="stat-number" style="font-size: 50px;">£40+</div>
+          <div style="font-size: 14px; color: #C9A227; margin-bottom: 16px; font-weight: 600;">per bound policy</div>
+          <p class="stat-desc" style="font-size: 16px;">Referral commission earned from FCA-regulated insurance partners upon binding bespoke collector policies.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>08 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 9: PROOF IT WORKS                    -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-9">
+    <div class="slide-header">
+      <div class="eyebrow">Proof It Works</div>
+      <h2 class="slide-title">Proven mechanics applied to all collectible categories.</h2>
+      <p class="slide-subtitle">Vertical leaders validate the model in single categories; Fanzeum expands it across the entire collector landscape.</p>
+    </div>
+
+    <div class="slide-body">
+      <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 48px; align-items: center;">
+        <div class="card highlight" style="padding: 44px 40px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div style="font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase; color: #C9A227; font-weight: 600;">Market Validation: CollX</div>
+            <span class="chip chip-live">Profitable</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <div>
+              <div class="stat-number" style="font-size: 56px;">3m+</div>
+              <div class="stat-label">Registered Collectors</div>
+            </div>
+            <div>
+              <div class="stat-number" style="font-size: 56px;">400k</div>
+              <div class="stat-label">Monthly Active Users</div>
+            </div>
+            <div>
+              <div class="stat-number" style="font-size: 56px;">~$10m</div>
+              <div class="stat-label">Annual Revenue</div>
+            </div>
+            <div>
+              <div class="stat-number" style="font-size: 56px;">$10–$25</div>
+              <div class="stat-label">Monthly Subscriptions</div>
+            </div>
+          </div>
+          <p class="stat-desc" style="font-size: 16px; border-top: 1px solid rgba(201,162,39,0.2); padding-top: 16px;">
+            CollX proved high willingess to pay for AI card identification and trading. Collectors Holdings (PSA) was valued at $4.3bn (2022).
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div class="card" style="padding: 32px;">
+            <div class="stat-label" style="color: #C9A227;">The Fanzeum Advantage</div>
+            <h3 class="font-serif" style="font-size: 26px; color: #F3EDE2; margin-bottom: 12px;">Universal Category Reach</h3>
+            <p class="stat-desc">While others restrict themselves to modern sports cards, Fanzeum's AI architecture serves coins, stamps, vinyl, comics, memorabilia, and antiques.</p>
+          </div>
+
+          <div class="card" style="padding: 32px;">
+            <div class="stat-label" style="color: #C9A227;">Cross-Collection Synergy</div>
+            <h3 class="font-serif" style="font-size: 26px; color: #F3EDE2; margin-bottom: 12px;">Unified Collector Profile</h3>
+            <p class="stat-desc">Collectors rarely stop at one hobby. Fanzeum captures the full household portfolio under a single showcase.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>
+        <span>Fanzeum · Confidential · Nov 2026</span>
+        <div class="source-note" style="margin-top: 4px;">Sources: TechCrunch (2025); Technical.ly (2026); Collectors Holdings PSA Valuation (2022).</div>
+      </div>
+      <span>09 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 10: ROADMAP                          -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-10">
+    <div class="slide-header">
+      <div class="eyebrow">Roadmap</div>
+      <h2 class="slide-title">Delivering rapid milestones from core PWA to apps.</h2>
+      <p class="slide-subtitle">Disciplined, sequential execution building compound network effects and marketplace density.</p>
+    </div>
+
+    <div class="slide-body">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px;">
+        <!-- Phase 1 -->
+        <div class="card" style="padding: 24px 20px; border-left: 3px solid #C9A227;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-family: 'Fraunces', serif; font-size: 18px; color: #C9A227;">Phase 1</span>
+            <span class="chip chip-live">Live</span>
+          </div>
+          <div style="font-weight: 600; color: #F3EDE2; font-size: 15px; margin-bottom: 6px;">Core Platform</div>
+          <p style="font-size: 13px; color: #A39D93; line-height: 1.4;">AI Expert Panel, Showcase curation, Fresh Finds feed, and WebP master pipeline.</p>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="card" style="padding: 24px 20px; border-left: 3px solid #E5C358;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-family: 'Fraunces', serif; font-size: 18px; color: #E5C358;">Phase 2</span>
+            <span class="chip chip-inbuild">Live / In Build</span>
+          </div>
+          <div style="font-weight: 600; color: #F3EDE2; font-size: 15px; margin-bottom: 6px;">Social Layer</div>
+          <p style="font-size: 13px; color: #A39D93; line-height: 1.4;">Follows, likes, comments, saves (done). ID corrections, alerts, and collector matching (in progress).</p>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="card" style="padding: 24px 20px; border-left: 3px solid #F3EDE2;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-family: 'Fraunces', serif; font-size: 18px; color: #F3EDE2;">Phase 3</span>
+            <span class="chip chip-next">Next</span>
+          </div>
+          <div style="font-weight: 600; color: #F3EDE2; font-size: 15px; margin-bottom: 6px;">Clubs & Reputation</div>
+          <p style="font-size: 13px; color: #A39D93; line-height: 1.4;">Specialist community groups, direct messaging, and peer reputation scoring.</p>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="card" style="padding: 24px 20px; border-left: 3px solid #F3EDE2;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-family: 'Fraunces', serif; font-size: 18px; color: #F3EDE2;">Phase 4</span>
+            <span class="chip chip-next">Next</span>
+          </div>
+          <div style="font-weight: 600; color: #F3EDE2; font-size: 15px; margin-bottom: 6px;">Set Tracking</div>
+          <p style="font-size: 13px; color: #A39D93; line-height: 1.4;">Merged multi-owner showcases, visual set completion rings, and variant checklists.</p>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+        <!-- Phase 5 -->
+        <div class="card" style="padding: 24px 20px; border-left: 3px solid #7A746B;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-family: 'Fraunces', serif; font-size: 18px; color: #7A746B;">Phase 5</span>
+            <span class="chip chip-planned">Planned</span>
+          </div>
+          <div style="font-weight: 600; color: #F3EDE2; font-size: 15px; margin-bottom: 6px;">Marketplace</div>
+          <p style="font-size: 13px; color: #A39D93; line-height: 1.4;">Direct transactions, curated auctions, escrow payments, and commission engine.</p>
+        </div>
+
+        <!-- Phase 6 -->
+        <div class="card" style="padding: 24px 20px; border-left: 3px solid #7A746B;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-family: 'Fraunces', serif; font-size: 18px; color: #7A746B;">Phase 6</span>
+            <span class="chip chip-planned">Planned</span>
+          </div>
+          <div style="font-weight: 600; color: #F3EDE2; font-size: 15px; margin-bottom: 6px;">Monetisation</div>
+          <p style="font-size: 13px; color: #A39D93; line-height: 1.4;">Premium subscriber tiers, store memberships for dealers, and insurance referral routing.</p>
+        </div>
+
+        <!-- Phase 7 -->
+        <div class="card" style="padding: 24px 20px; border-left: 3px solid #7A746B;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-family: 'Fraunces', serif; font-size: 18px; color: #7A746B;">Phase 7</span>
+            <span class="chip chip-planned">Planned</span>
+          </div>
+          <div style="font-weight: 600; color: #F3EDE2; font-size: 15px; margin-bottom: 6px;">Discovery & Vision</div>
+          <p style="font-size: 13px; color: #A39D93; line-height: 1.4;">Category editorial news, reverse photo search, and community administration tools.</p>
+        </div>
+
+        <!-- Phase 8 -->
+        <div class="card" style="padding: 24px 20px; border-left: 3px solid #7A746B;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-family: 'Fraunces', serif; font-size: 18px; color: #7A746B;">Phase 8</span>
+            <span class="chip chip-planned">Planned</span>
+          </div>
+          <div style="font-weight: 600; color: #F3EDE2; font-size: 15px; margin-bottom: 6px;">Native Apps</div>
+          <p style="font-size: 13px; color: #A39D93; line-height: 1.4;">Dedicated iOS and Android store distributions with instant camera capture pipelines.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>10 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 11: WHERE WE ARE TODAY               -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-11">
+    <div class="slide-header">
+      <div class="eyebrow">Where We Are Today</div>
+      <h2 class="slide-title">Live in production with hyper-efficient architecture.</h2>
+      <p class="slide-subtitle">Operating live at fanzeum.bruce-787.workers.dev with capital reserved for growth, not server overheads.</p>
+    </div>
+
+    <div class="slide-body">
+      <div class="stat-row grid-3">
+        <div class="card highlight">
+          <div class="stat-label" style="color: #E5C358;">Live Application</div>
+          <h3 class="font-serif" style="font-size: 32px; color: #F3EDE2; margin-bottom: 12px;">fanzeum.bruce-787.workers.dev</h3>
+          <p class="stat-desc">Fully operational PWA running live on global edge infrastructure. Collectors are onboarding, cataloguing, and sharing today.</p>
+        </div>
+
+        <div class="card">
+          <div class="stat-label">AI-First Efficiency</div>
+          <h3 class="font-serif" style="font-size: 32px; color: #F3EDE2; margin-bottom: 12px;">Zero Idle Overhead</h3>
+          <p class="stat-desc">Engineered on Cloudflare Workers, Firebase, and Gemini Flash free tiers. Every pound raised directly accelerates growth and liquidity.</p>
+        </div>
+
+        <div class="card">
+          <div class="stat-label">Specialist AI Personas</div>
+          <h3 class="font-serif" style="font-size: 32px; color: #F3EDE2; margin-bottom: 12px;">British Market Depth</h3>
+          <p class="stat-desc">Dedicated AI personas for UK coins, stamps, football cards, and records, trained on British grading scales and realistic £ market prices.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>11 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 12: PROJECTIONS                      -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-12">
+    <div class="slide-header">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <div class="eyebrow">Financial Model</div>
+        <span class="chip chip-inbuild">Illustrative projections, not forecasts</span>
+      </div>
+      <h2 class="slide-title">Three-year unit economics and scale trajectory.</h2>
+    </div>
+
+    <div class="slide-body" style="margin: 20px 0;">
+      <div style="display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; align-items: center;">
+        <!-- Projections Table -->
+        <div class="card" style="padding: 24px 32px;">
+          <table class="table-clean">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Year 1</th>
+                <th>Year 2</th>
+                <th>Year 3</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Registered collectors</td>
+                <td>10,000</td>
+                <td>60,000</td>
+                <td>250,000</td>
+              </tr>
+              <tr>
+                <td>Premium subscribers</td>
+                <td>400 (4%)</td>
+                <td>3,000 (5%)</td>
+                <td>15,000 (6%)</td>
+              </tr>
+              <tr>
+                <td>Premium revenue (£49/yr)</td>
+                <td>£19.6k</td>
+                <td>£147k</td>
+                <td>£735k</td>
+              </tr>
+              <tr>
+                <td>Store plans (£240/yr)</td>
+                <td>20 · £4.8k</td>
+                <td>150 · £36k</td>
+                <td>600 · £144k</td>
+              </tr>
+              <tr>
+                <td>Marketplace GMV</td>
+                <td>£0.5m</td>
+                <td>£4.0m</td>
+                <td>£20.0m</td>
+              </tr>
+              <tr>
+                <td>Commission (7% blended)</td>
+                <td>£35k</td>
+                <td>£280k</td>
+                <td>£1.40m</td>
+              </tr>
+              <tr>
+                <td>Insurance referrals (£40 each)</td>
+                <td>50 · £2k</td>
+                <td>400 · £16k</td>
+                <td>2,000 · £80k</td>
+              </tr>
+              <tr class="total-row">
+                <td>Total Revenue</td>
+                <td>£61k</td>
+                <td>£479k</td>
+                <td>£2.36m</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Inline SVG Revenue Growth Bar Chart -->
+        <div class="card" style="padding: 32px; display: flex; flex-direction: column; justify-content: center;">
+          <div style="font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: #C9A227; font-weight: 600; margin-bottom: 20px;">
+            Total Annual Revenue (£ GBP)
+          </div>
+          <svg viewBox="0 0 460 270" style="width: 100%; height: auto;">
+            <!-- Grid lines -->
+            <line x1="50" y1="210" x2="430" y2="210" stroke="rgba(201, 162, 39, 0.2)" stroke-width="1" />
+            <line x1="50" y1="130" x2="430" y2="130" stroke="rgba(201, 162, 39, 0.1)" stroke-width="1" stroke-dasharray="3" />
+            <line x1="50" y1="50" x2="430" y2="50" stroke="rgba(201, 162, 39, 0.1)" stroke-width="1" stroke-dasharray="3" />
+
+            <!-- Y Labels -->
+            <text x="40" y="214" fill="#7A746B" font-size="11" font-family="Inter" text-anchor="end">£0</text>
+            <text x="40" y="134" fill="#7A746B" font-size="11" font-family="Inter" text-anchor="end">£1.2m</text>
+            <text x="40" y="54" fill="#7A746B" font-size="11" font-family="Inter" text-anchor="end">£2.4m</text>
+
+            <!-- Year 1 Bar -->
+            <rect x="85" y="206" width="70" height="4" rx="2" fill="#8E6A1B" />
+            <text x="120" y="196" fill="#D6CEBE" font-size="14" font-family="Fraunces" text-anchor="middle">£61k</text>
+            <text x="120" y="234" fill="#A39D93" font-size="12" font-family="Inter" text-anchor="middle">Year 1</text>
+
+            <!-- Year 2 Bar -->
+            <rect x="205" y="178" width="70" height="32" rx="2" fill="#B8892B" />
+            <text x="240" y="166" fill="#D6CEBE" font-size="14" font-family="Fraunces" text-anchor="middle">£479k</text>
+            <text x="240" y="234" fill="#A39D93" font-size="12" font-family="Inter" text-anchor="middle">Year 2</text>
+
+            <!-- Year 3 Bar -->
+            <rect x="325" y="52" width="70" height="158" rx="2" fill="url(#brassGrad2)" />
+            <text x="360" y="38" fill="#E5C358" font-size="20" font-family="Fraunces" text-anchor="middle" font-weight="600">£2.36m</text>
+            <text x="360" y="234" fill="#A39D93" font-size="12" font-family="Inter" text-anchor="middle">Year 3</text>
+
+            <defs>
+              <linearGradient id="brassGrad2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#E5C358" />
+                <stop offset="100%" stop-color="#8E6A1B" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>12 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 13: THE OPPORTUNITY                  -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-13">
+    <div class="slide-header">
+      <div class="eyebrow">The Opportunity</div>
+      <h2 class="slide-title">Join us early.</h2>
+      <p class="slide-subtitle">We're looking for partners to accelerate growth: marketing to collector communities, partnerships with clubs, dealers and an insurer, and launching the marketplace and apps.</p>
+    </div>
+
+    <div class="slide-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;">
+        <!-- Left: Donut Chart -->
+        <div class="card" style="padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div style="font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: #C9A227; font-weight: 600; margin-bottom: 24px; width: 100%; text-align: left;">
+            Proposed Allocation of Capital
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 36px;">
+            <svg width="240" height="240" viewBox="0 0 200 200">
+              <!-- Donut segments using stroke-dasharray on r=70 (circumference = 2 * PI * 70 = 439.82) -->
+              <!-- 45% = 197.9, 30% = 131.9, 15% = 66.0, 10% = 44.0 -->
+              <!-- Segment 1: Growth & Community (45%) -->
+              <circle cx="100" cy="100" r="70" fill="transparent" stroke="#E5C358" stroke-width="26"
+                      stroke-dasharray="197.92 439.82" stroke-dashoffset="0" transform="rotate(-90 100 100)" />
+              <!-- Segment 2: Product & AI (30%) -->
+              <circle cx="100" cy="100" r="70" fill="transparent" stroke="#B8892B" stroke-width="26"
+                      stroke-dasharray="131.95 439.82" stroke-dashoffset="-197.92" transform="rotate(-90 100 100)" />
+              <!-- Segment 3: Partnerships (15%) -->
+              <circle cx="100" cy="100" r="70" fill="transparent" stroke="#F3EDE2" stroke-width="26"
+                      stroke-dasharray="65.97 439.82" stroke-dashoffset="-329.87" transform="rotate(-90 100 100)" />
+              <!-- Segment 4: Operations (10%) -->
+              <circle cx="100" cy="100" r="70" fill="transparent" stroke="#6E685F" stroke-width="26"
+                      stroke-dasharray="43.98 439.82" stroke-dashoffset="-395.84" transform="rotate(-90 100 100)" />
+              <!-- Center label -->
+              <text x="100" y="96" fill="#C9A227" font-size="12" font-family="Inter" text-anchor="middle" font-weight="600" letter-spacing="1">FUNDS</text>
+              <text x="100" y="114" fill="#F3EDE2" font-size="11" font-family="Inter" text-anchor="middle">USE</text>
+            </svg>
+
+            <!-- Legend -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 14px; height: 14px; background: #E5C358; border-radius: 2px;"></span>
+                <span style="font-size: 15px; color: #F3EDE2;"><strong>45%</strong> Growth & community</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 14px; height: 14px; background: #B8892B; border-radius: 2px;"></span>
+                <span style="font-size: 15px; color: #F3EDE2;"><strong>30%</strong> Product & AI</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 14px; height: 14px; background: #F3EDE2; border-radius: 2px;"></span>
+                <span style="font-size: 15px; color: #F3EDE2;"><strong>15%</strong> Partnerships</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 14px; height: 14px; background: #6E685F; border-radius: 2px;"></span>
+                <span style="font-size: 15px; color: #F3EDE2;"><strong>10%</strong> Operations</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Milestones & Value Creation -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <div class="card" style="padding: 28px;">
+            <div class="stat-label" style="color: #C9A227;">Market Traction</div>
+            <h4 class="font-serif" style="font-size: 22px; color: #F3EDE2; margin-bottom: 8px;">Community Acquisition</h4>
+            <p class="stat-desc" style="font-size: 16px;">Direct outreach across UK coin, card, comic and vinyl clubs to seed highly engaged core collector networks.</p>
+          </div>
+
+          <div class="card" style="padding: 28px;">
+            <div class="stat-label" style="color: #C9A227;">Commercial Moat</div>
+            <h4 class="font-serif" style="font-size: 22px; color: #F3EDE2; margin-bottom: 8px;">Institutional Partnerships</h4>
+            <p class="stat-desc" style="font-size: 16px;">Formal affiliate agreements with FCA-authorised specialist insurers and leading antique and memorabilia trade bodies.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>13 / 14</span>
+    </div>
+  </section>
+
+
+  <!-- ========================================== -->
+  <!-- SLIDE 14: CLOSING                          -->
+  <!-- ========================================== -->
+  <section class="slide" id="slide-14" style="justify-content: center; align-items: center; text-align: center; padding: 120px;">
+    <div style="position: absolute; top: 88px; left: 120px; right: 120px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 13px; letter-spacing: 0.24em; text-transform: uppercase; color: #C9A227; font-weight: 600;">Fanzeum Technologies</span>
+      <span style="font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: #7A746B;">Partnership Enquiries</span>
+    </div>
+
+    <div style="max-width: 1100px; margin: auto;">
+      <div style="display: inline-flex; align-items: center; gap: 16px; margin-bottom: 32px;">
+        <span style="width: 48px; height: 1px; background: #C9A227;"></span>
+        <span style="font-size: 15px; letter-spacing: 0.28em; text-transform: uppercase; color: #C9A227; font-weight: 600;">The New Standard In Collecting</span>
+        <span style="width: 48px; height: 1px; background: #C9A227;"></span>
+      </div>
+
+      <h1 class="font-serif" style="font-size: 120px; line-height: 0.95; font-weight: 300; letter-spacing: -0.03em; margin-bottom: 32px; color: #F3EDE2;">
+        Fanzeum
+      </h1>
+
+      <p class="font-serif" style="font-size: 44px; line-height: 1.3; font-style: italic; color: #D6CEBE; max-width: 900px; margin: 0 auto 56px auto;">
+        Where collections come to life.
+      </p>
+
+      <div style="display: inline-block; padding: 24px 44px; border: 1px solid rgba(201, 162, 39, 0.4); background: rgba(22, 20, 17, 0.7); border-radius: 4px;">
+        <div style="font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #C9A227; font-weight: 600; margin-bottom: 6px;">
+          Founder & Executive Contact
+        </div>
+        <div style="font-size: 24px; color: #F3EDE2; font-family: 'Fraunces', serif;">
+          Bruce Thomas, Founder
+        </div>
+        <div style="font-size: 17px; color: #A39D93; margin-top: 4px;">
+          <a href="mailto:bruce@tribes.tech" style="color: #D6CEBE; text-decoration: none; border-bottom: 1px solid #C9A227;">bruce@tribes.tech</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Fanzeum · Confidential · Nov 2026</span>
+      <span>14 / 14</span>
+    </div>
+  </section>
+
+</body>
+</html>
