@@ -15,6 +15,10 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { Button } from './components/ui/Button';
 import { EmptyState, Skeleton } from './components/ui/EmptyState';
 import { HomePage } from './features/home/HomePage';
+import {
+  FANZEUM_LOGO_ALT,
+  FANZEUM_LOGO_SRC,
+} from './lib/brand';
 
 const ExplorePage = lazy(() =>
   import('./features/explore/ExplorePage').then((m) => ({ default: m.ExplorePage })),
@@ -179,10 +183,13 @@ export default function App() {
 
               <footer className="hidden md:block border-t border-border py-10 px-4 sm:px-8">
                 <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-sm text-muted">
-                  <div>
-                    <span className="font-display text-lg font-semibold text-ink mr-3">
-                      Fanzeum
-                    </span>
+                  <div className="flex items-center flex-wrap gap-x-3 gap-y-2">
+                    <img
+                      src={FANZEUM_LOGO_SRC}
+                      alt={FANZEUM_LOGO_ALT}
+                      className="h-6 w-auto object-contain"
+                      loading="lazy"
+                    />
                     <span>
                       The collector&apos;s showcase for cards, coins, stamps, comics, vinyl &amp; toys.
                     </span>
