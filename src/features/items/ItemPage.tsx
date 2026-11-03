@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
+  AlertTriangle,
+  Bookmark,
   Check,
   ExternalLink,
+  Flag,
   FolderInput,
+  Heart,
   Info,
   Lock,
+  MessageSquare,
   Pencil,
+  Send,
   Share2,
   Trash2,
   X,
@@ -28,9 +34,21 @@ import {
   updateCollectibleItemRecord,
   upsertItemPrivateRecord,
 } from '../../lib/firestoreRepo';
+import {
+  createItemComment,
+  deleteItemComment,
+  fetchItemComments,
+  fetchItemLikeState,
+  fetchItemSaveState,
+  submitContentReport,
+  toggleItemLike,
+  toggleItemSave,
+  updateItemComment,
+} from '../../lib/socialRepo';
 import type {
   CollectibleItemRecord,
   CollectionRecord,
+  ItemCommentRecord,
   ItemPrivateRecord,
 } from '../../types/domain';
 import { useDocumentMeta } from '../../components/DocumentMeta';
@@ -60,6 +78,30 @@ export const ItemPage: React.FC = () => {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copiedToast, setCopiedToast] = useState(false);
+
+  // Social states: likes, saves, comments
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [saved, setSaved] = useState(false);
+  const [saveCount, setSaveCount] = useState(0);
+  const [comments, setComments] = useState<ItemCommentRecord[]>([]);
+  const [newCommentText, setNewCommentText] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+
+  // Comment edit state
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [savingCommentEdit, setSavingCommentEdit] = useState(false);
+
+  // Report modal state
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportTargetType, setReportTargetType] = useState<'item' | 'comment'>('item');
+  const [reportTargetId, setReportTargetId] = useState('');
+  const [reportReason, setReportReason] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   // Edit details sheet
   const [editOpen, setEditOpen] = useState(false);
@@ -136,6 +178,20 @@ export const ItemPage: React.FC = () => {
         } else {
           setPrivateRecord(null);
         }
+
+        // Fetch likes, saves, comments
+        const [likeState, saveState, commentList] = await Promise.all([
+          fetchItemLikeState(fetched.id, firebaseUser?.uid),
+          fetchItemSaveState(fetched.id, firebaseUser?.uid),
+          fetchItemComments(fetched.id),
+        ]);
+        if (active) {
+          setLiked(likeState.liked);
+          setLikeCount(likeState.count);
+          setSaved(saveState.saved);
+          setSaveCount(saveState.count);
+          setComments(commentList);
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -145,6 +201,147 @@ export const ItemPage: React.FC = () => {
       active = false;
     };
   }, [itemId, firebaseUser?.uid, firebaseUser?.emailVerified]);
+
+  const handleToggleLike = async () => {
+    if (!item) return;
+    if (!firebaseUser) {
+      navigate('/showcase');
+      return;
+    }
+
+    const nextLiked = !liked;
+    const nextCount = Math.max(0, likeCount + (nextLiked ? 1 : -1));
+    setLiked(nextLiked);
+    setLikeCount(nextCount);
+
+    try {
+      await toggleItemLike({
+        itemId: item.id,
+        uid: firebaseUser.uid,
+        isVerifiedUser: Boolean(firebaseUser.emailVerified),
+      });
+    } catch (err) {
+      console.error('Like toggle error:', err);
+      setLiked(!nextLiked);
+      setLikeCount(Math.max(0, nextCount + (nextLiked ? -1 : 1)));
+    }
+  };
+
+  const handleToggleSave = async () => {
+    if (!item) return;
+    if (!firebaseUser) {
+      navigate('/showcase');
+      return;
+    }
+
+    const nextSaved = !saved;
+    const nextCount = Math.max(0, saveCount + (nextSaved ? 1 : -1));
+    setSaved(nextSaved);
+    setSaveCount(nextCount);
+
+    try {
+      await toggleItemSave({
+        itemId: item.id,
+        uid: firebaseUser.uid,
+        isVerifiedUser: Boolean(firebaseUser.emailVerified),
+      });
+    } catch (err) {
+      console.error('Save toggle error:', err);
+      setSaved(!nextSaved);
+      setSaveCount(Math.max(0, nextCount + (nextSaved ? -1 : 1)));
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!item || !viewerProfile || !newCommentText.trim()) return;
+    setSubmittingComment(true);
+    setCommentError(null);
+    try {
+      const created = await createItemComment({
+        itemId: item.id,
+        author: viewerProfile,
+        text: newCommentText,
+        isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+      });
+      setComments((prev) => [created, ...prev]);
+      setNewCommentText('');
+    } catch (err) {
+      console.error('Add comment error:', err);
+      setCommentError(getFriendlyFirebaseErrorMessage(err));
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleSaveCommentEdit = async (commentId: string) => {
+    if (!item || !editCommentText.trim()) return;
+    setSavingCommentEdit(true);
+    try {
+      await updateItemComment({
+        itemId: item.id,
+        commentId,
+        text: editCommentText,
+        isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+      });
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, text: editCommentText } : c)),
+      );
+      setEditingCommentId(null);
+      setEditCommentText('');
+    } catch (err) {
+      console.error('Update comment error:', err);
+    } finally {
+      setSavingCommentEdit(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!item) return;
+    try {
+      await deleteItemComment({
+        itemId: item.id,
+        commentId,
+        isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+      });
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (err) {
+      console.error('Delete comment error:', err);
+    }
+  };
+
+  const handleOpenReport = (targetType: 'item' | 'comment', targetId: string) => {
+    setReportTargetType(targetType);
+    setReportTargetId(targetId);
+    setReportReason('');
+    setReportSuccess(false);
+    setReportError(null);
+    setReportOpen(true);
+  };
+
+  const handleSubmitReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!item || !firebaseUser || !reportReason.trim()) return;
+    setSubmittingReport(true);
+    setReportError(null);
+    try {
+      await submitContentReport({
+        reporterId: firebaseUser.uid,
+        targetType: reportTargetType,
+        targetId: reportTargetId,
+        itemId: item.id,
+        reason: reportReason,
+        isVerifiedUser: Boolean(firebaseUser.emailVerified),
+      });
+      setReportSuccess(true);
+      window.setTimeout(() => setReportOpen(false), 2000);
+    } catch (err) {
+      console.error('Submit report error:', err);
+      setReportError(getFriendlyFirebaseErrorMessage(err));
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
 
   const handleShare = async () => {
     if (!item) return;
@@ -399,6 +596,37 @@ export const ItemPage: React.FC = () => {
               <PanelConfirmedBadge date={item.panelConfirmedAt} size="md" />
             )}
             <ConfidenceChip confidence={item.aiConfidence} />
+
+            {/* Like button */}
+            <Button
+              variant={liked ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={handleToggleLike}
+              className={liked ? 'bg-danger border-danger text-white hover:bg-danger/90' : ''}
+              title={liked ? 'Unlike this piece' : 'Like this piece'}
+            >
+              <Heart
+                className={`w-4 h-4 ${liked ? 'fill-current' : ''}`}
+                strokeWidth={1.5}
+              />
+              <span className="font-mono">{likeCount}</span>
+            </Button>
+
+            {/* Save / Bookmark button */}
+            <Button
+              variant={saved ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={handleToggleSave}
+              title={saved ? 'Saved in your showcase' : 'Save to your showcase'}
+            >
+              <Bookmark
+                className={`w-4 h-4 ${saved ? 'fill-current' : ''}`}
+                strokeWidth={1.5}
+              />
+              <span>{saved ? 'Saved' : 'Save'}</span>
+              <span className="font-mono text-xs opacity-80">({saveCount})</span>
+            </Button>
+
             <Button variant="secondary" size="sm" onClick={handleShare}>
               {copiedToast ? (
                 <>
@@ -411,6 +639,16 @@ export const ItemPage: React.FC = () => {
                   <span>Share piece</span>
                 </>
               )}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleOpenReport('item', item.id)}
+              title="Report this piece"
+              className="text-muted hover:text-warn"
+            >
+              <Flag className="w-4 h-4" strokeWidth={1.5} />
             </Button>
 
             {isOwner && (
@@ -537,6 +775,184 @@ export const ItemPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Comments Thread */}
+      <section id="comments" className="pt-8 border-t border-border space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <MessageSquare className="w-5 h-5 text-brass" strokeWidth={1.5} />
+            <h2 className="text-xl sm:text-2xl font-display font-semibold text-ink">
+              Comments ({comments.length})
+            </h2>
+          </div>
+          <span className="text-xs font-mono text-muted">Plain text up to 1,000 characters</span>
+        </div>
+
+        {/* Comment input form */}
+        {firebaseUser ? (
+          <form onSubmit={handleAddComment} className="space-y-3">
+            <div className="relative">
+              <textarea
+                rows={3}
+                maxLength={1000}
+                required
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                placeholder="Share your thoughts, history notes, or questions on this piece…"
+                className="w-full px-4 py-3 text-base rounded-2xl border border-border bg-surface text-ink placeholder:text-muted/60 focus:outline-none focus:border-brass/70 resize-none transition-colors"
+              />
+              <span className="absolute bottom-2.5 right-3 text-xs font-mono text-muted">
+                {1000 - newCommentText.length} left
+              </span>
+            </div>
+
+            {commentError && (
+              <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">
+                {commentError}
+              </p>
+            )}
+
+            <div className="flex justify-end">
+              <Button type="submit" size="sm" disabled={submittingComment || !newCommentText.trim()}>
+                <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
+                <span>{submittingComment ? 'Posting…' : 'Post comment'}</span>
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Card className="p-4 flex items-center justify-between gap-4 bg-surface-raised">
+            <span className="text-sm text-muted">Sign in to join the discussion and post a comment.</span>
+            <Button size="sm" onClick={() => navigate('/showcase')}>
+              Sign in
+            </Button>
+          </Card>
+        )}
+
+        {/* Comments list */}
+        {comments.length === 0 ? (
+          <div className="py-6 text-center text-sm text-muted bg-surface/40 rounded-2xl border border-dashed border-border/80">
+            No comments yet. Be the first to share thoughts on this piece!
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {comments.map((comment) => {
+              const isCommentAuthor = firebaseUser?.uid === comment.authorId;
+              const isItemOwner = firebaseUser?.uid === item.ownerId;
+              const canDelete = isCommentAuthor || isItemOwner;
+              const isEditing = editingCommentId === comment.id;
+
+              return (
+                <Card key={comment.id} className="p-4 sm:p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <CollectorImage
+                        src={comment.authorAvatarUrl}
+                        alt={comment.authorName}
+                        className="w-8 h-8 rounded-full border border-border shrink-0 bg-surface-raised"
+                        imgClassName="w-full h-full object-cover rounded-full"
+                      />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-ink">
+                            {comment.authorName}
+                          </span>
+                          <Link
+                            to={`/@${comment.authorHandle}`}
+                            className="text-xs font-mono text-muted hover:text-brass"
+                          >
+                            @{comment.authorHandle}
+                          </Link>
+                          {comment.authorId === item.ownerId && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brass/15 text-brass">
+                              Owner
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {isCommentAuthor && !isEditing && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCommentId(comment.id);
+                            setEditCommentText(comment.text);
+                          }}
+                          title="Edit comment"
+                          className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center text-muted hover:text-ink cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        </button>
+                      )}
+
+                      {canDelete && !isEditing && (
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteComment(comment.id)}
+                          title={isCommentAuthor ? 'Delete your comment' : 'Delete comment from your piece'}
+                          className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center text-muted hover:text-danger cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenReport('comment', comment.id)}
+                        title="Report this comment"
+                        className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center text-muted hover:text-warn cursor-pointer"
+                      >
+                        <Flag className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {isEditing ? (
+                    <div className="space-y-2 pt-1">
+                      <div className="relative">
+                        <textarea
+                          rows={2}
+                          maxLength={1000}
+                          value={editCommentText}
+                          onChange={(e) => setEditCommentText(e.target.value)}
+                          className="w-full px-3 py-2 text-sm rounded-xl border border-border bg-bg text-ink focus:outline-none focus:border-brass/70 resize-none"
+                        />
+                        <span className="absolute bottom-2 right-2.5 text-[10px] font-mono text-muted">
+                          {1000 - editCommentText.length} left
+                        </span>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingCommentId(null);
+                            setEditCommentText('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={savingCommentEdit || !editCommentText.trim()}
+                          onClick={() => void handleSaveCommentEdit(comment.id)}
+                        >
+                          {savingCommentEdit ? 'Saving…' : 'Save'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-ink/90 whitespace-pre-wrap leading-relaxed">
+                      {comment.text}
+                    </p>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Sibling Pieces from Same Collection */}
       {siblingItems.length > 0 && collectionRecord && (
@@ -873,6 +1289,72 @@ export const ItemPage: React.FC = () => {
             </Button>
           </div>
         </div>
+      </Sheet>
+
+      {/* Report Content Sheet */}
+      <Sheet
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title={reportTargetType === 'item' ? 'Report piece' : 'Report comment'}
+        subtitle="Flag suspicious, offensive, or infringing content to moderators."
+      >
+        {reportSuccess ? (
+          <div className="py-6 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-ok/10 border border-ok/30 text-ok flex items-center justify-center mx-auto">
+              <Check className="w-6 h-6" strokeWidth={2} />
+            </div>
+            <h3 className="text-lg font-display font-semibold text-ink">Thank you</h3>
+            <p className="text-sm text-muted">
+              Your report has been sent to our UK moderation team for review.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmitReport} className="space-y-4">
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-warn/10 border border-warn/30 text-xs text-ink">
+              <AlertTriangle className="w-4 h-4 text-warn shrink-0" strokeWidth={1.5} />
+              <span>
+                Reports are confidential and reviewed directly by Fanzeum administrators.
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">
+                Reason for report
+              </label>
+              <textarea
+                rows={3}
+                required
+                maxLength={500}
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                placeholder="Please describe why this content violates guidelines (e.g., spam, harassment, counterfeit or misleading details)…"
+                className="w-full px-3.5 py-2.5 text-base rounded-xl border border-border bg-bg text-ink focus:outline-none focus:border-brass/70 resize-none"
+              />
+              <span className="block text-right text-xs font-mono text-muted mt-1">
+                {500 - reportReason.length} characters remaining
+              </span>
+            </div>
+
+            {reportError && (
+              <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">
+                {reportError}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="ghost" onClick={() => setReportOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="danger"
+                disabled={submittingReport || !reportReason.trim()}
+              >
+                {submittingReport ? 'Submitting…' : 'Submit report'}
+              </Button>
+            </div>
+          </form>
+        )}
       </Sheet>
     </div>
   );
