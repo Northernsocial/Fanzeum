@@ -16,6 +16,8 @@ def pool_key():
     return os.environ.get("POOL_KEY", "")
 CODERS = ["nvidia/deepseek-ai/deepseek-v4.1-flash", "nvidia/mistralai/mistral-large-4-1t-a52b", "team/coder"]
 GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
+GEMINI = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+GEMINI_KEY = os.environ.get("GEMINI_TEAM_KEY", "")  # separate free key, never the live site's
 TITLE = os.environ["ISSUE_TITLE"]; BODY = os.environ.get("ISSUE_BODY", ""); NUM = os.environ["ISSUE_NUMBER"]
 TEST = os.environ.get("TEST_CMD") or "npx tsc --noEmit 2>&1 | head -80; npx vite build >/tmp/vb.log 2>&1 && echo 'build: 1 passed' || (tail -40 /tmp/vb.log; echo 'build: 1 failed')"
 RULES = open("AGENTS.md").read() if os.path.exists("AGENTS.md") else ""
@@ -39,6 +41,8 @@ def chat(model, msgs, url=POOL, key=None, max_tokens=32000):
             if c: print("model ok", m, len(c), flush=True); return c
         except Exception as e: print("model error", m, e, flush=True)
         time.sleep(20)
+    if model == "team/coder" and GEMINI_KEY and url == POOL:  # free Gemini as last-resort coder
+        return chat("gemini-flash-latest", msgs, url=GEMINI, key=GEMINI_KEY, max_tokens=max_tokens)
     return ""
 
 def files_block(paths):
@@ -88,6 +92,7 @@ rp = ("You are a sceptical senior reviewer for Fanzeum (UK collectors PWA). Revi
 panel = [("Thinker panel", "team/thinker", POOL, None), ("Writer panel", "team/writer", POOL, None)]
 if GROQ_KEY: panel.append(("Groq gpt-oss-120b", "openai/gpt-oss-120b", GROQ, GROQ_KEY))
 else: panel.append(("Fast panel", "team/fast", POOL, None))
+if GEMINI_KEY: panel.append(("Gemini Flash", "gemini-flash-latest", GEMINI, GEMINI_KEY))
 reviews = []; passes = 0
 for name, m, u, k in panel:
     r = chat(m, [{"role": "user", "content": rp}], url=u, key=k, max_tokens=1500) if diff.strip() else "FAIL\nNo changes produced."
@@ -96,6 +101,6 @@ for name, m, u, k in panel:
 report = f"Tests: {'all passing' if green else 'NOT passing'}\nReview panel: {passes}/{len(panel)} PASS\n\n" + "\n\n".join(reviews)
 if not green: report += "\n\n<details><summary>Test output</summary>\n\n```\n" + log[-3000:] + "\n```\n</details>"
 open("/tmp/report.md", "w").write(report)
-ok = green and passes >= 2 and bool(diff.strip())
+ok = green and passes * 2 > len(panel) and bool(diff.strip())
 open(os.environ["GITHUB_OUTPUT"], "a").write(f"ok={'true' if ok else 'false'}\nchanged={'true' if diff.strip() else 'false'}\n")
 print(report)

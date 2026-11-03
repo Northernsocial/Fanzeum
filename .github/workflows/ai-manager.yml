@@ -49,6 +49,7 @@ jobs:
         id: mgr
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_TEAM_KEY: ${{ secrets.GEMINI_TEAM_KEY }}
           ISSUE_NUMBER: ${{ steps.pick.outputs.n }}
         run: |
           git config user.name "fanzeum-ai-team"; git config user.email "ai-team@users.noreply.github.com"
