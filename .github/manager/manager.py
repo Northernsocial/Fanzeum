@@ -25,24 +25,36 @@ RULES += os.environ.get("HOUSE_RULES") or """
 House rules: React 19 + TypeScript (strict) + Vite + Tailwind v4 PWA; Firebase Auth/Firestore/Storage via src/lib/firebase.ts and src/lib/firestoreRepo.ts; Gemini only server-side in src/server/ai (never in client code, never expose keys).
 Every Firestore write must match firestore.rules exactly (hasAll/hasOnly field lists); update the rules when you add fields. Design: dark-first "After Hours", brass accent, Fraunces + Inter.
 UK English and GBP in user-facing text. User-facing word is "Showcase", never "Cabinet". AI results are estimates, never authentication. No jargon like accession, curatorial, archival.
-Never mention 'Hark'. No new paid services. Keep changes within the issue scope."""
+Never mention 'Hark'. No new paid services. Keep changes within the issue scope.
+ADDITIVE ONLY: never delete or rename existing exports, types, constants, routes or components; add new ones beside them. Never rewrite shared files (src/types/domain.ts, firestoreRepo.ts, App routes) wholesale: output the complete file with only your additions.
+Every new Firestore collection gets matching firestore.rules in the same change. No guest or fallback user IDs: features that read or write user data, and ALL AI calls, require a signed-in account (show a sign-in prompt otherwise). Show friendly errors, never silent catches."""
 
 def sh(c): return subprocess.run(c, shell=True, capture_output=True, text=True).stdout
 
+def _call(m, msgs, url, key, max_tokens, timeout):
+    body = json.dumps({"model": m, "messages": msgs, "temperature": 0.2, "max_tokens": max_tokens}).encode()
+    h = {"Content-Type": "application/json", "Authorization": "Bearer " + (key or pool_key()), "User-Agent": "curl/8.5.0"}
+    try:
+        r = json.load(urllib.request.urlopen(urllib.request.Request(url, body, h), timeout=timeout))
+        c = r["choices"][0]["message"]["content"]
+        if c: print("model ok", m, len(c), flush=True); return c
+    except Exception as e: print("model error", m, e, flush=True)
+    return ""
+
 def chat(model, msgs, url=POOL, key=None, max_tokens=32000):
-    models = CODERS if model == "team/coder" else [model]
-    for a in range(len(models) * 2):
-        m = models[a % len(models)]
-        body = json.dumps({"model": m, "messages": msgs, "temperature": 0.2, "max_tokens": max_tokens}).encode()
-        h = {"Content-Type": "application/json", "Authorization": "Bearer " + (key or pool_key()), "User-Agent": "curl/8.5.0"}
-        try:
-            r = json.load(urllib.request.urlopen(urllib.request.Request(url, body, h), timeout=900))
-            c = r["choices"][0]["message"]["content"]
-            if c: print("model ok", m, len(c), flush=True); return c
-        except Exception as e: print("model error", m, e, flush=True)
-        time.sleep(20)
-    if model == "team/coder" and GEMINI_KEY and url == POOL:  # free Gemini as last-resort coder
-        return chat("gemini-flash-latest", msgs, url=GEMINI, key=GEMINI_KEY, max_tokens=max_tokens)
+    if model == "team/coder":
+        # Coders in order: free Gemini (most reliable), Groq, then the shared pool. Each tried twice.
+        chain = []
+        if GEMINI_KEY: chain += [("gemini-flash-latest", GEMINI, GEMINI_KEY), ("gemini-flash-lite-latest", GEMINI, GEMINI_KEY)]
+        if GROQ_KEY: chain.append(("openai/gpt-oss-120b", GROQ, GROQ_KEY))
+        chain += [(m, POOL, None) for m in CODERS]
+    else:
+        chain = [(model, url, key)]
+    for a in range(len(chain) * 2):
+        m, u, k = chain[a % len(chain)]
+        c = _call(m, msgs, u, k, max_tokens, 600)
+        if c: return c
+        time.sleep(15)
     return ""
 
 def files_block(paths):
