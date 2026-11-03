@@ -615,6 +615,36 @@ export const CATEGORIES: Record<CategorySlug, CategoryConfig> = {
 
 export const CATEGORY_LIST: CategoryConfig[] = Object.values(CATEGORIES);
 
+export const CATEGORY_KEY_FIELDS: Record<CategorySlug, string[]> = {
+  football_cards: ['playerOrCharacter', 'set', 'year'],
+  trading_cards: ['playerOrCharacter', 'set', 'year'],
+  coins: ['country', 'year', 'denomination'],
+  stamps: ['country', 'year', 'sgNumber'],
+  comics: ['publisher', 'comicTitle', 'issueNumber', 'year'],
+  vinyl: ['artist', 'albumTitle', 'label'],
+  toys: ['brand', 'line', 'year'],
+  memorabilia: ['memorabiliaType', 'maker', 'year'],
+};
+
+export function isPanelConfirmed(
+  category: CategorySlug,
+  fields: Record<string, { value?: unknown; confidence?: string }>,
+  overallConfidence?: string,
+): boolean {
+  if (overallConfidence && overallConfidence !== 'high') {
+    return false;
+  }
+  const keyFields = CATEGORY_KEY_FIELDS[category] || [];
+  if (keyFields.length === 0) return overallConfidence === 'high';
+
+  return keyFields.every((k) => {
+    const entry = fields[k];
+    if (!entry) return false;
+    const hasValue = entry.value !== undefined && entry.value !== '' && entry.value !== null;
+    return hasValue && entry.confidence === 'high';
+  });
+}
+
 export function getItemPlacardParts(
   category: CategorySlug,
   attributes: Record<string, string | boolean | undefined> = {},

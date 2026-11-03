@@ -120,9 +120,25 @@ export interface CollectibleItemRecord {
   customOrder: number;
   forSale: boolean;
   mediaCredit?: MediaCredit;
+  panelStatus?: 'none' | 'confirmed' | 'disputed';
+  panelConfirmedAt?: string;
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
+}
+
+export interface FreshFindRecord {
+  id: string;
+  itemId: string;
+  ownerId: string;
+  ownerHandle: string;
+  category: CategorySlug;
+  title: string;
+  thumbUrl: string;
+  valueRange?: string;
+  panelStatus?: 'none' | 'confirmed' | 'disputed';
+  isDemo?: boolean;
+  createdAt?: unknown;
 }
 
 export interface ItemPrivateRecord {
