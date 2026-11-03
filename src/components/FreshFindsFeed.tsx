@@ -1,16 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bookmark, BookmarkCheck, Flame, Sparkles, Users } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Flame, Heart, MessageSquare, Sparkles, Users } from 'lucide-react';
 import { CATEGORIES, CATEGORY_LIST, type CategorySlug } from '../config/categories';
 import { useAuth } from '../contexts/AuthContext';
 import { explorePublicItems, listOwnerItems } from '../lib/firestoreRepo';
 import {
-  checkIsFollowing,
   fetchFollowedCategories,
   fetchFollowedCollectors,
   followTarget,
   unfollowTarget,
 } from '../lib/followRepo';
+import {
+  fetchItemComments,
+  fetchItemLikeState,
+  fetchItemSaveState,
+  toggleItemLike,
+  toggleItemSave,
+} from '../lib/socialRepo';
 import type { CollectibleItemRecord } from '../types/domain';
 import { Button } from './ui/Button';
 import { CategoryIcon } from './ui/CategoryIcon';
@@ -29,6 +35,20 @@ export const FreshFindsFeed: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FreshFindsTab>('all');
   const [items, setItems] = useState<CollectibleItemRecord[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Social stats state (likes, saves, comments)
+  const [socialStats, setSocialStats] = useState<
+    Record<
+      string,
+      {
+        liked: boolean;
+        likeCount: number;
+        saved: boolean;
+        saveCount: number;
+        commentsCount: number;
+      }
+    >
+  >({});
 
   // Follow states
   const [followedCategories, setFollowedCategories] = useState<Set<CategorySlug>>(new Set());
@@ -81,6 +101,28 @@ export const FreshFindsFeed: React.FC = () => {
         ]);
         if (!active) return;
         setItems(res.items);
+
+        // Fetch social stats for initial displayed items
+        const statsMap: typeof socialStats = {};
+        await Promise.all(
+          res.items.slice(0, 24).map(async (itm) => {
+            const [likeRes, saveRes, comments] = await Promise.all([
+              fetchItemLikeState(itm.id, firebaseUser?.uid),
+              fetchItemSaveState(itm.id, firebaseUser?.uid),
+              fetchItemComments(itm.id),
+            ]);
+            statsMap[itm.id] = {
+              liked: likeRes.liked,
+              likeCount: likeRes.count,
+              saved: saveRes.saved,
+              saveCount: saveRes.count,
+              commentsCount: comments.length,
+            };
+          }),
+        );
+        if (active) {
+          setSocialStats(statsMap);
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -89,7 +131,92 @@ export const FreshFindsFeed: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [loadFollowData]);
+  }, [loadFollowData, firebaseUser?.uid]);
+
+  const handleToggleLike = async (itemId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!firebaseUser) {
+      openAuthModal();
+      return;
+    }
+
+    const current = socialStats[itemId] || {
+      liked: false,
+      likeCount: 0,
+      saved: false,
+      saveCount: 0,
+      commentsCount: 0,
+    };
+    const nextLiked = !current.liked;
+    const nextCount = Math.max(0, current.likeCount + (nextLiked ? 1 : -1));
+
+    setSocialStats((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...current,
+        liked: nextLiked,
+        likeCount: nextCount,
+      },
+    }));
+
+    try {
+      await toggleItemLike({
+        itemId,
+        uid: firebaseUser.uid,
+        isVerifiedUser: Boolean(firebaseUser.emailVerified),
+      });
+    } catch (err) {
+      console.error('Failed to toggle like:', err);
+      // Revert on error
+      setSocialStats((prev) => ({
+        ...prev,
+        [itemId]: current,
+      }));
+    }
+  };
+
+  const handleToggleSave = async (itemId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!firebaseUser) {
+      openAuthModal();
+      return;
+    }
+
+    const current = socialStats[itemId] || {
+      liked: false,
+      likeCount: 0,
+      saved: false,
+      saveCount: 0,
+      commentsCount: 0,
+    };
+    const nextSaved = !current.saved;
+    const nextCount = Math.max(0, current.saveCount + (nextSaved ? 1 : -1));
+
+    setSocialStats((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...current,
+        saved: nextSaved,
+        saveCount: nextCount,
+      },
+    }));
+
+    try {
+      await toggleItemSave({
+        itemId,
+        uid: firebaseUser.uid,
+        isVerifiedUser: Boolean(firebaseUser.emailVerified),
+      });
+    } catch (err) {
+      console.error('Failed to toggle save:', err);
+      setSocialStats((prev) => ({
+        ...prev,
+        [itemId]: current,
+      }));
+    }
+  };
 
   // Handle follow/unfollow category directly from Fresh Finds
   const handleToggleCategoryFollow = async (cat: CategorySlug) => {
@@ -417,6 +544,64 @@ export const FreshFindsFeed: React.FC = () => {
                           {isCategoryFollowed ? 'Followed' : '10+ pieces'}
                         </span>
                       )}
+                    </div>
+
+                    {/* Social Action Strip (Likes, Comments, Saves with counts) */}
+                    <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs text-muted">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={(e) => void handleToggleLike(item.id, e)}
+                          title={socialStats[item.id]?.liked ? 'Unlike' : 'Like'}
+                          className={`inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                            socialStats[item.id]?.liked
+                              ? 'text-danger font-medium'
+                              : 'hover:text-ink'
+                          }`}
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 ${
+                              socialStats[item.id]?.liked ? 'fill-danger text-danger' : ''
+                            }`}
+                            strokeWidth={1.5}
+                          />
+                          <span className="font-mono text-[11px]">
+                            {socialStats[item.id]?.likeCount ?? 0}
+                          </span>
+                        </button>
+
+                        <Link
+                          to={`/i/${item.id}#comments`}
+                          className="inline-flex items-center gap-1.5 hover:text-ink transition-colors"
+                          title="View comments"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          <span className="font-mono text-[11px]">
+                            {socialStats[item.id]?.commentsCount ?? 0}
+                          </span>
+                        </Link>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => void handleToggleSave(item.id, e)}
+                        title={socialStats[item.id]?.saved ? 'Saved to showcase' : 'Save piece'}
+                        className={`inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                          socialStats[item.id]?.saved
+                            ? 'text-brass font-medium'
+                            : 'hover:text-ink'
+                        }`}
+                      >
+                        <Bookmark
+                          className={`w-3.5 h-3.5 ${
+                            socialStats[item.id]?.saved ? 'fill-brass text-brass' : ''
+                          }`}
+                          strokeWidth={1.5}
+                        />
+                        <span className="font-mono text-[11px]">
+                          {socialStats[item.id]?.saveCount ?? 0}
+                        </span>
+                      </button>
                     </div>
 
                     {/* Compact Got One / Want One interaction */}

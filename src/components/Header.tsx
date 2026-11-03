@@ -4,6 +4,10 @@ import { Bookmark, Camera, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { NotificationsButton } from './NotificationsButton';
+import {
+  FANZEUM_LOGO_ALT,
+  FANZEUM_LOGO_SRC,
+} from '../lib/brand';
 import { Button } from './ui/Button';
 
 export const Header: React.FC = () => {
@@ -26,15 +30,23 @@ export const Header: React.FC = () => {
         {/* Zone 1: Wordmark */}
         <Link
           to="/"
-          className="text-2xl font-display font-semibold tracking-tight text-ink whitespace-nowrap shrink-0"
+          className="shrink-0 inline-flex items-center"
         >
-          Fanzeum
+          <img
+            src={FANZEUM_LOGO_SRC}
+            alt={FANZEUM_LOGO_ALT}
+            className="h-8 md:h-10 w-auto object-contain"
+            loading="eager"
+          />
         </Link>
 
         {/* Zone 2: Clean Desktop Navigation */}
         <nav aria-label="Main navigation" className="hidden md:flex items-center gap-7">
           <NavLink to="/" end className={navLinkClass}>
             Home
+          </NavLink>
+          <NavLink to="/fresh-finds" className={navLinkClass}>
+            Fresh Finds
           </NavLink>
           <NavLink to="/explore" className={navLinkClass}>
             Explore

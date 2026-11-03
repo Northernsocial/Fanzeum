@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { MailCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFriendlyFirebaseErrorMessage } from '../lib/firebase';
+import {
+  FANZEUM_LOGO_ALT,
+  FANZEUM_LOGO_SRC,
+} from '../lib/brand';
 import { Button } from './ui/Button';
 import { Sheet } from './ui/Sheet';
 import { Tabs } from './ui/Tabs';
@@ -122,6 +126,15 @@ export const AuthModal: React.FC = () => {
         subtitle="Add pieces by photo, check realistic UK £ values, and exhibit your sets."
       >
         <div className="space-y-5">
+          <div className="flex justify-center">
+            <img
+              src={FANZEUM_LOGO_SRC}
+              alt={FANZEUM_LOGO_ALT}
+              className="h-9 w-auto object-contain"
+              loading="eager"
+            />
+          </div>
+
           <Button variant="primary" fullWidth disabled={busy} onClick={handleGoogle}>
             <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
               <path

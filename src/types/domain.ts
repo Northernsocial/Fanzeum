@@ -62,6 +62,40 @@ export interface FollowRecord {
   createdAt?: unknown;
 }
 
+export interface ItemLikeRecord {
+  uid: string;
+  itemId: string;
+  createdAt?: unknown;
+}
+
+export interface ItemSaveRecord {
+  uid: string;
+  itemId: string;
+  createdAt?: unknown;
+}
+
+export interface ItemCommentRecord {
+  id: string;
+  itemId: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatarUrl: string;
+  text: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface ReportRecord {
+  id?: string;
+  reporterId: string;
+  targetType: 'comment' | 'item';
+  targetId: string;
+  itemId: string;
+  reason: string;
+  createdAt?: unknown;
+}
+
 export interface UserPrivateAccount {
   uid: string;
   email: string;
@@ -121,6 +155,8 @@ export interface CollectibleItemRecord {
   forSale: boolean;
   mediaCredit?: MediaCredit;
   helpedBy?: string; // Collector handle or note of who contributed ID correction
+  panelStatus?: 'none' | 'confirmed' | 'disputed';
+  panelConfirmedAt?: string;
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -176,6 +212,20 @@ export interface NotificationRecord {
   itemTitle: string;
   itemCategory: CategorySlug;
   read: boolean;
+  createdAt?: unknown;
+}
+
+export interface FreshFindRecord {
+  id: string;
+  itemId: string;
+  ownerId: string;
+  ownerHandle: string;
+  category: CategorySlug;
+  title: string;
+  thumbUrl: string;
+  valueRange?: string;
+  panelStatus?: 'none' | 'confirmed' | 'disputed';
+  isDemo?: boolean;
   createdAt?: unknown;
 }
 

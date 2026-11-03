@@ -17,7 +17,7 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { CATEGORIES, CATEGORY_LIST, type CategorySlug } from '../../config/categories';
+import { CATEGORIES, CATEGORY_LIST, isPanelConfirmed, type CategorySlug } from '../../config/categories';
 import {
   ALL_PERSONAS,
   getPersonaById,
@@ -31,6 +31,7 @@ import { getFriendlyFirebaseErrorMessage } from '../../lib/firebase';
 import {
   addCollectibleItemRecord,
   createCollectionRecord,
+  createFreshFindRecord,
   listOwnerCollections,
   makeSafeId,
   upsertPanelChatRecord,
@@ -109,6 +110,8 @@ export const AddPiecePage: React.FC = () => {
   const [acquiredPriceGbp, setAcquiredPriceGbp] = useState('');
   const [acquiredDate, setAcquiredDate] = useState('');
   const [privateNotes, setPrivateNotes] = useState('');
+  const [shareFreshFind, setShareFreshFind] = useState(true);
+  const [includeValueRangeInFreshFind, setIncludeValueRangeInFreshFind] = useState(true);
   const [savingItem, setSavingItem] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -411,6 +414,16 @@ export const AddPiecePage: React.FC = () => {
         confidences[k] = entry.confidence;
       });
 
+      const confirmed = isPanelConfirmed(
+        currentCard.category,
+        currentCard.fields,
+        currentCard.overallConfidence,
+      );
+      const panelStatus: 'none' | 'confirmed' | 'disputed' = confirmed ? 'confirmed' : 'none';
+      const panelConfirmedAt = confirmed
+        ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date())
+        : undefined;
+
       setSaveStatus('Saving piece to your showcase…');
       const created = await addCollectibleItemRecord({
         customItemId: chatItemId,
@@ -431,7 +444,30 @@ export const AddPiecePage: React.FC = () => {
         acquiredDate,
         acquiredPriceGbp: Number(acquiredPriceGbp) || 0,
         privateNotes,
+        panelStatus,
+        panelConfirmedAt,
       });
+
+      // Write Fresh Find if enabled
+      if (shareFreshFind) {
+        setSaveStatus('Sharing as a Fresh Find…');
+        const valueRangeStr =
+          includeValueRangeInFreshFind && (currentCard.valueMinGbp > 0 || currentCard.valueMaxGbp > 0)
+            ? formatGbpRange(currentCard.valueMinGbp, currentCard.valueMaxGbp)
+            : undefined;
+
+        await createFreshFindRecord({
+          itemId: created.id,
+          ownerId: firebaseUser.uid,
+          ownerHandle: profile.handle,
+          category: currentCard.category,
+          title: created.title,
+          thumbUrl: created.thumbUrl || created.imageUrl,
+          valueRange: valueRangeStr,
+          panelStatus,
+          isDemo: false,
+        });
+      }
 
       // Update panel chat record status to 'saved'
       void upsertPanelChatRecord({
@@ -1083,6 +1119,38 @@ export const AddPiecePage: React.FC = () => {
                 />
                 <span>Mark as a Grail Piece</span>
               </label>
+
+              {/* Share as a Fresh Find */}
+              <div className="p-3 rounded-xl bg-surface border border-brass/30 space-y-2">
+                <label className="flex items-start gap-2.5 text-xs text-ink cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={shareFreshFind}
+                    onChange={(e) => setShareFreshFind(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 accent-brass"
+                  />
+                  <div>
+                    <span className="font-semibold text-brass">Share as a Fresh Find</span>
+                    <p className="text-[11px] text-muted mt-0.5">
+                      Showcase this piece in the public Fresh Finds feed. Zero location data or private price paid are ever shown.
+                    </p>
+                  </div>
+                </label>
+
+                {shareFreshFind && (
+                  <div className="pl-6 pt-1 border-t border-border/50">
+                    <label className="flex items-center gap-2 text-[11px] text-muted hover:text-ink cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeValueRangeInFreshFind}
+                        onChange={(e) => setIncludeValueRangeInFreshFind(e.target.checked)}
+                        className="w-3.5 h-3.5 accent-brass"
+                      />
+                      <span>Show estimated guide ({formatGbpRange(currentCard.valueMinGbp, currentCard.valueMaxGbp)}) on Fresh Find card</span>
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
 
             {saveError && (

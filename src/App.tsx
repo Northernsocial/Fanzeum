@@ -15,9 +15,16 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { Button } from './components/ui/Button';
 import { EmptyState, Skeleton } from './components/ui/EmptyState';
 import { HomePage } from './features/home/HomePage';
+import {
+  FANZEUM_LOGO_ALT,
+  FANZEUM_LOGO_SRC,
+} from './lib/brand';
 
 const ExplorePage = lazy(() =>
   import('./features/explore/ExplorePage').then((m) => ({ default: m.ExplorePage })),
+);
+const FreshFindsPage = lazy(() =>
+  import('./features/fresh-finds/FreshFindsPage').then((m) => ({ default: m.FreshFindsPage })),
 );
 const CabinetPage = lazy(() =>
   import('./features/cabinet/CabinetPage').then((m) => ({ default: m.CabinetPage })),
@@ -141,6 +148,7 @@ export default function App() {
                 >
                   <Routes>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/fresh-finds" element={<FreshFindsPage />} />
                     <Route path="/explore" element={<ExplorePage />} />
                     <Route path="/category/:categorySlug" element={<ExplorePage />} />
                     <Route path="/c/:collectionId" element={<CollectionPage />} />
@@ -179,15 +187,21 @@ export default function App() {
 
               <footer className="hidden md:block border-t border-border py-10 px-4 sm:px-8">
                 <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-sm text-muted">
-                  <div>
-                    <span className="font-display text-lg font-semibold text-ink mr-3">
-                      Fanzeum
-                    </span>
+                  <div className="flex items-center flex-wrap gap-x-3 gap-y-2">
+                    <img
+                      src={FANZEUM_LOGO_SRC}
+                      alt={FANZEUM_LOGO_ALT}
+                      className="h-6 w-auto object-contain"
+                      loading="eager"
+                    />
                     <span>
                       The collector&apos;s showcase for cards, coins, stamps, comics, vinyl &amp; toys.
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-6">
+                    <Link to="/fresh-finds" className="hover:text-ink">
+                      Fresh Finds
+                    </Link>
                     <Link to="/explore" className="hover:text-ink">
                       Explore
                     </Link>

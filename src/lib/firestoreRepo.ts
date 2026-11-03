@@ -20,6 +20,7 @@ import type {
   CollectionRecord,
   CollectorGoal,
   ConfidenceLevel,
+  FreshFindRecord,
   ItemPhoto,
   ItemPrivateRecord,
   MediaCredit,
@@ -126,9 +127,27 @@ function normalizeItemDoc(id: string, raw: Record<string, unknown>): Collectible
     customOrder: Number(raw.customOrder) || 0,
     forSale: Boolean(raw.forSale),
     mediaCredit: raw.mediaCredit as MediaCredit | undefined,
+    panelStatus: raw.panelStatus as 'none' | 'confirmed' | 'disputed' | undefined,
+    panelConfirmedAt: raw.panelConfirmedAt ? String(raw.panelConfirmedAt) : undefined,
     isDemo: Boolean(raw.isDemo),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
+  };
+}
+
+function normalizeFreshFindDoc(id: string, raw: Record<string, unknown>): FreshFindRecord {
+  return {
+    id,
+    itemId: String(raw.itemId || ''),
+    ownerId: String(raw.ownerId || ''),
+    ownerHandle: String(raw.ownerHandle || 'collector'),
+    category: (raw.category as CategorySlug) || 'memorabilia',
+    title: String(raw.title || 'Untitled Piece'),
+    thumbUrl: String(raw.thumbUrl || ''),
+    valueRange: raw.valueRange ? String(raw.valueRange) : undefined,
+    panelStatus: raw.panelStatus as 'none' | 'confirmed' | 'disputed' | undefined,
+    isDemo: Boolean(raw.isDemo),
+    createdAt: raw.createdAt,
   };
 }
 
@@ -929,6 +948,8 @@ export async function addCollectibleItemRecord(params: {
   acquiredPriceGbp?: number;
   privateNotes?: string;
   customItemId?: string;
+  panelStatus?: 'none' | 'confirmed' | 'disputed';
+  panelConfirmedAt?: string;
 }): Promise<CollectibleItemRecord> {
   const itemId = params.customItemId || makeSafeId('itm');
   const path = `items/${itemId}`;
@@ -991,6 +1012,8 @@ export async function addCollectibleItemRecord(params: {
     tags: cleanTags,
     customOrder: Math.max(0, params.collectionRecord.itemCount || 0),
     forSale: false,
+    ...(params.panelStatus ? { panelStatus: params.panelStatus } : {}),
+    ...(params.panelConfirmedAt ? { panelConfirmedAt: params.panelConfirmedAt } : {}),
     isDemo: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -1047,6 +1070,8 @@ export async function updateCollectibleItemRecord(params: {
   valuationReason: string;
   grail: boolean;
   tags: string[];
+  panelStatus?: 'none' | 'confirmed' | 'disputed';
+  panelConfirmedAt?: string;
 }): Promise<void> {
   const path = `items/${params.item.id}`;
   const cleanTitle = (params.title.trim() || 'Untitled Piece').slice(0, 140);
@@ -1073,6 +1098,8 @@ export async function updateCollectibleItemRecord(params: {
         .map((t) => t.toLowerCase().trim().slice(0, 40))
         .filter(Boolean)
         .slice(0, 12),
+      ...(params.panelStatus ? { panelStatus: params.panelStatus } : {}),
+      ...(params.panelConfirmedAt ? { panelConfirmedAt: params.panelConfirmedAt } : {}),
       updatedAt: serverTimestamp(),
     });
     await recomputeAndSyncCollectionStats(params.collectionRecord, params.item.ownerId);
@@ -1176,6 +1203,120 @@ export async function deleteEntireCollection(
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, colPath);
   }
+}
+
+// 3.5 Fresh Finds Collection
+export async function createFreshFindRecord(params: {
+  itemId: string;
+  ownerId: string;
+  ownerHandle: string;
+  category: CategorySlug;
+  title: string;
+  thumbUrl: string;
+  valueRange?: string;
+  panelStatus?: 'none' | 'confirmed' | 'disputed';
+  isDemo?: boolean;
+}): Promise<FreshFindRecord> {
+  const findId = makeSafeId('find');
+  const path = `freshFinds/${findId}`;
+
+  const cleanTitle = params.title.trim().slice(0, 140) || 'Untitled Piece';
+  const cleanHandle = sanitizeHandle(params.ownerHandle);
+  const cleanThumb = (params.thumbUrl || '').slice(0, 2048);
+
+  const recordData = {
+    itemId: params.itemId,
+    ownerId: params.ownerId,
+    ownerHandle: cleanHandle,
+    category: params.category,
+    title: cleanTitle,
+    thumbUrl: cleanThumb,
+    ...(params.valueRange ? { valueRange: params.valueRange.trim().slice(0, 80) } : {}),
+    ...(params.panelStatus ? { panelStatus: params.panelStatus } : {}),
+    isDemo: Boolean(params.isDemo),
+    createdAt: serverTimestamp(),
+  };
+
+  try {
+    await setDoc(doc(db, 'freshFinds', findId), recordData);
+    return {
+      id: findId,
+      ...recordData,
+    };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export async function deleteFreshFindRecord(findId: string): Promise<void> {
+  const path = `freshFinds/${findId}`;
+  try {
+    await deleteDoc(doc(db, 'freshFinds', findId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function listFreshFinds(params: {
+  category?: CategorySlug | 'all';
+  pageSize?: number;
+  pageIndex?: number;
+}): Promise<{
+  items: FreshFindRecord[];
+  totalCount: number;
+  hasMore: boolean;
+}> {
+  const pageSize = params.pageSize || 12;
+  const pageIndex = params.pageIndex || 0;
+
+  let liveFinds: FreshFindRecord[] = [];
+  try {
+    const q =
+      params.category && params.category !== 'all'
+        ? query(
+            collection(db, 'freshFinds'),
+            where('category', '==', params.category),
+            limit(150),
+          )
+        : query(collection(db, 'freshFinds'), limit(150));
+
+    const snap = await getDocs(q);
+    liveFinds = snap.docs.map((d) => normalizeFreshFindDoc(d.id, d.data() as Record<string, unknown>));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, 'freshFinds');
+  }
+
+  const seen = new Set(liveFinds.map((f) => f.id));
+  const combined = [...liveFinds];
+
+  if (!isBuiltinDemoHidden()) {
+    // Import demo catalog fresh finds dynamically/safely
+    const { DEMO_FRESH_FINDS } = await import('../data/demoCatalog');
+    for (const demo of DEMO_FRESH_FINDS) {
+      if (seen.has(demo.id)) continue;
+      if (params.category && params.category !== 'all' && demo.category !== params.category) {
+        continue;
+      }
+      combined.push(demo);
+    }
+  }
+
+  // Newest first: live non-demo items ahead of demo, sorted by createdAt
+  combined.sort((a, b) => {
+    const aLive = a.isDemo ? 0 : 1;
+    const bLive = b.isDemo ? 0 : 1;
+    if (aLive !== bLive) return bLive - aLive;
+    const aSec = (a.createdAt as { seconds?: number } | undefined)?.seconds || 0;
+    const bSec = (b.createdAt as { seconds?: number } | undefined)?.seconds || 0;
+    return bSec - aSec;
+  });
+
+  const end = (pageIndex + 1) * pageSize;
+  return {
+    items: combined.slice(0, end),
+    totalCount: combined.length,
+    hasMore: end < combined.length,
+  };
 }
 
 // 4. UK GDPR Full Export & Complete Account + Storage Erasure

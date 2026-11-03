@@ -8,17 +8,17 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { DEMO_COLLECTIONS, DEMO_ITEMS, DEMO_USERS } from '../data/demoCatalog';
+import { DEMO_COLLECTIONS, DEMO_FRESH_FINDS, DEMO_ITEMS, DEMO_USERS } from '../data/demoCatalog';
 import { db, handleFirestoreError, OperationType } from './firebase';
 import { setBuiltinDemoHidden } from './firestoreRepo';
 
 /**
- * Idempotent admin seeder: writes the 6 demo collectors, 16 collections, and 192 pieces
+ * Idempotent admin seeder: writes the 6 demo collectors, 16 collections, 192 pieces, and demo Fresh Finds
  * into Firestore with `isDemo: true` using deterministic IDs so re-running never creates duplicates.
  */
 export async function seedDemoDataToFirestore(
   onProgress?: (message: string) => void,
-): Promise<{ users: number; collections: number; items: number }> {
+): Promise<{ users: number; collections: number; items: number; freshFinds: number }> {
   setBuiltinDemoHidden(false);
 
   onProgress?.('Writing 6 demo collector profiles…');
@@ -122,6 +122,12 @@ export async function seedDemoDataToFirestore(
         if (item.mediaCredit) {
           payload.mediaCredit = item.mediaCredit;
         }
+        if (item.panelStatus) {
+          payload.panelStatus = item.panelStatus;
+        }
+        if (item.panelConfirmedAt) {
+          payload.panelConfirmedAt = item.panelConfirmedAt;
+        }
         itemBatch.set(doc(db, 'items', item.id), payload);
       }
       await itemBatch.commit();
@@ -130,11 +136,36 @@ export async function seedDemoDataToFirestore(
     }
   }
 
+  // 4. Demo Fresh Finds
+  onProgress?.(`Writing ${DEMO_FRESH_FINDS.length} demo Fresh Finds…`);
+  try {
+    const findBatch = writeBatch(db);
+    for (const find of DEMO_FRESH_FINDS) {
+      const payload: Record<string, unknown> = {
+        itemId: find.itemId,
+        ownerId: find.ownerId,
+        ownerHandle: find.ownerHandle,
+        category: find.category,
+        title: find.title,
+        thumbUrl: find.thumbUrl,
+        isDemo: true,
+        createdAt: serverTimestamp(),
+      };
+      if (find.valueRange) payload.valueRange = find.valueRange;
+      if (find.panelStatus) payload.panelStatus = find.panelStatus;
+      findBatch.set(doc(db, 'freshFinds', find.id), payload);
+    }
+    await findBatch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'freshFinds');
+  }
+
   onProgress?.('Demo data loaded.');
   return {
     users: DEMO_USERS.length,
     collections: DEMO_COLLECTIONS.length,
     items: DEMO_ITEMS.length,
+    freshFinds: DEMO_FRESH_FINDS.length,
   };
 }
 
@@ -146,7 +177,7 @@ export async function removeDemoDataFromFirestore(
 ): Promise<{ deletedCount: number }> {
   let deletedCount = 0;
 
-  for (const colName of ['items', 'collections', 'users'] as const) {
+  for (const colName of ['freshFinds', 'items', 'collections', 'users'] as const) {
     onProgress?.(`Removing demo records from ${colName}…`);
     try {
       const q =

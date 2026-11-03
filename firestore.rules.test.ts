@@ -51,13 +51,19 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
         '/users/{userId}',
         '/users/{userId}/private/{docId}',
         '/users/{userId}/itemPrivate/{itemId}',
+        '/users/{userId}/saves/{itemId}',
         '/collections/{collectionId}',
         '/items/{itemId}',
+        '/items/{itemId}/likes/{userId}',
+        '/items/{itemId}/saves/{userId}',
+        '/items/{itemId}/comments/{commentId}',
         '/follows/{followId}',
         '/idCorrections/{correctionId}',
         '/itemSignals/{signalId}',
         '/wants/{wantId}',
         '/notifications/{notificationId}',
+        '/reports/{reportId}',
+        '/freshFinds/{findId}',
       ]),
     );
     expect(rulesSource).toContain('match /admins/{adminId}');
@@ -65,13 +71,18 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('match /users/{userId}');
     expect(rulesSource).toContain('match /private/{docId}');
     expect(rulesSource).toContain('match /itemPrivate/{itemId}');
+    expect(rulesSource).toContain('match /saves/{itemId}');
     expect(rulesSource).toContain('match /collections/{collectionId}');
     expect(rulesSource).toContain('match /items/{itemId}');
+    expect(rulesSource).toContain('match /likes/{userId}');
+    expect(rulesSource).toContain('match /comments/{commentId}');
     expect(rulesSource).toContain('match /follows/{followId}');
     expect(rulesSource).toContain('match /idCorrections/{correctionId}');
     expect(rulesSource).toContain('match /itemSignals/{signalId}');
     expect(rulesSource).toContain('match /wants/{wantId}');
     expect(rulesSource).toContain('match /notifications/{notificationId}');
+    expect(rulesSource).toContain('match /reports/{reportId}');
+    expect(rulesSource).toContain('match /freshFinds/{findId}');
   });
 
   it('2b. Enforces strict schema and owner-only writes on follows collection', () => {
@@ -81,7 +92,7 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('existing().followerId == request.auth.uid || isAdmin()');
   });
 
-  it('2c. Enforces strict schema and validation on Phase 2C collections (idCorrections, itemSignals, wants, notifications)', () => {
+  it('2f. Enforces strict schema and validation on Phase 2C collections (idCorrections, itemSignals, wants, notifications)', () => {
     expect(rulesSource).toContain('isValidIdCorrection(incoming())');
     expect(rulesSource).toContain("incoming().status == 'pending'");
     expect(rulesSource).toContain('isValidItemSignal(incoming())');
@@ -89,6 +100,27 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('isValidNotification(incoming())');
     expect(rulesSource).toContain("affectedKeys().hasOnly(['status', 'updatedAt'])");
     expect(rulesSource).toContain("affectedKeys().hasOnly(['read'])");
+  });
+
+  it('2c. Enforces one like per user per item with doc id = uid and immutable likes', () => {
+    expect(rulesSource).toContain('isValidItemLike(incoming())');
+    expect(rulesSource).toContain('request.auth.uid == userId');
+    expect(rulesSource).toContain('incoming().uid == request.auth.uid');
+    expect(rulesSource).toContain('userId == request.auth.uid || isAdmin()');
+  });
+
+  it('2d. Enforces comments constraints: plain text <= 1000 chars, author edit/delete, item owner delete', () => {
+    expect(rulesSource).toContain('isValidItemComment(incoming())');
+    expect(rulesSource).toContain('data.text.size() <= 1000');
+    expect(rulesSource).toContain('existing().authorId == request.auth.uid');
+    expect(rulesSource).toContain("incoming().diff(existing()).affectedKeys().hasOnly(['text', 'updatedAt'])");
+    expect(rulesSource).toContain('get(/databases/$(database)/documents/items/$(itemId)).data.ownerId == request.auth.uid');
+  });
+
+  it('2e. Enforces reports: writeable by verified users, strictly admin read only', () => {
+    expect(rulesSource).toContain('isValidReport(incoming())');
+    expect(rulesSource).toContain('allow get, list: if isAdmin();');
+    expect(rulesSource).toContain('incoming().reporterId == request.auth.uid');
   });
 
   it('3. Blocks privilege escalation on registration (locks role=collector, plan=free, isVerifiedExpert=false)', () => {
@@ -103,6 +135,21 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('isValidCollectibleItem(incoming())');
     expect(rulesSource).toContain('isValidPanelChatRecord(incoming())');
     expect(rulesSource).toContain('incoming().diff(existing()).affectedKeys().hasOnly(');
+    expect(rulesSource).toContain('isValidFreshFind(incoming())');
+  });
+
+  it('4b. Enforces Fresh Finds rules: anyone can read, owner-only create/delete, no edits', () => {
+    expect(rulesSource).toContain('match /freshFinds/{findId}');
+    expect(rulesSource).toContain('allow get, list: if true;');
+    expect(rulesSource).toContain('incoming().ownerId == request.auth.uid');
+    expect(rulesSource).toContain('existing().ownerId == request.auth.uid || isAdmin()');
+    expect(rulesSource).toMatch(/match \/freshFinds\/\{findId\}\s*\{[\s\S]*?allow update: if false;/);
+  });
+
+  it('4c. Allows panelStatus and panelConfirmedAt on CollectibleItem updates and schema', () => {
+    expect(rulesSource).toContain("'panelStatus'");
+    expect(rulesSource).toContain("'panelConfirmedAt'");
+    expect(rulesSource).toContain("data.panelStatus in ['none', 'confirmed', 'disputed']");
   });
 
   it('5. Prevents unverified admin email spoofing (requires email_verified == true)', () => {

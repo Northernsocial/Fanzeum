@@ -16,7 +16,10 @@
           "format": "date-time"
         }
       },
-      "required": ["uid", "createdAt"]
+      "required": [
+        "uid",
+        "createdAt"
+      ]
     },
     "UserProfile": {
       "title": "UserProfile",
@@ -58,17 +61,31 @@
         },
         "goal": {
           "type": "string",
-          "enum": ["exhibit", "complete_set", "sell", "learn"],
+          "enum": [
+            "exhibit",
+            "complete_set",
+            "sell",
+            "learn"
+          ],
           "maxLength": 24
         },
         "role": {
           "type": "string",
-          "enum": ["collector", "expert", "store", "admin"],
+          "enum": [
+            "collector",
+            "expert",
+            "store",
+            "admin"
+          ],
           "maxLength": 16
         },
         "plan": {
           "type": "string",
-          "enum": ["free", "premium", "store"],
+          "enum": [
+            "free",
+            "premium",
+            "store"
+          ],
           "maxLength": 16
         },
         "isVerifiedExpert": {
@@ -274,7 +291,11 @@
         },
         "visibility": {
           "type": "string",
-          "enum": ["public", "followers", "private"],
+          "enum": [
+            "public",
+            "followers",
+            "private"
+          ],
           "maxLength": 16
         },
         "itemCount": {
@@ -362,7 +383,11 @@
         },
         "visibility": {
           "type": "string",
-          "enum": ["public", "followers", "private"],
+          "enum": [
+            "public",
+            "followers",
+            "private"
+          ],
           "maxLength": 16
         },
         "title": {
@@ -430,7 +455,12 @@
         },
         "aiConfidence": {
           "type": "string",
-          "enum": ["high", "medium", "low", "manual"],
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "manual"
+          ],
           "maxLength": 16
         },
         "grail": {
@@ -450,10 +480,18 @@
           "type": "object",
           "description": "Optional public-domain / Creative Commons attribution."
         },
-        "helpedBy": {
+        "panelStatus": {
           "type": "string",
-          "maxLength": 120,
-          "description": "Optional collector handle or note acknowledging community ID correction."
+          "enum": [
+            "none",
+            "confirmed",
+            "disputed"
+          ],
+          "maxLength": 16
+        },
+        "panelConfirmedAt": {
+          "type": "string",
+          "maxLength": 64
         },
         "isDemo": {
           "type": "boolean"
@@ -465,6 +503,11 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "helpedBy": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional collector handle or note acknowledging community ID correction."
         }
       },
       "required": [
@@ -511,7 +554,10 @@
         },
         "targetType": {
           "type": "string",
-          "enum": ["category", "user"],
+          "enum": [
+            "category",
+            "user"
+          ],
           "maxLength": 16
         },
         "targetId": {
@@ -528,6 +574,254 @@
         "followerId",
         "targetType",
         "targetId",
+        "createdAt"
+      ]
+    },
+    "FreshFindRecord": {
+      "title": "FreshFindRecord",
+      "description": "Public community feed discovery card with zero location and zero private price.",
+      "type": "object",
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerHandle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32,
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "stamps",
+            "football_cards",
+            "trading_cards",
+            "coins",
+            "comics",
+            "vinyl",
+            "toys",
+            "memorabilia"
+          ],
+          "maxLength": 32
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "thumbUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "valueRange": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "panelStatus": {
+          "type": "string",
+          "enum": [
+            "none",
+            "confirmed",
+            "disputed"
+          ],
+          "maxLength": 16
+        },
+        "isDemo": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "itemId",
+        "ownerId",
+        "ownerHandle",
+        "category",
+        "title",
+        "thumbUrl",
+        "createdAt"
+      ]
+    },
+    "ItemLikeRecord": {
+      "title": "ItemLikeRecord",
+      "description": "One like per user per item with doc id = uid.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "itemId",
+        "createdAt"
+      ]
+    },
+    "ItemSaveRecord": {
+      "title": "ItemSaveRecord",
+      "description": "One save per user per item bookmark.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "itemId",
+        "createdAt"
+      ]
+    },
+    "ItemCommentRecord": {
+      "title": "ItemCommentRecord",
+      "description": "Plain text comment on an item up to 1,000 characters.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "authorHandle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32,
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "authorAvatarUrl": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "itemId",
+        "authorId",
+        "authorName",
+        "authorHandle",
+        "authorAvatarUrl",
+        "text",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ReportRecord": {
+      "title": "ReportRecord",
+      "description": "Admin read-only moderation report.",
+      "type": "object",
+      "properties": {
+        "reporterId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetType": {
+          "type": "string",
+          "enum": [
+            "comment",
+            "item"
+          ],
+          "maxLength": 16
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "reporterId",
+        "targetType",
+        "targetId",
+        "itemId",
+        "reason",
         "createdAt"
       ]
     },
@@ -576,7 +870,11 @@
         },
         "status": {
           "type": "string",
-          "enum": ["pending", "accepted", "dismissed"],
+          "enum": [
+            "pending",
+            "accepted",
+            "dismissed"
+          ],
           "maxLength": 16
         },
         "createdAt": {
@@ -619,7 +917,10 @@
         },
         "signalType": {
           "type": "string",
-          "enum": ["got", "want"],
+          "enum": [
+            "got",
+            "want"
+          ],
           "maxLength": 16
         },
         "createdAt": {
@@ -707,7 +1008,11 @@
         },
         "type": {
           "type": "string",
-          "enum": ["want_match", "id_correction_received", "id_correction_accepted"],
+          "enum": [
+            "want_match",
+            "id_correction_received",
+            "id_correction_accepted"
+          ],
           "maxLength": 32
         },
         "title": {
@@ -768,51 +1073,111 @@
   },
   "firestore": {
     "/admins/{adminId}": {
-      "schema": { "$ref": "#/entities/AdminRecord" },
+      "schema": {
+        "$ref": "#/entities/AdminRecord"
+      },
       "description": "Out-of-band administrator registry."
     },
     "/panelChats/{itemId}": {
-      "schema": { "$ref": "#/entities/PanelChatRecord" },
+      "schema": {
+        "$ref": "#/entities/PanelChatRecord"
+      },
       "description": "Interactive AI Expert Panel chat and structured card for an item."
     },
     "/users/{userId}": {
-      "schema": { "$ref": "#/entities/UserProfile" },
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
       "description": "Public collector cabinet profiles (zero PII)."
     },
     "/users/{userId}/private/{docId}": {
-      "schema": { "$ref": "#/entities/UserPrivateAccount" },
+      "schema": {
+        "$ref": "#/entities/UserPrivateAccount"
+      },
       "description": "Strictly isolated PII and UK GDPR consent records."
     },
     "/users/{userId}/itemPrivate/{itemId}": {
-      "schema": { "$ref": "#/entities/ItemPrivateRecord" },
+      "schema": {
+        "$ref": "#/entities/ItemPrivateRecord"
+      },
       "description": "Strictly isolated owner-only purchase price, acquisition date, and private notes."
     },
     "/collections/{collectionId}": {
-      "schema": { "$ref": "#/entities/CollectionRecord" },
+      "schema": {
+        "$ref": "#/entities/CollectionRecord"
+      },
       "description": "Collector collections with visibility controls and set targets."
     },
     "/items/{itemId}": {
-      "schema": { "$ref": "#/entities/CollectibleItemRecord" },
+      "schema": {
+        "$ref": "#/entities/CollectibleItemRecord"
+      },
       "description": "Individual pieces referencing owned collections and Storage photo URLs."
     },
     "/follows/{followId}": {
-      "schema": { "$ref": "#/entities/FollowRecord" },
+      "schema": {
+        "$ref": "#/entities/FollowRecord"
+      },
       "description": "Owner-only follow records for categories and collectors."
     },
+    "/freshFinds/{findId}": {
+      "schema": {
+        "$ref": "#/entities/FreshFindRecord"
+      },
+      "description": "Public Fresh Finds community discoveries."
+    },
+    "/users/{userId}/saves/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/ItemSaveRecord"
+      },
+      "description": "User saved/bookmarked pieces list."
+    },
+    "/items/{itemId}/likes/{userId}": {
+      "schema": {
+        "$ref": "#/entities/ItemLikeRecord"
+      },
+      "description": "Likes on an item, strictly 1 per user enforced by doc id = uid."
+    },
+    "/items/{itemId}/saves/{userId}": {
+      "schema": {
+        "$ref": "#/entities/ItemSaveRecord"
+      },
+      "description": "Saves on an item, strictly 1 per user enforced by doc id = uid."
+    },
+    "/items/{itemId}/comments/{commentId}": {
+      "schema": {
+        "$ref": "#/entities/ItemCommentRecord"
+      },
+      "description": "Plain text comments on an item."
+    },
+    "/reports/{reportId}": {
+      "schema": {
+        "$ref": "#/entities/ReportRecord"
+      },
+      "description": "Content reports, writeable by verified users and readable only by admins."
+    },
     "/idCorrections/{correctionId}": {
-      "schema": { "$ref": "#/entities/IdCorrectionRecord" },
+      "schema": {
+        "$ref": "#/entities/IdCorrectionRecord"
+      },
       "description": "Suggested ID corrections on items with accept/dismiss states."
     },
     "/itemSignals/{signalId}": {
-      "schema": { "$ref": "#/entities/ItemSignalRecord" },
+      "schema": {
+        "$ref": "#/entities/ItemSignalRecord"
+      },
       "description": "Collector got-one and want-one button signals."
     },
     "/wants/{wantId}": {
-      "schema": { "$ref": "#/entities/WantItemRecord" },
+      "schema": {
+        "$ref": "#/entities/WantItemRecord"
+      },
       "description": "Collector wantlist entries with category and key fields."
     },
     "/notifications/{notificationId}": {
-      "schema": { "$ref": "#/entities/NotificationRecord" },
+      "schema": {
+        "$ref": "#/entities/NotificationRecord"
+      },
       "description": "In-app notifications for want alerts and ID correction events."
     }
   }
