@@ -57,35 +57,35 @@ export const Slab: React.FC<SlabProps> = ({
       ref={ref}
       onPointerMove={handlePointerMove}
       onPointerLeave={resetTilt}
-      className="relative rounded-2xl p-2.5 sm:p-3 bg-surface-raised border border-border transition-transform duration-150 ease-out select-none"
+      className="relative rounded-2xl overflow-hidden bg-surface-raised border border-border transition-transform duration-150 ease-out select-none shadow-sm hover:shadow-md"
     >
-      {/* Top Grading Flip Label */}
-      <div className="flex items-center justify-between gap-2 rounded-lg bg-surface border border-brass/40 px-2.5 py-1.5 mb-2.5">
-        <div className="min-w-0">
-          <div className="text-[11px] font-mono font-semibold text-brass tracking-wider truncate">
+      {/* Graded Slab Label Strip */}
+      <div className="flex items-center justify-between gap-2 bg-surface/90 border-b border-border/80 px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-mono font-semibold text-brass tracking-wider truncate uppercase">
             {graderLabel}
           </div>
           {subLabel && (
-            <div className="text-[11px] text-muted truncate">{subLabel}</div>
+            <div className="text-[10px] sm:text-[11px] text-muted truncate">{subLabel}</div>
           )}
         </div>
         {gradeValue && (
-          <div className="text-sm font-mono font-semibold tabular-nums text-ink shrink-0 pl-2 border-l border-border">
+          <div className="text-sm sm:text-base font-mono font-semibold tabular-nums text-ink shrink-0 pl-2.5 border-l border-border/60">
             {gradeValue}
           </div>
         )}
       </div>
 
-      {/* Recessed Card / Comic Window */}
-      <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-bg border border-border">
+      {/* Recessed Display Window */}
+      <div className="relative aspect-[3/4] bg-bg/40 flex items-center justify-center p-2.5">
         <CollectorImage
           src={src}
           alt={alt}
           category={category}
           blurDataUrl={blurDataUrl}
           priority={priority}
-          className="w-full h-full"
-          imgClassName="w-full h-full object-contain p-1.5"
+          className="w-full h-full flex items-center justify-center"
+          imgClassName="w-full h-full object-contain drop-shadow-sm"
         />
         <div
           ref={sheenRef}

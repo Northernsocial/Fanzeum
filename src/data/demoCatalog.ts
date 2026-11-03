@@ -14,10 +14,10 @@ const LOCAL_PENNY_BLACK = '/images/demo/stamp_penny_black.jpg';
 const LOCAL_SOVEREIGN = '/images/demo/coin_gold_sovereign.jpg';
 const LOCAL_SEAHORSE = '/images/demo/stamp_seahorse_highvalue.jpg';
 
-// Verified Wikimedia Commons public-domain & CC images with full credits
+// Verified Wikimedia Commons public-domain & CC images stored locally in public/images/demo/
 const WIKI = {
   pennyBlack1: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/3/36/Penny_black.jpg',
+    url: '/images/demo/stamp_penny_black_plate4.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Penny_black.jpg',
       author: 'General Post Office',
@@ -25,7 +25,7 @@ const WIKI = {
     },
   },
   pennyBlack2: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/0/0d/Penny_Black%2C_world%27s_first_postage_stamp%2C_1840.jpg',
+    url: '/images/demo/stamp_penny_black_plate1a.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Penny_Black,_world%27s_first_postage_stamp,_1840.jpg',
       author: 'William Wyon / Perkins Bacon',
@@ -33,7 +33,7 @@ const WIKI = {
     },
   },
   twoPennyBlue1840: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/8/8f/Stamp_UK_1840_2d.jpg',
+    url: '/images/demo/stamp_twopenny_blue_1840.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Stamp_UK_1840_2d.jpg',
       author: 'General Post Office',
@@ -41,7 +41,7 @@ const WIKI = {
     },
   },
   twoPennyBlueLines: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/0/0c/Queen_Victoria_Two-Penny-Blue.jpg',
+    url: '/images/demo/stamp_twopenny_blue_lines.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Queen_Victoria_Two-Penny-Blue.jpg',
       author: 'General Post Office',
@@ -49,7 +49,7 @@ const WIKI = {
     },
   },
   embossed10d: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/2/27/Great_Britain_1848_10d_embossed_postage_stamp_unused.png',
+    url: '/images/demo/stamp_embossed_10d_1848.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Great_Britain_1848_10d_embossed_postage_stamp_unused.png',
       author: 'William Wyon / Somerset House',
@@ -57,7 +57,7 @@ const WIKI = {
     },
   },
   seahorsePound: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/3/33/British_1913_%C2%A31_Seahorse_stamp_1913_%C2%A31.JPG',
+    url: '/images/demo/stamp_seahorse_pound_1913.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:British_1913_%C2%A31_Seahorse_stamp_1913_%C2%A31.JPG',
       author: 'Waterlow & Sons / British Government',
@@ -65,7 +65,7 @@ const WIKI = {
     },
   },
   irishSeahorse: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/d/d9/Stamp_irl_1922_2N6se.jpg',
+    url: '/images/demo/stamp_irish_seahorse_1922.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Stamp_irl_1922_2N6se.jpg',
       author: 'Irish Minister for Posts and Telegraphs',
@@ -73,8 +73,8 @@ const WIKI = {
     },
   },
   crown1890Obv: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/d/df/British_crown_1890_obverse.png',
-    revUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/62/British_crown_1890_reverse.png',
+    url: '/images/demo/coin_crown_1890_obv.jpg',
+    revUrl: '/images/demo/coin_crown_1890_rev.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:British_crown_1890_obverse.png',
       author: 'Royal Mint / woody1778a',
@@ -82,8 +82,8 @@ const WIKI = {
     },
   },
   sov1959Obv: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/3/3a/1959_sovereign_Elizabeth_II_obverse.jpg',
-    revUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d0/1959_Elizabeth_II_sovereign_reverse.jpg',
+    url: '/images/demo/coin_sov_1959_obv.jpg',
+    revUrl: '/images/demo/coin_sov_1959_rev.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:1959_sovereign_Elizabeth_II_obverse.jpg',
       author: 'Mary Gillick / Benedetto Pistrucci',
@@ -91,7 +91,7 @@ const WIKI = {
     },
   },
   halfSov1844: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/5/53/REVERSE_QUEEN_VICTORIA%2C_young_head%2C_half_sovereign%2C_1844_%28S.3859%29._Nearly_extremely_fine.jpg',
+    url: '/images/demo/coin_half_sov_1844.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:REVERSE_QUEEN_VICTORIA,_young_head,_half_sovereign,_1844_(S.3859)._Nearly_extremely_fine.jpg',
       author: 'Robert Climpson',
@@ -99,7 +99,7 @@ const WIKI = {
     },
   },
   sovIndia: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/9/9c/Sovereign_%28minted_in_India%29.jpg',
+    url: '/images/demo/coin_sov_india_1918.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Sovereign_(minted_in_India).jpg',
       author: 'Snd3054',
@@ -107,7 +107,7 @@ const WIKI = {
     },
   },
   branchSovs: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/4/44/Branch_Mint_Sovereigns.jpg',
+    url: '/images/demo/coin_branch_mint_sovs.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Branch_Mint_Sovereigns.jpg',
       author: 'Snd3054',
@@ -115,7 +115,7 @@ const WIKI = {
     },
   },
   trajanRome: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/7/72/Roman_silver_coin%2C_Trajan_denarius%2C_Rome_%28FindID_641244%29.jpg',
+    url: '/images/demo/coin_trajan_rome.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Roman_silver_coin,_Trajan_denarius,_Rome_(FindID_641244).jpg',
       author: 'Wenke Domscheit / Portable Antiquities Scheme',
@@ -123,7 +123,7 @@ const WIKI = {
     },
   },
   trajanLincs: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/c/c4/Roman_Coin_%2C_Silver_Denarius_of_Trajan_%28FindID_623095%29.jpg',
+    url: '/images/demo/coin_trajan_lincs.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Roman_Coin_,_Silver_Denarius_of_Trajan_(FindID_623095).jpg',
       author: 'Lincolnshire County Council / Alastair Willis',
@@ -131,7 +131,7 @@ const WIKI = {
     },
   },
   cordiusRufus: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/3/39/Roman_Coin_%2C_Silver_Roman_Republican_Denarius_Coin_of_Cordius_Rufus_46BC_%28FindID_584434%29.jpg',
+    url: '/images/demo/coin_cordius_rufus.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Roman_Coin_,_Silver_Roman_Republican_Denarius_Coin_of_Cordius_Rufus_46BC_(FindID_584434).jpg',
       author: 'Cambridgeshire County Council / Helen Fowler',
@@ -139,7 +139,7 @@ const WIKI = {
     },
   },
   serratedRep: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/4/40/Roman_coin%3B_silver_serrated_Republican_denarius_%28FindID_191704%29.jpg',
+    url: '/images/demo/coin_serrated_republican.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Roman_coin;_silver_serrated_Republican_denarius_(FindID_191704).jpg',
       author: 'West Yorkshire Archaeology Service',
@@ -147,7 +147,7 @@ const WIKI = {
     },
   },
   scaurusMet: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/9/98/Silver_denarius_of_Aemilius_Scaurus_MET_LC-08_170_67a.jpg',
+    url: '/images/demo/coin_scaurus_met.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Silver_denarius_of_Aemilius_Scaurus_MET_LC-08_170_67a.jpg',
       author: 'Metropolitan Museum of Art',
@@ -155,8 +155,8 @@ const WIKI = {
     },
   },
   ogdenCameron: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Ogden_football_card_cameron.jpg',
-    revUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/13/Smith_football_card_reverse.jpg',
+    url: '/images/demo/card_ogden_cameron.jpg',
+    revUrl: '/images/demo/card_football_reverse.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Ogden_football_card_cameron.jpg',
       author: "Ogden's Cigarettes",
@@ -164,7 +164,7 @@ const WIKI = {
     },
   },
   harryBeecher: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Harry_Beecher_%28football_card%29.jpg',
+    url: '/images/demo/card_harry_beecher.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Harry_Beecher_(football_card).jpg',
       author: 'Vintage Trade Card Issue',
@@ -172,7 +172,7 @@ const WIKI = {
     },
   },
   boguslavskyCard: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/6/66/Football_boguslavsky_card.jpg',
+    url: '/images/demo/card_boguslavsky_football.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Football_boguslavsky_card.jpg',
       author: 'Boguslavsky Turf Cigarettes',
@@ -180,7 +180,7 @@ const WIKI = {
     },
   },
   feyenoordCard: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/b/bf/Feyenoord-Go-Ahead-Cigarette-Card.jpg',
+    url: '/images/demo/card_feyenoord_1931.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Feyenoord-Go-Ahead-Cigarette-Card.jpg',
       author: 'Pre-war European Football Card',
@@ -188,7 +188,7 @@ const WIKI = {
     },
   },
   motown45: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Motown_7%22_Single_%28Side_2%29.jpg',
+    url: '/images/demo/vinyl_motown_45.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Motown_7%22_Single_(Side_2).jpg',
       author: 'DiscoA340',
@@ -196,7 +196,7 @@ const WIKI = {
     },
   },
   single45: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/1/15/45_rpm_Single_Record.jpg',
+    url: '/images/demo/vinyl_single_45.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:45_rpm_Single_Record.jpg',
       author: 'Erik Henning Edvardsen',
@@ -204,7 +204,7 @@ const WIKI = {
     },
   },
   chiMai45: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Chi_Mai_45_rpm_vinyl_single_label_detail.jpg',
+    url: '/images/demo/vinyl_chi_mai_45.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Chi_Mai_45_rpm_vinyl_single_label_detail.jpg',
       author: 'FarewellAngelina',
@@ -212,7 +212,7 @@ const WIKI = {
     },
   },
   elektra45: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Bread_%E2%80%93_Hooked_On_You_%281977%29_45_RPM_single_US.png',
+    url: '/images/demo/vinyl_elektra_45.jpg',
     credit: {
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bread_–_Hooked_On_You_(1977)_45_RPM_single_US.png',
       author: 'Elektra Records',
@@ -409,6 +409,7 @@ const RAW_COLLECTIONS: SeedCollectionSpec[] = [
     story:
       "From turn-of-the-century Ogden's tobacco cards to early Topps Chrome refractors from the Invincibles era. Every slab and raw card here was pulled in Stockport or traded face-to-face at the National.",
     category: 'football_cards',
+    coverImageUrl: '/images/demo/card_ogden_cameron.jpg',
     setTargetCount: 16,
     featured: true,
     pieces: [
@@ -1261,7 +1262,7 @@ const RAW_COLLECTIONS: SeedCollectionSpec[] = [
       'High-silver denarii spanning the late Republic to the Five Good Emperors, several recorded through the UK Portable Antiquities Scheme.',
     category: 'coins',
     setTargetCount: 16,
-    featured: false,
+    featured: true,
     coverImageUrl: WIKI.trajanRome.url,
     pieces: [
       {
@@ -1542,7 +1543,7 @@ const RAW_COLLECTIONS: SeedCollectionSpec[] = [
       'Strictly original 1960s Detroit, Chicago, and UK Stateside/Tamla 7-inch pressings — zero bootlegs or 70s lookalike reissues. Hover any sleeve to slide the vinyl out.',
     category: 'vinyl',
     setTargetCount: 20,
-    featured: false,
+    featured: true,
     coverImageUrl: WIKI.motown45.url,
     pieces: [
       {

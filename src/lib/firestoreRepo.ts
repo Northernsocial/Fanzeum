@@ -436,8 +436,17 @@ export async function listPublicCollections(maxResults = 40): Promise<Collection
 
 export async function listFeaturedCollections(): Promise<CollectionRecord[]> {
   const all = await listPublicCollections(40);
-  const featured = all.filter((c) => c.featured);
-  return featured.length > 0 ? featured : all.slice(0, 3);
+  // Sort collections so that those with real photos (not data:image/svg) appear first
+  const sorted = [...all].sort((a, b) => {
+    const aReal = a.coverImageUrl && !a.coverImageUrl.startsWith('data:image/svg') ? 1 : 0;
+    const bReal = b.coverImageUrl && !b.coverImageUrl.startsWith('data:image/svg') ? 1 : 0;
+    if (aReal !== bReal) return bReal - aReal;
+    const aFeat = a.featured ? 1 : 0;
+    const bFeat = b.featured ? 1 : 0;
+    return bFeat - aFeat;
+  });
+  const featured = sorted.filter((c) => c.featured);
+  return featured.length > 0 ? featured : sorted.slice(0, 3);
 }
 
 export async function listOwnerCollections(
