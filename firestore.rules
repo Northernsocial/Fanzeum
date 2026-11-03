@@ -321,6 +321,19 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    // Validation Blueprint: FollowRecord (Owner-only category and collector follows)
+    function isValidFollow(data) {
+      return data.keys().hasAll(['followerId', 'targetType', 'targetId', 'createdAt']) &&
+        data.keys().hasOnly(['followerId', 'targetType', 'targetId', 'createdAt']) &&
+        isValidId(data.followerId) &&
+        data.targetType is string && data.targetType in ['category', 'user'] &&
+        (
+          (data.targetType == 'category' && isValidCategory(data.targetId)) ||
+          (data.targetType == 'user' && isValidId(data.targetId))
+        ) &&
+        data.createdAt is timestamp;
+    }
+
     // Validation Blueprint: CollectibleItem
     function isValidCollectibleItem(data) {
       return data.keys().hasAll([
@@ -802,6 +815,23 @@ service cloud.firestore {
       allow delete: if isVerifiedUser() &&
         isValidId(itemId) &&
         (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 7. Follows (Owner-only writes, public reads for counts and feed query)
+    match /follows/{followId} {
+      allow get, list: if true;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(followId) &&
+        isValidFollow(incoming()) &&
+        incoming().followerId == request.auth.uid &&
+        incoming().createdAt == request.time;
+
+      allow update: if false;
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(followId) &&
+        (existing().followerId == request.auth.uid || isAdmin());
     }
   }
 }

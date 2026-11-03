@@ -27,6 +27,7 @@ import { CollectorImage } from '../../components/ui/CollectorImage';
 import { CompletionRing } from '../../components/ui/CompletionRing';
 import { Skeleton } from '../../components/ui/EmptyState';
 import { PieceStage } from '../../components/ui/PieceStage';
+import { FreshFindsFeed } from '../../components/FreshFindsFeed';
 import { Placard } from '../../components/ui/Placard';
 
 export const HomePage: React.FC = () => {
@@ -423,6 +424,9 @@ export const HomePage: React.FC = () => {
         )}
       </section>
 
+      {/* Personalised Fresh Finds Feed (Priority Categories & Following Tab) */}
+      <FreshFindsFeed />
+
       {/* Browse by Category */}
       <section className="max-w-6xl mx-auto px-4 sm:px-8 space-y-6">
         <div>
@@ -436,7 +440,7 @@ export const HomePage: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {CATEGORY_LIST.map((cat) => (
-            <Link key={cat.slug} to={`/explore?category=${cat.slug}`} className="block">
+            <Link key={cat.slug} to={`/category/${cat.slug}`} className="block">
               <Card interactive className="p-5 h-full flex flex-col justify-between gap-4">
                 <div className="w-10 h-10 rounded-xl bg-surface-raised border border-border text-brass flex items-center justify-center">
                   <CategoryIcon category={cat.slug} className="w-5 h-5" />

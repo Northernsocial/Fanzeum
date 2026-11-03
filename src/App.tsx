@@ -139,6 +139,7 @@ export default function App() {
                   <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/explore" element={<ExplorePage />} />
+                    <Route path="/category/:categorySlug" element={<ExplorePage />} />
                     <Route path="/c/:collectionId" element={<CollectionPage />} />
                     <Route path="/exhibition/:collectionId" element={<LegacyExhibitionRedirect />} />
                     <Route path="/i/:itemId" element={<ItemPage />} />
