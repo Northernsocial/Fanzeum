@@ -87,7 +87,7 @@ export interface ItemCommentRecord {
 }
 
 export interface ReportRecord {
-  id?: string;
+  id: string;
   reporterId: string;
   targetType: 'comment' | 'item';
   targetId: string;

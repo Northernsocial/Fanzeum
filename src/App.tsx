@@ -47,6 +47,9 @@ const SettingsPage = lazy(() =>
 const WantlistPage = lazy(() =>
   import('./features/wantlist/WantlistPage').then((m) => ({ default: m.WantlistPage })),
 );
+const AdminPage = lazy(() =>
+  import('./features/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -159,6 +162,7 @@ export default function App() {
                     <Route path="/wantlist" element={<WantlistPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
+                    <Route path="/admin" element={<AdminPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />
                     <Route path="/showcase/:handle" element={<CabinetPage />} />
                     <Route path="/cabinet" element={<LegacyCabinetRedirect />} />

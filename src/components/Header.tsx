@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Bookmark, Camera, Moon, Sun } from 'lucide-react';
+import { Bookmark, Camera, Moon, ShieldAlert, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { NotificationsButton } from './NotificationsButton';
@@ -11,7 +11,7 @@ import {
 import { Button } from './ui/Button';
 
 export const Header: React.FC = () => {
-  const { firebaseUser, profile, openAuthModal } = useAuth();
+  const { firebaseUser, profile, isAdminUser, openAuthModal } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -62,6 +62,11 @@ export const Header: React.FC = () => {
           <NavLink to="/settings" className={navLinkClass}>
             Settings
           </NavLink>
+          {isAdminUser && (
+            <NavLink to="/admin" className={navLinkClass}>
+              Admin
+            </NavLink>
+          )}
         </nav>
 
         {/* Zone 3: Notifications + Theme Switch + Single Primary Action */}

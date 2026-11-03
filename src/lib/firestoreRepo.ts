@@ -27,8 +27,10 @@ import type {
   PanelCard,
   PanelChatMessage,
   PanelChatRecord,
+  ReportRecord,
   UserPrivateAccount,
   UserProfile,
+  UserRole,
   VisibilityLevel,
 } from '../types/domain';
 import { canUse, sanitizeHandle } from './entitlements';
@@ -259,6 +261,37 @@ export async function fetchUserPrivateAccount(uid: string): Promise<UserPrivateA
   }
 }
 
+export async function exportAllUserData(uid: string): Promise<string> {
+  const profile = await fetchUserProfile(uid);
+  const privateAcc = await fetchUserPrivateAccount(uid);
+  const collections = await listOwnerCollections(uid, uid, 200);
+  const items = await listOwnerItems(uid, 500);
+
+  const exportPayload = {
+    profile,
+    privateAccount: privateAcc,
+    collections,
+    items,
+    exportedAt: new Date().toISOString(),
+  };
+
+  return JSON.stringify(exportPayload, null, 2);
+}
+
+export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
+  try {
+    await deleteAllUserStorageFiles(uid);
+    const collections = await listOwnerCollections(uid, uid, 200);
+    for (const col of collections) {
+      await deleteEntireCollection(col, { uid } as UserProfile);
+    }
+    await deleteDoc(doc(db, 'users', uid, 'private', 'account')).catch(() => {});
+    await deleteDoc(doc(db, 'users', uid)).catch(() => {});
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
+  }
+}
+
 export async function bootstrapVerifiedUserProfile(params: {
   uid: string;
   email: string;
@@ -339,6 +372,7 @@ export async function updateUserPublicProfile(
     location: string;
     specialties: CategorySlug[];
     goal: CollectorGoal;
+    role: UserRole;
     isPublicProfile: boolean;
     hideValues: boolean;
     hideLocation: boolean;
@@ -362,6 +396,7 @@ export async function updateUserPublicProfile(
   if (updates.location !== undefined) payload.location = updates.location.slice(0, 80);
   if (updates.specialties !== undefined) payload.specialties = updates.specialties.slice(0, 10);
   if (updates.goal !== undefined) payload.goal = updates.goal;
+  if (updates.role !== undefined) payload.role = updates.role;
   if (updates.isPublicProfile !== undefined) payload.isPublicProfile = updates.isPublicProfile;
   if (updates.hideValues !== undefined) payload.hideValues = updates.hideValues;
   if (updates.hideLocation !== undefined) payload.hideLocation = updates.hideLocation;
@@ -426,6 +461,85 @@ export async function listPublicCollectors(maxResults = 30): Promise<UserProfile
     if (!seen.has(demo.uid)) combined.push(demo);
   }
   return combined.slice(0, maxResults);
+}
+
+export async function listAllUsersAdmin(maxResults = 200): Promise<UserProfile[]> {
+  const path = 'users';
+  try {
+    const q = query(collection(db, 'users'), limit(maxResults));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => normalizeUserDoc(d.data() as Record<string, unknown>));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
+export async function fetchAllReportsAdmin(): Promise<ReportRecord[]> {
+  const path = 'reports';
+  try {
+    const q = query(collection(db, 'reports'), limit(100));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<ReportRecord, 'id'>),
+    }));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
+export async function deleteReportAdmin(reportId: string): Promise<void> {
+  const path = `reports/${reportId}`;
+  try {
+    await deleteDoc(doc(db, 'reports', reportId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function deleteCommentAdmin(itemId: string, commentId: string): Promise<void> {
+  const path = `items/${itemId}/comments/${commentId}`;
+  try {
+    await deleteDoc(doc(db, 'items', itemId, 'comments', commentId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function setCollectionFeaturedAdmin(collectionId: string, featured: boolean): Promise<void> {
+  const path = `collections/${collectionId}`;
+  try {
+    await updateDoc(doc(db, 'collections', collectionId), {
+      featured,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+export async function fetchPlatformStatsAdmin(): Promise<{
+  usersCount: number;
+  itemsCount: number;
+  collectionsCount: number;
+  reportsCount: number;
+}> {
+  try {
+    const [usersSnap, itemsSnap, colsSnap, reportsSnap] = await Promise.all([
+      getDocs(query(collection(db, 'users'), limit(1000))),
+      getDocs(query(collection(db, 'items'), limit(2000))),
+      getDocs(query(collection(db, 'collections'), limit(1000))),
+      getDocs(query(collection(db, 'reports'), limit(500))),
+    ]);
+    return {
+      usersCount: usersSnap.size,
+      itemsCount: itemsSnap.size,
+      collectionsCount: colsSnap.size,
+      reportsCount: reportsSnap.size,
+    };
+  } catch {
+    return { usersCount: 0, itemsCount: 0, collectionsCount: 0, reportsCount: 0 };
+  }
 }
 
 // 1.5 AI Expert Panel Chats (Owner Only)
@@ -536,7 +650,6 @@ export async function listPublicCollections(maxResults = 40): Promise<Collection
 
 export async function listFeaturedCollections(): Promise<CollectionRecord[]> {
   const all = await listPublicCollections(40);
-  // Sort collections so that those with real photos (not data:image/svg) appear first
   const sorted = [...all].sort((a, b) => {
     const aReal = a.coverImageUrl && !a.coverImageUrl.startsWith('data:image/svg') ? 1 : 0;
     const bReal = b.coverImageUrl && !b.coverImageUrl.startsWith('data:image/svg') ? 1 : 0;
@@ -886,7 +999,6 @@ export async function explorePublicItems(params: {
   if (params.sortBy === 'value_desc') {
     filtered.sort((a, b) => b.valueMaxGbp - a.valueMaxGbp);
   } else {
-    // Newest first: live non-demo items appear ahead of demo items, sorted by createdAt seconds if available
     filtered.sort((a, b) => {
       const aLive = a.isDemo ? 0 : 1;
       const bLive = b.isDemo ? 0 : 1;
@@ -1276,9 +1388,9 @@ export async function listFreshFinds(params: {
         ? query(
             collection(db, 'freshFinds'),
             where('category', '==', params.category),
-            limit(150),
+            limit(100),
           )
-        : query(collection(db, 'freshFinds'), limit(150));
+        : query(collection(db, 'freshFinds'), limit(100));
 
     const snap = await getDocs(q);
     liveFinds = snap.docs.map((d) => normalizeFreshFindDoc(d.id, d.data() as Record<string, unknown>));
@@ -1286,119 +1398,10 @@ export async function listFreshFinds(params: {
     handleFirestoreError(error, OperationType.LIST, 'freshFinds');
   }
 
-  const seen = new Set(liveFinds.map((f) => f.id));
-  const combined = [...liveFinds];
-
-  if (!isBuiltinDemoHidden()) {
-    // Import demo catalog fresh finds dynamically/safely
-    const { DEMO_FRESH_FINDS } = await import('../data/demoCatalog');
-    for (const demo of DEMO_FRESH_FINDS) {
-      if (seen.has(demo.id)) continue;
-      if (params.category && params.category !== 'all' && demo.category !== params.category) {
-        continue;
-      }
-      combined.push(demo);
-    }
-  }
-
-  // Newest first: live non-demo items ahead of demo, sorted by createdAt
-  combined.sort((a, b) => {
-    const aLive = a.isDemo ? 0 : 1;
-    const bLive = b.isDemo ? 0 : 1;
-    if (aLive !== bLive) return bLive - aLive;
-    const aSec = (a.createdAt as { seconds?: number } | undefined)?.seconds || 0;
-    const bSec = (b.createdAt as { seconds?: number } | undefined)?.seconds || 0;
-    return bSec - aSec;
-  });
-
   const end = (pageIndex + 1) * pageSize;
   return {
-    items: combined.slice(0, end),
-    totalCount: combined.length,
-    hasMore: end < combined.length,
+    items: liveFinds.slice(0, end),
+    totalCount: liveFinds.length,
+    hasMore: end < liveFinds.length,
   };
-}
-
-// 4. UK GDPR Full Export & Complete Account + Storage Erasure
-export async function exportAllUserData(uid: string) {
-  const [profile, privateAccount, collections, items] = await Promise.all([
-    fetchUserProfile(uid),
-    fetchUserPrivateAccount(uid),
-    listOwnerCollections(uid, uid, 200),
-    listOwnerItems(uid, 500),
-  ]);
-
-  let itemPrivateRecords: ItemPrivateRecord[] = [];
-  try {
-    const privQ = query(
-      collection(db, 'users', uid, 'itemPrivate'),
-      where('uid', '==', uid),
-      limit(500),
-    );
-    const snap = await getDocs(privQ);
-    itemPrivateRecords = snap.docs.map((d) => d.data() as ItemPrivateRecord);
-  } catch {
-    // Optional subcollection
-  }
-
-  return {
-    exportedAt: new Date().toISOString(),
-    jurisdiction: 'UK GDPR (Data Protection Act 2018)',
-    platform: 'Fanzeum',
-    profile,
-    privateAccount,
-    collections,
-    items,
-    itemPrivateRecords,
-  };
-}
-
-export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
-  await deleteAllUserStorageFiles(uid);
-
-  try {
-    const privItemsQ = query(
-      collection(db, 'users', uid, 'itemPrivate'),
-      where('uid', '==', uid),
-      limit(500),
-    );
-    const privItemsSnap = await getDocs(privItemsQ);
-    for (const d of privItemsSnap.docs) {
-      await deleteDoc(doc(db, 'users', uid, 'itemPrivate', d.id));
-    }
-  } catch {
-    // Proceed with remaining cleanup
-  }
-
-  try {
-    const itemsQ = query(collection(db, 'items'), where('ownerId', '==', uid), limit(500));
-    const itemSnap = await getDocs(itemsQ);
-    for (const d of itemSnap.docs) {
-      await deleteDoc(doc(db, 'items', d.id));
-    }
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, 'items');
-  }
-
-  const cols = await listOwnerCollections(uid, uid, 200);
-  for (const col of cols) {
-    try {
-      await deleteDoc(doc(db, 'collections', col.id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `collections/${col.id}`);
-    }
-  }
-
-  try {
-    const privSnap = await getDoc(doc(db, 'users', uid, 'private', 'account'));
-    if (privSnap.exists()) {
-      await deleteDoc(doc(db, 'users', uid, 'private', 'account'));
-    }
-    const userSnap = await getDoc(doc(db, 'users', uid));
-    if (userSnap.exists()) {
-      await deleteDoc(doc(db, 'users', uid));
-    }
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
-  }
 }

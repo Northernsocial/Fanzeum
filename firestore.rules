@@ -31,7 +31,11 @@ service cloud.firestore {
     function isAdmin() {
       return isVerifiedUser() && (
         request.auth.token.email == 'fifestreet@gmail.com' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        )
       );
     }
 
@@ -714,6 +718,13 @@ service cloud.firestore {
               'joinedLabel',
               'updatedAt'
             ])
+          ) ||
+          // Action 2: Admin edits user role/plan
+          (
+            isAdmin() &&
+            incoming().uid == existing().uid &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time
           )
         );
 
@@ -1158,7 +1169,7 @@ service cloud.firestore {
         (existing().followerId == request.auth.uid || isAdmin());
     }
 
-    // 8. Reports (Verified user create, strictly admin read only)
+    // 8. Reports (Verified user create, strictly admin read/update only)
     match /reports/{reportId} {
       allow get, list: if isAdmin();
 
