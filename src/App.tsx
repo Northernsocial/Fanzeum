@@ -19,6 +19,9 @@ import { HomePage } from './features/home/HomePage';
 const ExplorePage = lazy(() =>
   import('./features/explore/ExplorePage').then((m) => ({ default: m.ExplorePage })),
 );
+const FreshFindsPage = lazy(() =>
+  import('./features/fresh-finds/FreshFindsPage').then((m) => ({ default: m.FreshFindsPage })),
+);
 const CabinetPage = lazy(() =>
   import('./features/cabinet/CabinetPage').then((m) => ({ default: m.CabinetPage })),
 );
@@ -138,6 +141,7 @@ export default function App() {
                 >
                   <Routes>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/fresh-finds" element={<FreshFindsPage />} />
                     <Route path="/explore" element={<ExplorePage />} />
                     <Route path="/category/:categorySlug" element={<ExplorePage />} />
                     <Route path="/c/:collectionId" element={<CollectionPage />} />
@@ -184,6 +188,9 @@ export default function App() {
                     </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-6">
+                    <Link to="/fresh-finds" className="hover:text-ink">
+                      Fresh Finds
+                    </Link>
                     <Link to="/explore" className="hover:text-ink">
                       Explore
                     </Link>
