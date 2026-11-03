@@ -14,6 +14,8 @@ export type ConfidenceLevel = 'high' | 'medium' | 'low';
 
 export type AIConfidence = ConfidenceLevel | 'manual';
 
+export type NotificationType = 'like' | 'comment' | 'follow' | 'id_correction' | 'wantlist_match';
+
 export interface ItemPhoto {
   url: string;
   thumbUrl: string;
@@ -124,6 +126,63 @@ export interface ItemPrivateRecord {
   privateNotes: string;
   createdAt?: unknown;
   updatedAt?: unknown;
+}
+
+export interface WantlistItem {
+  uid: string;
+  itemId: string;
+  category: CategorySlug;
+  title: string;
+  year: string;
+  maker: string;
+  setNumber: string;
+  condition: string;
+  createdAt?: unknown;
+}
+
+export interface Notification {
+  id: string;
+  recipientId: string;
+  type: NotificationType;
+  actorId: string;
+  actorHandle: string;
+  actorDisplayName: string;
+  itemId?: string;
+  itemTitle: string;
+  collectionId?: string;
+  collectionTitle: string;
+  read: boolean;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface CollectorMatch {
+  uid: string;
+  handle: string;
+  displayName: string;
+  matchScore: number;
+  reason: string;
+  matchingItems: string[];
+}
+
+export interface AIIdentificationResult {
+  title: string;
+  category: CategorySlug;
+  whatYouveGot: string;
+  valueMinGbp: number;
+  valueMaxGbp: number;
+  valuationReason: string;
+  overallConfidence: ConfidenceLevel;
+  fields: Record<string, AIIdentifyFieldEntry>;
+  suggestedTags: string[];
+}
+
+export interface AIOnboardingResponse {
+  welcomeNote: string;
+  suggestedCollectionTitle: string;
+  suggestedCollectionStory: string;
+  suggestedBio: string;
+  photoTip: string;
 }
 
 export interface AIIdentifyFieldEntry {

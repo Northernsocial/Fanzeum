@@ -417,6 +417,85 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    // Validation Blueprint: Notification
+    function isValidNotification(data) {
+      return data.keys().hasAll([
+          'id',
+          'recipientId',
+          'type',
+          'actorId',
+          'actorHandle',
+          'actorDisplayName',
+          'itemId',
+          'itemTitle',
+          'collectionId',
+          'collectionTitle',
+          'read',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'recipientId',
+          'type',
+          'actorId',
+          'actorHandle',
+          'actorDisplayName',
+          'itemId',
+          'itemTitle',
+          'collectionId',
+          'collectionTitle',
+          'read',
+          'createdAt'
+        ]) &&
+        isValidId(data.id) &&
+        isValidId(data.recipientId) &&
+        data.type is string && data.type.size() <= 32 && data.type in ['like', 'comment', 'follow', 'id_correction', 'wantlist_match'] &&
+        isValidId(data.actorId) &&
+        data.actorHandle is string && data.actorHandle.size() >= 2 && data.actorHandle.size() <= 32 && data.actorHandle.matches('^[a-z0-9_\\-]+$') &&
+        data.actorDisplayName is string && data.actorDisplayName.size() >= 1 && data.actorDisplayName.size() <= 80 &&
+        (!('itemId' in data) || isValidId(data.itemId)) &&
+        data.itemTitle is string && data.itemTitle.size() <= 140 &&
+        (!('collectionId' in data) || isValidId(data.collectionId)) &&
+        data.collectionTitle is string && data.collectionTitle.size() <= 120 &&
+        data.read is bool &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: WantlistItem
+    function isValidWantlistItem(data) {
+      return data.keys().hasAll([
+          'uid',
+          'itemId',
+          'category',
+          'title',
+          'year',
+          'maker',
+          'setNumber',
+          'condition',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'itemId',
+          'category',
+          'title',
+          'year',
+          'maker',
+          'setNumber',
+          'condition',
+          'createdAt'
+        ]) &&
+        isValidId(data.uid) &&
+        isValidId(data.itemId) &&
+        isValidCategory(data.category) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.year is string && data.year.size() <= 32 &&
+        data.maker is string && data.maker.size() <= 120 &&
+        data.setNumber is string && data.setNumber.size() <= 80 &&
+        data.condition is string && data.condition.size() >= 1 && data.condition.size() <= 80 &&
+        data.createdAt is timestamp;
+    }
+
     // 1. Out-of-band Admin Registry
     match /admins/{adminId} {
       allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
@@ -588,6 +667,58 @@ service cloud.firestore {
           isValidId(itemId) &&
           (request.auth.uid == userId || isAdmin());
       }
+
+      // 5. Wantlist Items (Owner-only)
+      match /wantlist/{itemId} {
+        allow get: if isSignedIn() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          (request.auth.uid == userId || isAdmin()) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow list: if isSignedIn() &&
+          (
+            (request.auth.uid == userId && resource.data.uid == request.auth.uid) ||
+            isAdmin()
+          );
+
+        allow create: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          request.auth.uid == userId &&
+          isValidWantlistItem(incoming()) &&
+          incoming().uid == request.auth.uid &&
+          incoming().itemId == itemId &&
+          incoming().createdAt == request.time;
+
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          isValidWantlistItem(incoming()) && (
+            isAdmin() ||
+            (
+              request.auth.uid == userId &&
+              existing().uid == request.auth.uid &&
+              incoming().uid == existing().uid &&
+              incoming().itemId == existing().itemId &&
+              incoming().createdAt == existing().createdAt &&
+              incoming().updatedAt == request.time &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'category',
+                'title',
+                'year',
+                'maker',
+                'setNumber',
+                'condition',
+                'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          (request.auth.uid == userId || isAdmin());
+      }
     }
 
     function isValidItemPrivateAccountGate(userId, itemId) {
@@ -604,7 +735,86 @@ service cloud.firestore {
         );
     }
 
-    // 5. Collections
+    // 5. Notifications (Owner-only read/write)
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() &&
+        isValidId(notificationId) &&
+        resource != null &&
+        resource.data.recipientId == request.auth.uid;
+      allow list: if isSignedIn() &&
+        resource.data.recipientId == request.auth.uid;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(notificationId) &&
+        isValidNotification(incoming()) &&
+        incoming().id == notificationId &&
+        incoming().recipientId == request.auth.uid &&
+        incoming().read == false &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(notificationId) &&
+        isValidNotification(incoming()) && (
+          isAdmin() ||
+          (
+            request.auth.uid == notificationId &&
+            existing().recipientId == request.auth.uid &&
+            incoming().recipientId == existing().recipientId &&
+            incoming().id == existing().id &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'read',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(notificationId) &&
+        (resource.data.recipientId == request.auth.uid || isAdmin());
+    }
+
+    // 5.5 AI Expert Panel Chats (Strict Owner Only)
+    match /panelChats/{itemId} {
+      allow get: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        resource != null &&
+        resource.data.ownerId == request.auth.uid;
+      allow list: if isVerifiedUser() &&
+        resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidPanelChatRecord(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidPanelChatRecord(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'personaId',
+          'messages',
+          'summary',
+          'card',
+          'confidence',
+          'status',
+          'updatedAt'
+        ]);
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 6. Collections
     match /collections/{collectionId} {
       allow get: if isValidId(collectionId) && (
         (resource != null && resource.data.visibility == 'public') ||
