@@ -191,7 +191,7 @@ export default function App() {
                     <img
                       src={FANZEUM_LOGO_SRC}
                       alt={FANZEUM_LOGO_ALT}
-                      className="h-6 w-auto object-contain"
+                      className="h-8 w-auto object-contain"
                       loading="eager"
                     />
                     <span>

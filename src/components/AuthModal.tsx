@@ -130,7 +130,7 @@ export const AuthModal: React.FC = () => {
             <img
               src={FANZEUM_LOGO_SRC}
               alt={FANZEUM_LOGO_ALT}
-              className="h-9 w-auto object-contain"
+              className="h-12 w-auto object-contain"
               loading="eager"
             />
           </div>

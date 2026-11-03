@@ -35,7 +35,7 @@ export const Header: React.FC = () => {
           <img
             src={FANZEUM_LOGO_SRC}
             alt={FANZEUM_LOGO_ALT}
-            className="h-8 md:h-10 w-auto object-contain"
+            className="h-[43px] md:h-[53px] w-auto object-contain"
             loading="eager"
           />
         </Link>
