@@ -151,6 +151,44 @@ export interface AIOnboardingResponse {
   photoTip: string;
 }
 
+export interface PanelCardFieldEntry {
+  value: string | boolean;
+  confidence: ConfidenceLevel;
+}
+
+export interface PanelCard {
+  title: string;
+  category: CategorySlug;
+  fields: Record<string, PanelCardFieldEntry>;
+  conditionGuess: string;
+  valueMinGbp: number;
+  valueMaxGbp: number;
+  valuationReason: string;
+  overallConfidence: ConfidenceLevel;
+}
+
+export interface PanelChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'lead';
+  text: string;
+  personaId: string;
+  imageUrls?: string[];
+  createdAt: string; // ISO string
+}
+
+export interface PanelChatRecord {
+  itemId: string;
+  ownerId: string;
+  personaId: string;
+  messages: PanelChatMessage[];
+  summary: string;
+  card: PanelCard;
+  confidence: ConfidenceLevel;
+  status: 'active' | 'saved' | 'closed';
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
 export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: string }> = {
   exhibit: {
     title: 'Show off my pieces',

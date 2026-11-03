@@ -47,6 +47,7 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(paths).toEqual(
       expect.arrayContaining([
         '/admins/{adminId}',
+        '/panelChats/{itemId}',
         '/users/{userId}',
         '/users/{userId}/private/{docId}',
         '/users/{userId}/itemPrivate/{itemId}',
@@ -55,6 +56,7 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
       ]),
     );
     expect(rulesSource).toContain('match /admins/{adminId}');
+    expect(rulesSource).toContain('match /panelChats/{itemId}');
     expect(rulesSource).toContain('match /users/{userId}');
     expect(rulesSource).toContain('match /private/{docId}');
     expect(rulesSource).toContain('match /itemPrivate/{itemId}');
@@ -72,6 +74,7 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('isValidUserProfile(incoming())');
     expect(rulesSource).toContain('isValidCollection(incoming())');
     expect(rulesSource).toContain('isValidCollectibleItem(incoming())');
+    expect(rulesSource).toContain('isValidPanelChatRecord(incoming())');
     expect(rulesSource).toContain('incoming().diff(existing()).affectedKeys().hasOnly(');
   });
 

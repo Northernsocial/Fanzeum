@@ -60,7 +60,7 @@ export const CoinFlip: React.FC<CoinFlipProps> = ({
           </div>
         ) : (
           <div className="w-full h-full rounded-full border-2 border-brass/50 bg-surface flex flex-col items-center justify-center text-center p-4">
-            <span className="text-xs font-mono text-brass">{year || 'Cabinet Ticket'}</span>
+            <span className="text-xs font-mono text-brass">{year || 'Showcase Ticket'}</span>
             <span className="text-xs font-mono text-ink mt-1.5 line-clamp-2 break-words">
               {reference || 'Reverse Unrecorded'}
             </span>

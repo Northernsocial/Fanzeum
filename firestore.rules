@@ -259,6 +259,68 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    // Validation Blueprint: PanelChatRecord (Owner-only AI Expert Panel chat)
+    function isValidPanelChatMessage(msg) {
+      return msg is map &&
+        msg.keys().hasAll(['id', 'role', 'text', 'personaId', 'createdAt']) &&
+        msg.keys().hasOnly(['id', 'role', 'text', 'personaId', 'imageUrls', 'createdAt']) &&
+        msg.id is string && msg.id.size() >= 1 && msg.id.size() <= 128 &&
+        msg.role is string && msg.role in ['user', 'assistant', 'lead'] &&
+        msg.text is string && msg.text.size() <= 5000 &&
+        msg.personaId is string && msg.personaId.size() <= 64 &&
+        (!('imageUrls' in msg) || (msg.imageUrls is list && msg.imageUrls.size() <= 4)) &&
+        msg.createdAt is string && msg.createdAt.size() <= 64;
+    }
+
+    function isValidPanelCard(card) {
+      return card is map &&
+        card.keys().hasAll(['title', 'category', 'conditionGuess', 'valueMinGbp', 'valueMaxGbp', 'valuationReason', 'overallConfidence', 'fields']) &&
+        card.keys().hasOnly(['title', 'category', 'conditionGuess', 'valueMinGbp', 'valueMaxGbp', 'valuationReason', 'overallConfidence', 'fields']) &&
+        card.title is string && card.title.size() <= 140 &&
+        isValidCategory(card.category) &&
+        card.conditionGuess is string && card.conditionGuess.size() <= 80 &&
+        (card.valueMinGbp is int || card.valueMinGbp is float) && card.valueMinGbp >= 0 &&
+        (card.valueMaxGbp is int || card.valueMaxGbp is float) && card.valueMaxGbp >= card.valueMinGbp &&
+        card.valuationReason is string && card.valuationReason.size() <= 320 &&
+        card.overallConfidence is string && card.overallConfidence in ['high', 'medium', 'low'] &&
+        card.fields is map && card.fields.size() <= 30;
+    }
+
+    function isValidPanelChatRecord(data) {
+      return data.keys().hasAll([
+          'ownerId',
+          'personaId',
+          'messages',
+          'summary',
+          'card',
+          'confidence',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId',
+          'personaId',
+          'messages',
+          'summary',
+          'card',
+          'confidence',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.ownerId) &&
+        data.personaId is string && data.personaId.size() <= 64 &&
+        data.messages is list && data.messages.size() <= 100 &&
+        (data.messages.size() == 0 || isValidPanelChatMessage(data.messages[0])) &&
+        data.summary is string && data.summary.size() <= 4000 &&
+        isValidPanelCard(data.card) &&
+        data.confidence is string && data.confidence in ['high', 'medium', 'low'] &&
+        data.status is string && data.status in ['active', 'saved', 'closed'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
     // Validation Blueprint: CollectibleItem
     function isValidCollectibleItem(data) {
       return data.keys().hasAll([
@@ -606,6 +668,44 @@ service cloud.firestore {
 
       allow delete: if isVerifiedUser() &&
         isValidId(collectionId) &&
+        (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 5.5 AI Expert Panel Chats (Strict Owner Only)
+    match /panelChats/{itemId} {
+      allow get: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        resource != null &&
+        resource.data.ownerId == request.auth.uid;
+      allow list: if isVerifiedUser() &&
+        resource.data.ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidPanelChatRecord(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(itemId) &&
+        isValidPanelChatRecord(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'personaId',
+          'messages',
+          'summary',
+          'card',
+          'confidence',
+          'status',
+          'updatedAt'
+        ]);
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(itemId) &&
         (existing().ownerId == request.auth.uid || isAdmin());
     }
 
