@@ -492,6 +492,39 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "FollowRecord": {
+      "title": "FollowRecord",
+      "description": "Owner-only follow record for following a category or another collector.",
+      "type": "object",
+      "properties": {
+        "followerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetType": {
+          "type": "string",
+          "enum": ["category", "user"],
+          "maxLength": 16
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "followerId",
+        "targetType",
+        "targetId",
+        "createdAt"
+      ]
     }
   },
   "firestore": {
@@ -522,6 +555,10 @@
     "/items/{itemId}": {
       "schema": { "$ref": "#/entities/CollectibleItemRecord" },
       "description": "Individual pieces referencing owned collections and Storage photo URLs."
+    },
+    "/follows/{followId}": {
+      "schema": { "$ref": "#/entities/FollowRecord" },
+      "description": "Owner-only follow records for categories and collectors."
     }
   }
 }

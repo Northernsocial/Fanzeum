@@ -53,6 +53,15 @@ export interface UserProfile {
   updatedAt?: unknown;
 }
 
+export type FollowTargetType = 'category' | 'user';
+
+export interface FollowRecord {
+  followerId: string;
+  targetType: FollowTargetType;
+  targetId: string;
+  createdAt?: unknown;
+}
+
 export interface UserPrivateAccount {
   uid: string;
   email: string;

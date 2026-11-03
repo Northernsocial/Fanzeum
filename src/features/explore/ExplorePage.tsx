@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Search, X } from 'lucide-react';
-import { CATEGORY_LIST, type CategorySlug } from '../../config/categories';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Bookmark, BookmarkCheck, Search, X } from 'lucide-react';
+import { CATEGORIES, CATEGORY_LIST, type CategorySlug } from '../../config/categories';
+import { useAuth } from '../../contexts/AuthContext';
 import { explorePublicItems } from '../../lib/firestoreRepo';
+import {
+  checkIsFollowing,
+  followTarget,
+  unfollowTarget,
+} from '../../lib/followRepo';
 import type { CollectibleItemRecord } from '../../types/domain';
 import { useDocumentMeta } from '../../components/DocumentMeta';
 import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
 import { CategoryIcon } from '../../components/ui/CategoryIcon';
 import { EmptyState, Skeleton } from '../../components/ui/EmptyState';
 import { PieceStage } from '../../components/ui/PieceStage';
@@ -13,8 +20,12 @@ import { Placard } from '../../components/ui/Placard';
 import { Tabs } from '../../components/ui/Tabs';
 
 export const ExplorePage: React.FC = () => {
+  const { categorySlug } = useParams<{ categorySlug?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialCat = (searchParams.get('category') as CategorySlug | null) || 'all';
+  const { firebaseUser } = useAuth();
+
+  const queryCat = searchParams.get('category') as CategorySlug | null;
+  const initialCat = (categorySlug as CategorySlug) || queryCat || 'all';
   const initialQ = searchParams.get('q') || '';
 
   const [category, setCategory] = useState<CategorySlug | 'all'>(initialCat);
@@ -27,10 +38,17 @@ export const ExplorePage: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isFollowingCategory, setIsFollowingCategory] = useState(false);
+  const [followCategoryToggling, setFollowCategoryToggling] = useState(false);
+
+  const selectedCatConfig = category !== 'all' ? CATEGORIES[category] : null;
 
   useDocumentMeta({
-    title: 'Explore Pieces',
+    title: selectedCatConfig
+      ? `${selectedCatConfig.label} · Fanzeum`
+      : 'Explore Pieces',
     description:
+      selectedCatConfig?.tagline ||
       'Search graded football cards, sovereigns, Victorian stamps, CGC comics, Northern Soul 45s, and vintage toys across Fanzeum.',
   });
 
@@ -50,21 +68,34 @@ export const ExplorePage: React.FC = () => {
   }, [category, debouncedSearch, setSearchParams]);
 
   useEffect(() => {
+    if (categorySlug && categorySlug in CATEGORIES) {
+      setCategory(categorySlug as CategorySlug);
+      setPageIndex(0);
+    }
+  }, [categorySlug]);
+
+  useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true);
       try {
-        const res = await explorePublicItems({
-          category,
-          search: debouncedSearch,
-          sortBy,
-          pageSize: 24,
-          pageIndex,
-        });
+        const [res, isFollowing] = await Promise.all([
+          explorePublicItems({
+            category,
+            search: debouncedSearch,
+            sortBy,
+            pageSize: 24,
+            pageIndex,
+          }),
+          category !== 'all'
+            ? checkIsFollowing(firebaseUser?.uid || 'guest_user', 'category', category)
+            : Promise.resolve(false),
+        ]);
         if (!active) return;
         setItems(res.items);
         setTotalCount(res.totalCount);
         setHasMore(res.hasMore);
+        setIsFollowingCategory(isFollowing);
       } finally {
         if (active) setLoading(false);
       }
@@ -73,23 +104,102 @@ export const ExplorePage: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [category, debouncedSearch, sortBy, pageIndex]);
+  }, [category, debouncedSearch, sortBy, pageIndex, firebaseUser?.uid]);
 
   const selectCategory = (next: CategorySlug | 'all') => {
     setCategory(next);
     setPageIndex(0);
   };
 
+  const handleToggleCategoryFollow = async () => {
+    if (category === 'all') return;
+    const currentViewerUid = firebaseUser?.uid || 'guest_user';
+    const nextState = !isFollowingCategory;
+
+    setIsFollowingCategory(nextState);
+    setFollowCategoryToggling(true);
+
+    try {
+      if (nextState) {
+        await followTarget({
+          followerId: currentViewerUid,
+          targetType: 'category',
+          targetId: category,
+          isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+        });
+      } else {
+        await unfollowTarget({
+          followerId: currentViewerUid,
+          targetType: 'category',
+          targetId: category,
+          isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+        });
+      }
+    } catch (err) {
+      console.error('Category follow toggle error:', err);
+      setIsFollowingCategory(!nextState);
+    } finally {
+      setFollowCategoryToggling(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12 pb-28 space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl sm:text-4xl font-display font-semibold text-ink">
-          Explore pieces
-        </h1>
-        <p className="text-base text-muted">
-          Search by player, monarch, Stanley Gibbons or Spink reference, label, year, or @handle.
-        </p>
-      </div>
+      {selectedCatConfig ? (
+        <Card className="p-6 sm:p-8 space-y-4 border-brass/30 bg-surface">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-surface-raised border border-border text-brass flex items-center justify-center shrink-0">
+                <CategoryIcon category={selectedCatConfig.slug} className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink">
+                    {selectedCatConfig.label}
+                  </h1>
+                </div>
+                <p className="text-sm sm:text-base text-muted leading-relaxed">
+                  {selectedCatConfig.tagline}
+                </p>
+              </div>
+            </div>
+
+            <Button
+              variant={isFollowingCategory ? 'secondary' : 'primary'}
+              size="sm"
+              disabled={followCategoryToggling}
+              onClick={handleToggleCategoryFollow}
+              className="shrink-0 self-start sm:self-center"
+              aria-label={
+                isFollowingCategory
+                  ? `Unfollow ${selectedCatConfig.shortLabel}`
+                  : `Follow ${selectedCatConfig.shortLabel}`
+              }
+            >
+              {isFollowingCategory ? (
+                <>
+                  <BookmarkCheck className="w-4 h-4 text-brass" strokeWidth={1.5} />
+                  <span>Following {selectedCatConfig.shortLabel}</span>
+                </>
+              ) : (
+                <>
+                  <Bookmark className="w-4 h-4" strokeWidth={1.5} />
+                  <span>Follow {selectedCatConfig.shortLabel}</span>
+                </>
+              )}
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-display font-semibold text-ink">
+            Explore pieces
+          </h1>
+          <p className="text-base text-muted">
+            Search by player, monarch, Stanley Gibbons or Spink reference, label, year, or @handle.
+          </p>
+        </div>
+      )}
 
       {/* Search & Sort Controls */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">

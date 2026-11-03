@@ -9,6 +9,8 @@ import {
   MapPin,
   Pencil,
   Share2,
+  UserCheck,
+  UserPlus,
   UserX,
 } from 'lucide-react';
 import { CATEGORIES, CATEGORY_LIST, type CategorySlug } from '../../config/categories';
@@ -22,6 +24,13 @@ import {
   listOwnerCollections,
   updateUserPublicProfile,
 } from '../../lib/firestoreRepo';
+import {
+  checkIsFollowing,
+  fetchFollowerCount,
+  fetchFollowingCount,
+  followTarget,
+  unfollowTarget,
+} from '../../lib/followRepo';
 import { uploadAvatarPhoto } from '../../lib/imageUtils';
 import type { CollectionRecord, UserProfile, VisibilityLevel } from '../../types/domain';
 import { useDocumentMeta } from '../../components/DocumentMeta';
@@ -44,6 +53,10 @@ export const CabinetPage: React.FC = () => {
   const [collections, setCollections] = useState<CollectionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedToast, setCopiedToast] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followToggling, setFollowToggling] = useState(false);
 
   // Edit profile sheet state
   const [editOpen, setEditOpen] = useState(false);
@@ -90,9 +103,17 @@ export const CabinetPage: React.FC = () => {
         if (!active) return;
         setCabinetOwner(user);
         if (user) {
-          const cols = await listOwnerCollections(user.uid, firebaseUser?.uid);
+          const [cols, followers, following, followingState] = await Promise.all([
+            listOwnerCollections(user.uid, firebaseUser?.uid),
+            fetchFollowerCount(user.uid, firebaseUser?.uid),
+            fetchFollowingCount(user.uid),
+            firebaseUser ? checkIsFollowing(firebaseUser.uid, 'user', user.uid) : Promise.resolve(false),
+          ]);
           if (!active) return;
           setCollections(cols);
+          setFollowerCount(followers);
+          setFollowingCount(following);
+          setIsFollowing(followingState);
         } else {
           setCollections([]);
         }
@@ -215,7 +236,7 @@ export const CabinetPage: React.FC = () => {
     }
   };
 
-  const handleShareCabinet = async () => {
+  const handleShareShowcase = async () => {
     if (!cabinetOwner) return;
     const shareUrl = `${window.location.origin}/@${cabinetOwner.handle}`;
     if (navigator.share) {
@@ -233,6 +254,41 @@ export const CabinetPage: React.FC = () => {
     await navigator.clipboard?.writeText(shareUrl);
     setCopiedToast(true);
     window.setTimeout(() => setCopiedToast(false), 2600);
+  };
+
+  const handleToggleFollow = async () => {
+    if (!cabinetOwner) return;
+    const currentViewerUid = firebaseUser?.uid || 'guest_user';
+    const nextFollowing = !isFollowing;
+
+    setIsFollowing(nextFollowing);
+    setFollowerCount((prev) => Math.max(0, prev + (nextFollowing ? 1 : -1)));
+    setFollowToggling(true);
+
+    try {
+      if (nextFollowing) {
+        await followTarget({
+          followerId: currentViewerUid,
+          targetType: 'user',
+          targetId: cabinetOwner.uid,
+          isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+        });
+      } else {
+        await unfollowTarget({
+          followerId: currentViewerUid,
+          targetType: 'user',
+          targetId: cabinetOwner.uid,
+          isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+        });
+      }
+    } catch (err) {
+      console.error('Follow toggle error:', err);
+      // Revert on error
+      setIsFollowing(!nextFollowing);
+      setFollowerCount((prev) => Math.max(0, prev + (nextFollowing ? -1 : 1)));
+    } finally {
+      setFollowToggling(false);
+    }
   };
 
   if (loading) {
@@ -346,7 +402,7 @@ export const CabinetPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            <Button variant="secondary" size="sm" onClick={handleShareCabinet}>
+            <Button variant="secondary" size="sm" onClick={handleShareShowcase}>
               {copiedToast ? (
                 <>
                   <Check className="w-4 h-4 text-ok" strokeWidth={1.5} />
@@ -359,6 +415,28 @@ export const CabinetPage: React.FC = () => {
                 </>
               )}
             </Button>
+
+            {!isOwnCabinet && (
+              <Button
+                variant={isFollowing ? 'secondary' : 'primary'}
+                size="sm"
+                disabled={followToggling}
+                onClick={handleToggleFollow}
+                aria-label={isFollowing ? `Unfollow ${cabinetOwner.displayName}` : `Follow ${cabinetOwner.displayName}`}
+              >
+                {isFollowing ? (
+                  <>
+                    <UserCheck className="w-4 h-4 text-brass" strokeWidth={1.5} />
+                    <span>Following</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" strokeWidth={1.5} />
+                    <span>Follow</span>
+                  </>
+                )}
+              </Button>
+            )}
 
             {isOwnCabinet && (
               <>
@@ -397,6 +475,18 @@ export const CabinetPage: React.FC = () => {
             <div className="text-xs text-muted">Pieces</div>
             <div className="text-xl font-mono font-semibold tabular-nums text-ink">
               {totals.pieces}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-muted">Followers</div>
+            <div className="text-xl font-mono font-semibold tabular-nums text-ink">
+              {followerCount}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-muted">Following</div>
+            <div className="text-xl font-mono font-semibold tabular-nums text-ink">
+              {followingCount}
             </div>
           </div>
           {showValues && totals.max > 0 && (

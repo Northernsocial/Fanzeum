@@ -53,6 +53,7 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
         '/users/{userId}/itemPrivate/{itemId}',
         '/collections/{collectionId}',
         '/items/{itemId}',
+        '/follows/{followId}',
       ]),
     );
     expect(rulesSource).toContain('match /admins/{adminId}');
@@ -62,6 +63,14 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('match /itemPrivate/{itemId}');
     expect(rulesSource).toContain('match /collections/{collectionId}');
     expect(rulesSource).toContain('match /items/{itemId}');
+    expect(rulesSource).toContain('match /follows/{followId}');
+  });
+
+  it('2b. Enforces strict schema and owner-only writes on follows collection', () => {
+    expect(rulesSource).toContain('isValidFollow(incoming())');
+    expect(rulesSource).toContain('incoming().followerId == request.auth.uid');
+    expect(rulesSource).toContain('allow update: if false;');
+    expect(rulesSource).toContain('existing().followerId == request.auth.uid || isAdmin()');
   });
 
   it('3. Blocks privilege escalation on registration (locks role=collector, plan=free, isVerifiedExpert=false)', () => {
