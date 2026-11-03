@@ -334,6 +334,85 @@ service cloud.firestore {
         data.createdAt is timestamp;
     }
 
+    // Validation Blueprint: ItemLike (One like per user per item)
+    function isValidItemLike(data) {
+      return data.keys().hasAll(['uid', 'itemId', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'itemId', 'createdAt']) &&
+        isValidId(data.uid) &&
+        isValidId(data.itemId) &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: ItemSave (One save per user per item bookmark)
+    function isValidItemSave(data) {
+      return data.keys().hasAll(['uid', 'itemId', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'itemId', 'createdAt']) &&
+        isValidId(data.uid) &&
+        isValidId(data.itemId) &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: ItemComment (Plain text up to 1,000 characters)
+    function isValidItemComment(data) {
+      return data.keys().hasAll([
+          'id',
+          'itemId',
+          'authorId',
+          'authorName',
+          'authorHandle',
+          'authorAvatarUrl',
+          'text',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'itemId',
+          'authorId',
+          'authorName',
+          'authorHandle',
+          'authorAvatarUrl',
+          'text',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        isValidId(data.itemId) &&
+        isValidId(data.authorId) &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+        data.authorHandle is string && data.authorHandle.size() >= 2 && data.authorHandle.size() <= 32 && data.authorHandle.matches('^[a-z0-9_\\-]+$') &&
+        data.authorAvatarUrl is string && data.authorAvatarUrl.size() <= 2048 &&
+        data.text is string && data.text.size() >= 1 && data.text.size() <= 1000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Report (Admin read-only moderation report)
+    function isValidReport(data) {
+      return data.keys().hasAll([
+          'reporterId',
+          'targetType',
+          'targetId',
+          'itemId',
+          'reason',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'reporterId',
+          'targetType',
+          'targetId',
+          'itemId',
+          'reason',
+          'createdAt'
+        ]) &&
+        isValidId(data.reporterId) &&
+        data.targetType is string && data.targetType in ['comment', 'item'] &&
+        isValidId(data.targetId) &&
+        isValidId(data.itemId) &&
+        data.reason is string && data.reason.size() >= 1 && data.reason.size() <= 500 &&
+        data.createdAt is timestamp;
+    }
+
     // Validation Blueprint: CollectibleItem
     function isValidCollectibleItem(data) {
       return data.keys().hasAll([
@@ -601,6 +680,27 @@ service cloud.firestore {
           isValidId(itemId) &&
           (request.auth.uid == userId || isAdmin());
       }
+
+      // 4.5 User Saved Pieces Index
+      match /saves/{itemId} {
+        allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+        allow create: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          request.auth.uid == userId &&
+          isValidItemSave(incoming()) &&
+          incoming().uid == request.auth.uid &&
+          incoming().itemId == itemId &&
+          incoming().createdAt == request.time;
+
+        allow update: if false;
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(itemId) &&
+          (request.auth.uid == userId || isAdmin());
+      }
     }
 
     function isValidItemPrivateAccountGate(userId, itemId) {
@@ -815,6 +915,90 @@ service cloud.firestore {
       allow delete: if isVerifiedUser() &&
         isValidId(itemId) &&
         (existing().ownerId == request.auth.uid || isAdmin());
+
+      // 6.1 Likes (One like per user per item, enforced by doc id = uid)
+      match /likes/{userId} {
+        allow get, list: if true;
+
+        allow create: if isVerifiedUser() &&
+          isValidId(itemId) &&
+          isValidId(userId) &&
+          request.auth.uid == userId &&
+          isValidItemLike(incoming()) &&
+          incoming().uid == request.auth.uid &&
+          incoming().itemId == itemId &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/items/$(itemId));
+
+        allow update: if false;
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(itemId) &&
+          isValidId(userId) &&
+          (userId == request.auth.uid || isAdmin());
+      }
+
+      // 6.2 Saves (One bookmark per user per item, enforced by doc id = uid)
+      match /saves/{userId} {
+        allow get, list: if true;
+
+        allow create: if isVerifiedUser() &&
+          isValidId(itemId) &&
+          isValidId(userId) &&
+          request.auth.uid == userId &&
+          isValidItemSave(incoming()) &&
+          incoming().uid == request.auth.uid &&
+          incoming().itemId == itemId &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/items/$(itemId));
+
+        allow update: if false;
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(itemId) &&
+          isValidId(userId) &&
+          (userId == request.auth.uid || isAdmin());
+      }
+
+      // 6.3 Comments (Plain text <= 1,000 chars; author edits/deletes; item owner deletes)
+      match /comments/{commentId} {
+        allow get, list: if true;
+
+        allow create: if isVerifiedUser() &&
+          isValidId(itemId) &&
+          isValidId(commentId) &&
+          isValidItemComment(incoming()) &&
+          incoming().id == commentId &&
+          incoming().itemId == itemId &&
+          incoming().authorId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/items/$(itemId));
+
+        allow update: if isVerifiedUser() &&
+          isValidId(itemId) &&
+          isValidId(commentId) &&
+          isValidItemComment(incoming()) &&
+          existing().authorId == request.auth.uid &&
+          incoming().id == existing().id &&
+          incoming().itemId == existing().itemId &&
+          incoming().authorId == existing().authorId &&
+          incoming().authorName == existing().authorName &&
+          incoming().authorHandle == existing().authorHandle &&
+          incoming().authorAvatarUrl == existing().authorAvatarUrl &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['text', 'updatedAt']);
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(itemId) &&
+          isValidId(commentId) &&
+          (
+            existing().authorId == request.auth.uid ||
+            get(/databases/$(database)/documents/items/$(itemId)).data.ownerId == request.auth.uid ||
+            isAdmin()
+          );
+      }
     }
 
     // 7. Follows (Owner-only writes, public reads for counts and feed query)
@@ -832,6 +1016,19 @@ service cloud.firestore {
       allow delete: if isVerifiedUser() &&
         isValidId(followId) &&
         (existing().followerId == request.auth.uid || isAdmin());
+    }
+
+    // 8. Reports (Verified user create, strictly admin read only)
+    match /reports/{reportId} {
+      allow get, list: if isAdmin();
+
+      allow create: if isVerifiedUser() &&
+        isValidId(reportId) &&
+        isValidReport(incoming()) &&
+        incoming().reporterId == request.auth.uid &&
+        incoming().createdAt == request.time;
+
+      allow update, delete: if isAdmin();
     }
   }
 }

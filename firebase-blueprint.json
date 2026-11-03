@@ -525,6 +525,165 @@
         "targetId",
         "createdAt"
       ]
+    },
+    "ItemLikeRecord": {
+      "title": "ItemLikeRecord",
+      "description": "One like per user per item with doc id = uid.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "itemId", "createdAt"]
+    },
+    "ItemSaveRecord": {
+      "title": "ItemSaveRecord",
+      "description": "One save per user per item bookmark.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "itemId", "createdAt"]
+    },
+    "ItemCommentRecord": {
+      "title": "ItemCommentRecord",
+      "description": "Plain text comment on an item up to 1,000 characters.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "authorHandle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32,
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "authorAvatarUrl": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "itemId",
+        "authorId",
+        "authorName",
+        "authorHandle",
+        "authorAvatarUrl",
+        "text",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ReportRecord": {
+      "title": "ReportRecord",
+      "description": "Admin read-only moderation report.",
+      "type": "object",
+      "properties": {
+        "reporterId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetType": {
+          "type": "string",
+          "enum": ["comment", "item"],
+          "maxLength": 16
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "itemId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "reporterId",
+        "targetType",
+        "targetId",
+        "itemId",
+        "reason",
+        "createdAt"
+      ]
     }
   },
   "firestore": {
@@ -548,6 +707,10 @@
       "schema": { "$ref": "#/entities/ItemPrivateRecord" },
       "description": "Strictly isolated owner-only purchase price, acquisition date, and private notes."
     },
+    "/users/{userId}/saves/{itemId}": {
+      "schema": { "$ref": "#/entities/ItemSaveRecord" },
+      "description": "User saved/bookmarked pieces list."
+    },
     "/collections/{collectionId}": {
       "schema": { "$ref": "#/entities/CollectionRecord" },
       "description": "Collector collections with visibility controls and set targets."
@@ -556,9 +719,25 @@
       "schema": { "$ref": "#/entities/CollectibleItemRecord" },
       "description": "Individual pieces referencing owned collections and Storage photo URLs."
     },
+    "/items/{itemId}/likes/{userId}": {
+      "schema": { "$ref": "#/entities/ItemLikeRecord" },
+      "description": "Likes on an item, strictly 1 per user enforced by doc id = uid."
+    },
+    "/items/{itemId}/saves/{userId}": {
+      "schema": { "$ref": "#/entities/ItemSaveRecord" },
+      "description": "Saves on an item, strictly 1 per user enforced by doc id = uid."
+    },
+    "/items/{itemId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/ItemCommentRecord" },
+      "description": "Plain text comments on an item."
+    },
     "/follows/{followId}": {
       "schema": { "$ref": "#/entities/FollowRecord" },
       "description": "Owner-only follow records for categories and collectors."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/ReportRecord" },
+      "description": "Content reports, writeable by verified users and readable only by admins."
     }
   }
 }

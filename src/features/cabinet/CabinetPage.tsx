@@ -2,13 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   BadgeCheck,
+  Bookmark,
   Camera,
   Check,
   FolderPlus,
+  Grid,
   Lock,
   MapPin,
   Pencil,
   Share2,
+  Sparkles,
   UserCheck,
   UserPlus,
   UserX,
@@ -32,14 +35,18 @@ import {
   unfollowTarget,
 } from '../../lib/followRepo';
 import { uploadAvatarPhoto } from '../../lib/imageUtils';
-import type { CollectionRecord, UserProfile, VisibilityLevel } from '../../types/domain';
+import { fetchUserSavedItems, toggleItemSave } from '../../lib/socialRepo';
+import type { CollectibleItemRecord, CollectionRecord, UserProfile, VisibilityLevel } from '../../types/domain';
 import { useDocumentMeta } from '../../components/DocumentMeta';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CollectorImage } from '../../components/ui/CollectorImage';
 import { CompletionRing } from '../../components/ui/CompletionRing';
 import { EmptyState, Skeleton } from '../../components/ui/EmptyState';
+import { PieceStage } from '../../components/ui/PieceStage';
+import { Placard } from '../../components/ui/Placard';
 import { Sheet } from '../../components/ui/Sheet';
+import { Tabs } from '../../components/ui/Tabs';
 
 export const CabinetPage: React.FC = () => {
   const { atHandle, handle: routeHandle } = useParams<{ atHandle?: string; handle?: string }>();
@@ -57,6 +64,11 @@ export const CabinetPage: React.FC = () => {
   const [followingCount, setFollowingCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followToggling, setFollowToggling] = useState(false);
+
+  // Profile view tabs: 'collections' vs 'saved'
+  const [activeProfileTab, setActiveProfileTab] = useState<'collections' | 'saved'>('collections');
+  const [savedItems, setSavedItems] = useState<CollectibleItemRecord[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
 
   // Edit profile sheet state
   const [editOpen, setEditOpen] = useState(false);
@@ -126,6 +138,44 @@ export const CabinetPage: React.FC = () => {
       active = false;
     };
   }, [cleanHandle, isInvalidAtRoute, viewerProfile, firebaseUser?.uid]);
+
+  // Load saved items if user is on their own showcase and views Saved tab
+  useEffect(() => {
+    if (!isOwnCabinet || activeProfileTab !== 'saved' || !firebaseUser) return;
+    const uid = firebaseUser.uid;
+    let active = true;
+    async function loadSaved() {
+      setLoadingSaved(true);
+      try {
+        const items = await fetchUserSavedItems(uid);
+        if (active) setSavedItems(items);
+      } catch (err) {
+        console.error('Failed to load saved items:', err);
+      } finally {
+        if (active) setLoadingSaved(false);
+      }
+    }
+    void loadSaved();
+    return () => {
+      active = false;
+    };
+  }, [isOwnCabinet, activeProfileTab, firebaseUser]);
+
+  const handleUnsaveItem = async (itemId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!firebaseUser) return;
+    setSavedItems((prev) => prev.filter((i) => i.id !== itemId));
+    try {
+      await toggleItemSave({
+        itemId,
+        uid: firebaseUser.uid,
+        isVerifiedUser: Boolean(firebaseUser.emailVerified),
+      });
+    } catch (err) {
+      console.error('Failed to unsave piece:', err);
+    }
+  };
 
   const totals = useMemo(() => {
     const min = collections.reduce((s, c) => s + (c.estimatedTotalMinGbp || 0), 0);
@@ -504,11 +554,32 @@ export const CabinetPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* Collections Grid */}
-      <div className="space-y-5">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-display font-semibold text-ink">Collections</h2>
-          {isOwnCabinet && (
+      {/* Showcase Content: Collections vs Saved */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {isOwnCabinet ? (
+            <Tabs
+              ariaLabel="Showcase view tabs"
+              value={activeProfileTab}
+              onChange={(tab) => setActiveProfileTab(tab as 'collections' | 'saved')}
+              options={[
+                {
+                  value: 'collections',
+                  label: `Collections (${collections.length})`,
+                  icon: <Grid className="w-4 h-4" strokeWidth={1.5} />,
+                },
+                {
+                  value: 'saved',
+                  label: `Saved pieces (${savedItems.length})`,
+                  icon: <Bookmark className="w-4 h-4" strokeWidth={1.5} />,
+                },
+              ]}
+            />
+          ) : (
+            <h2 className="text-2xl font-display font-semibold text-ink">Collections</h2>
+          )}
+
+          {isOwnCabinet && activeProfileTab === 'collections' && (
             <Button variant="secondary" size="sm" onClick={() => navigate('/add')}>
               <Camera className="w-4 h-4" strokeWidth={1.5} />
               <span>Add piece by photo</span>
@@ -516,78 +587,135 @@ export const CabinetPage: React.FC = () => {
           )}
         </div>
 
-        {collections.length === 0 ? (
-          <EmptyState
-            icon={<FolderPlus className="w-6 h-6" strokeWidth={1.5} />}
-            title={isOwnCabinet ? 'Start your first collection' : 'No public collections yet'}
-            description={
-              isOwnCabinet
-                ? 'Group a set, binder, album, or coin tray—then snap your first piece.'
-                : 'This collector has not published any public sets yet.'
-            }
-            action={
-              isOwnCabinet ? (
-                <Button onClick={() => setNewColOpen(true)}>Create collection</Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {collections.map((col) => (
-              <Link key={col.id} to={`/c/${col.id}`} className="block">
-                <Card interactive className="overflow-hidden h-full flex flex-col justify-between">
-                  <div>
-                    <div className="aspect-[16/10] bg-surface-raised border-b border-border p-5 flex items-center justify-center after-hours-spotlight">
-                      <CollectorImage
-                        src={col.coverImageUrl}
-                        alt={col.title}
-                        category={col.category}
-                        className="w-full h-full"
-                        imgClassName="w-full h-full object-contain"
-                      />
-                    </div>
-                    <div className="p-5 space-y-2">
-                      <div className="text-xs text-muted flex items-center gap-2">
-                        <span>{CATEGORIES[col.category]?.shortLabel || col.category}</span>
-                        {isOwnCabinet && (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span className="capitalize">{col.visibility}</span>
-                          </>
+        {activeProfileTab === 'collections' ? (
+          collections.length === 0 ? (
+            <EmptyState
+              icon={<FolderPlus className="w-6 h-6" strokeWidth={1.5} />}
+              title={isOwnCabinet ? 'Start your first collection' : 'No public collections yet'}
+              description={
+                isOwnCabinet
+                  ? 'Group a set, binder, album, or coin tray—then snap your first piece.'
+                  : 'This collector has not published any public sets yet.'
+              }
+              action={
+                isOwnCabinet ? (
+                  <Button onClick={() => setNewColOpen(true)}>Create collection</Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {collections.map((col) => (
+                <Link key={col.id} to={`/c/${col.id}`} className="block">
+                  <Card interactive className="overflow-hidden h-full flex flex-col justify-between">
+                    <div>
+                      <div className="aspect-[16/10] bg-surface-raised border-b border-border p-5 flex items-center justify-center after-hours-spotlight">
+                        <CollectorImage
+                          src={col.coverImageUrl}
+                          alt={col.title}
+                          category={col.category}
+                          className="w-full h-full"
+                          imgClassName="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="p-5 space-y-2">
+                        <div className="text-xs text-muted flex items-center gap-2">
+                          <span>{CATEGORIES[col.category]?.shortLabel || col.category}</span>
+                          {isOwnCabinet && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span className="capitalize">{col.visibility}</span>
+                            </>
+                          )}
+                        </div>
+                        <h3 className="text-xl font-display font-semibold text-ink line-clamp-2">
+                          {col.title}
+                        </h3>
+                        {col.story && (
+                          <p className="text-sm text-muted line-clamp-2 leading-relaxed">
+                            {col.story}
+                          </p>
                         )}
                       </div>
-                      <h3 className="text-xl font-display font-semibold text-ink line-clamp-2">
-                        {col.title}
-                      </h3>
-                      {col.story && (
-                        <p className="text-sm text-muted line-clamp-2 leading-relaxed">
-                          {col.story}
-                        </p>
+                    </div>
+
+                    <div className="px-5 pb-5 pt-3 border-t border-border flex items-center justify-between gap-3">
+                      {col.setTargetCount > 0 ? (
+                        <CompletionRing
+                          current={col.itemCount}
+                          target={col.setTargetCount}
+                          size={44}
+                        />
+                      ) : (
+                        <span className="text-sm font-mono text-muted">
+                          {col.itemCount} {col.itemCount === 1 ? 'piece' : 'pieces'}
+                        </span>
+                      )}
+                      {showValues && col.estimatedTotalMaxGbp > 0 && (
+                        <span className="text-sm font-mono tabular-nums text-brass">
+                          {formatGbpRange(col.estimatedTotalMinGbp, col.estimatedTotalMaxGbp)}
+                        </span>
                       )}
                     </div>
-                  </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )
+        ) : (
+          /* Saved Pieces Tab View */
+          <div>
+            {loadingSaved ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <Skeleton key={idx} className="h-80" />
+                ))}
+              </div>
+            ) : savedItems.length === 0 ? (
+              <EmptyState
+                icon={<Bookmark className="w-6 h-6" strokeWidth={1.5} />}
+                title="No saved pieces yet"
+                description="Bookmark your favourite cards, coins, stamps and records from Fresh Finds or Explore to build your private wishlist."
+                action={
+                  <Button variant="secondary" onClick={() => navigate('/explore')}>
+                    Explore pieces to save
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {savedItems.map((savedPiece) => (
+                  <div key={savedPiece.id} className="space-y-3 group relative">
+                    <Link to={`/i/${savedPiece.id}`} className="block">
+                      <PieceStage item={savedPiece} />
+                    </Link>
 
-                  <div className="px-5 pb-5 pt-3 border-t border-border flex items-center justify-between gap-3">
-                    {col.setTargetCount > 0 ? (
-                      <CompletionRing
-                        current={col.itemCount}
-                        target={col.setTargetCount}
-                        size={44}
-                      />
-                    ) : (
-                      <span className="text-sm font-mono text-muted">
-                        {col.itemCount} {col.itemCount === 1 ? 'piece' : 'pieces'}
-                      </span>
-                    )}
-                    {showValues && col.estimatedTotalMaxGbp > 0 && (
-                      <span className="text-sm font-mono tabular-nums text-brass">
-                        {formatGbpRange(col.estimatedTotalMinGbp, col.estimatedTotalMaxGbp)}
-                      </span>
-                    )}
+                    <div className="px-0.5 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-muted">
+                        <span>{CATEGORIES[savedPiece.category]?.shortLabel || savedPiece.category}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => void handleUnsaveItem(savedPiece.id, e)}
+                          title="Remove from saved"
+                          className="inline-flex items-center gap-1 font-mono text-brass hover:text-warn transition-colors cursor-pointer"
+                        >
+                          <Bookmark className="w-3.5 h-3.5 fill-brass text-brass" strokeWidth={1.5} />
+                          <span>Saved</span>
+                        </button>
+                      </div>
+
+                      <Link to={`/i/${savedPiece.id}`} className="block hover:text-brass transition-colors">
+                        <Placard item={savedPiece} size="sm" />
+                      </Link>
+
+                      <div className="pt-0.5 text-xs text-muted font-mono">
+                        @{savedPiece.ownerHandle}
+                      </div>
+                    </div>
                   </div>
-                </Card>
-              </Link>
-            ))}
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

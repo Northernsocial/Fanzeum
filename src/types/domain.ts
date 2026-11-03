@@ -62,6 +62,40 @@ export interface FollowRecord {
   createdAt?: unknown;
 }
 
+export interface ItemLikeRecord {
+  uid: string;
+  itemId: string;
+  createdAt?: unknown;
+}
+
+export interface ItemSaveRecord {
+  uid: string;
+  itemId: string;
+  createdAt?: unknown;
+}
+
+export interface ItemCommentRecord {
+  id: string;
+  itemId: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatarUrl: string;
+  text: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface ReportRecord {
+  id?: string;
+  reporterId: string;
+  targetType: 'comment' | 'item';
+  targetId: string;
+  itemId: string;
+  reason: string;
+  createdAt?: unknown;
+}
+
 export interface UserPrivateAccount {
   uid: string;
   email: string;
