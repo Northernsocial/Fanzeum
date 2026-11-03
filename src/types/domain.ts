@@ -121,6 +121,7 @@ export interface CollectionRecord {
   estimatedTotalMinGbp: number;
   estimatedTotalMaxGbp: number;
   featured: boolean;
+  featuredOrder?: number;
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -157,6 +158,8 @@ export interface CollectibleItemRecord {
   helpedBy?: string; // Collector handle or note of who contributed ID correction
   panelStatus?: 'none' | 'confirmed' | 'disputed';
   panelConfirmedAt?: string;
+  featured?: boolean;
+  featuredOrder?: number;
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -225,8 +228,25 @@ export interface FreshFindRecord {
   thumbUrl: string;
   valueRange?: string;
   panelStatus?: 'none' | 'confirmed' | 'disputed';
+  featured?: boolean;
+  featuredOrder?: number;
   isDemo?: boolean;
   createdAt?: unknown;
+}
+
+export interface ArticleRecord {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  category: CategorySlug;
+  authorName: string;
+  authorHandle: string;
+  coverImageUrl: string;
+  featured: boolean;
+  featuredOrder?: number;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 export interface ItemPrivateRecord {

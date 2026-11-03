@@ -14,8 +14,10 @@ import {
 } from 'firebase/firestore';
 import { getItemPlacardParts, type CategorySlug } from '../config/categories';
 import { DEMO_COLLECTIONS, DEMO_ITEMS, DEMO_USERS } from '../data/demoCatalog';
+import { DEMO_ARTICLES } from '../data/demoArticles';
 import type {
   AIConfidence,
+  ArticleRecord,
   CollectibleItemRecord,
   CollectionRecord,
   CollectorGoal,
@@ -129,6 +131,8 @@ function normalizeItemDoc(id: string, raw: Record<string, unknown>): Collectible
     mediaCredit: raw.mediaCredit as MediaCredit | undefined,
     panelStatus: raw.panelStatus as 'none' | 'confirmed' | 'disputed' | undefined,
     panelConfirmedAt: raw.panelConfirmedAt ? String(raw.panelConfirmedAt) : undefined,
+    featured: Boolean(raw.featured),
+    featuredOrder: typeof raw.featuredOrder === 'number' ? raw.featuredOrder : undefined,
     isDemo: Boolean(raw.isDemo),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
@@ -146,6 +150,8 @@ function normalizeFreshFindDoc(id: string, raw: Record<string, unknown>): FreshF
     thumbUrl: String(raw.thumbUrl || ''),
     valueRange: raw.valueRange ? String(raw.valueRange) : undefined,
     panelStatus: raw.panelStatus as 'none' | 'confirmed' | 'disputed' | undefined,
+    featured: Boolean(raw.featured),
+    featuredOrder: typeof raw.featuredOrder === 'number' ? raw.featuredOrder : undefined,
     isDemo: Boolean(raw.isDemo),
     createdAt: raw.createdAt,
   };
@@ -517,10 +523,29 @@ export async function listPublicCollections(maxResults = 40): Promise<Collection
       limit(maxResults),
     );
     const snap = await getDocs(q);
-    live = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<CollectionRecord, 'id'>),
-    }));
+    live = snap.docs.map((d) => {
+      const data = d.data() as Record<string, unknown>;
+      return {
+        id: d.id,
+        ownerId: String(data.ownerId || ''),
+        ownerName: String(data.ownerName || ''),
+        ownerHandle: String(data.ownerHandle || ''),
+        title: String(data.title || ''),
+        story: String(data.story || ''),
+        coverImageUrl: String(data.coverImageUrl || ''),
+        category: (data.category as CategorySlug) || 'memorabilia',
+        visibility: (data.visibility as VisibilityLevel) || 'public',
+        itemCount: Number(data.itemCount) || 0,
+        setTargetCount: Number(data.setTargetCount) || 0,
+        estimatedTotalMinGbp: Number(data.estimatedTotalMinGbp) || 0,
+        estimatedTotalMaxGbp: Number(data.estimatedTotalMaxGbp) || 0,
+        featured: Boolean(data.featured),
+        featuredOrder: typeof data.featuredOrder === 'number' ? data.featuredOrder : undefined,
+        isDemo: Boolean(data.isDemo),
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
+    });
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
   }
@@ -531,22 +556,65 @@ export async function listPublicCollections(maxResults = 40): Promise<Collection
   for (const demo of DEMO_COLLECTIONS) {
     if (!seen.has(demo.id)) combined.push(demo);
   }
+
+  // Sort by featuredOrder if present, then featured status
+  combined.sort((a, b) => {
+    const aOrd = a.featuredOrder ?? 999;
+    const bOrd = b.featuredOrder ?? 999;
+    if (aOrd !== bOrd) return aOrd - bOrd;
+    const aFeat = a.featured ? 0 : 1;
+    const bFeat = b.featured ? 0 : 1;
+    return aFeat - bFeat;
+  });
+
   return combined.slice(0, maxResults);
 }
 
 export async function listFeaturedCollections(): Promise<CollectionRecord[]> {
   const all = await listPublicCollections(40);
-  // Sort collections so that those with real photos (not data:image/svg) appear first
-  const sorted = [...all].sort((a, b) => {
-    const aReal = a.coverImageUrl && !a.coverImageUrl.startsWith('data:image/svg') ? 1 : 0;
-    const bReal = b.coverImageUrl && !b.coverImageUrl.startsWith('data:image/svg') ? 1 : 0;
-    if (aReal !== bReal) return bReal - aReal;
-    const aFeat = a.featured ? 1 : 0;
-    const bFeat = b.featured ? 1 : 0;
-    return bFeat - aFeat;
-  });
-  const featured = sorted.filter((c) => c.featured);
-  return featured.length > 0 ? featured : sorted.slice(0, 3);
+  const featured = all.filter((c) => c.featured);
+  if (featured.length > 0) {
+    return featured.sort((a, b) => (a.featuredOrder ?? 999) - (b.featuredOrder ?? 999));
+  }
+  return all.slice(0, 3);
+}
+
+export async function listFeaturedArticles(): Promise<ArticleRecord[]> {
+  let live: ArticleRecord[] = [];
+  try {
+    const q = query(collection(db, 'articles'), limit(20));
+    const snap = await getDocs(q);
+    live = snap.docs.map((d) => {
+      const data = d.data() as Record<string, unknown>;
+      return {
+        id: d.id,
+        title: String(data.title || ''),
+        summary: String(data.summary || ''),
+        content: String(data.content || ''),
+        category: (data.category as CategorySlug) || 'stamps',
+        authorName: String(data.authorName || ''),
+        authorHandle: String(data.authorHandle || ''),
+        coverImageUrl: String(data.coverImageUrl || ''),
+        featured: Boolean(data.featured),
+        featuredOrder: typeof data.featuredOrder === 'number' ? data.featuredOrder : undefined,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
+    });
+  } catch {
+    // Fall back to demo articles
+  }
+
+  const seen = new Set(live.map((a) => a.id));
+  const combined = [...live];
+  if (!isBuiltinDemoHidden()) {
+    for (const art of DEMO_ARTICLES) {
+      if (!seen.has(art.id)) combined.push(art);
+    }
+  }
+
+  combined.sort((a, b) => (a.featuredOrder ?? 999) - (b.featuredOrder ?? 999));
+  return combined.filter((a) => a.featured).slice(0, 3);
 }
 
 export async function listOwnerCollections(
@@ -570,10 +638,29 @@ export async function listOwnerCollections(
           limit(maxResults),
         );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<CollectionRecord, 'id'>),
-    }));
+    return snap.docs.map((d) => {
+      const data = d.data() as Record<string, unknown>;
+      return {
+        id: d.id,
+        ownerId: String(data.ownerId || ''),
+        ownerName: String(data.ownerName || ''),
+        ownerHandle: String(data.ownerHandle || ''),
+        title: String(data.title || ''),
+        story: String(data.story || ''),
+        coverImageUrl: String(data.coverImageUrl || ''),
+        category: (data.category as CategorySlug) || 'memorabilia',
+        visibility: (data.visibility as VisibilityLevel) || 'public',
+        itemCount: Number(data.itemCount) || 0,
+        setTargetCount: Number(data.setTargetCount) || 0,
+        estimatedTotalMinGbp: Number(data.estimatedTotalMinGbp) || 0,
+        estimatedTotalMaxGbp: Number(data.estimatedTotalMaxGbp) || 0,
+        featured: Boolean(data.featured),
+        featuredOrder: typeof data.featuredOrder === 'number' ? data.featuredOrder : undefined,
+        isDemo: Boolean(data.isDemo),
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
+    });
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
   }
@@ -589,9 +676,26 @@ export async function fetchCollectionById(collectionId: string): Promise<Collect
   try {
     const snap = await getDoc(doc(db, 'collections', collectionId));
     if (!snap.exists()) return null;
+    const data = snap.data() as Record<string, unknown>;
     return {
       id: snap.id,
-      ...(snap.data() as Omit<CollectionRecord, 'id'>),
+      ownerId: String(data.ownerId || ''),
+      ownerName: String(data.ownerName || ''),
+      ownerHandle: String(data.ownerHandle || ''),
+      title: String(data.title || ''),
+      story: String(data.story || ''),
+      coverImageUrl: String(data.coverImageUrl || ''),
+      category: (data.category as CategorySlug) || 'memorabilia',
+      visibility: (data.visibility as VisibilityLevel) || 'public',
+      itemCount: Number(data.itemCount) || 0,
+      setTargetCount: Number(data.setTargetCount) || 0,
+      estimatedTotalMinGbp: Number(data.estimatedTotalMinGbp) || 0,
+      estimatedTotalMaxGbp: Number(data.estimatedTotalMaxGbp) || 0,
+      featured: Boolean(data.featured),
+      featuredOrder: typeof data.featuredOrder === 'number' ? data.featuredOrder : undefined,
+      isDemo: Boolean(data.isDemo),
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
     };
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
@@ -669,6 +773,8 @@ export async function updateCollectionDetails(
     itemCount: number;
     estimatedTotalMinGbp: number;
     estimatedTotalMaxGbp: number;
+    featured: boolean;
+    featuredOrder: number;
   }>,
 ): Promise<void> {
   const path = `collections/${collectionId}`;
@@ -701,6 +807,8 @@ export async function updateCollectionDetails(
   if (updates.estimatedTotalMaxGbp !== undefined) {
     payload.estimatedTotalMaxGbp = Math.max(0, Number(updates.estimatedTotalMaxGbp) || 0);
   }
+  if (updates.featured !== undefined) payload.featured = Boolean(updates.featured);
+  if (updates.featuredOrder !== undefined) payload.featuredOrder = Number(updates.featuredOrder) || 0;
 
   try {
     await updateDoc(doc(db, 'collections', collectionId), payload);
@@ -886,8 +994,10 @@ export async function explorePublicItems(params: {
   if (params.sortBy === 'value_desc') {
     filtered.sort((a, b) => b.valueMaxGbp - a.valueMaxGbp);
   } else {
-    // Newest first: live non-demo items appear ahead of demo items, sorted by createdAt seconds if available
     filtered.sort((a, b) => {
+      const aOrd = a.featuredOrder ?? 999;
+      const bOrd = b.featuredOrder ?? 999;
+      if (aOrd !== bOrd) return aOrd - bOrd;
       const aLive = a.isDemo ? 0 : 1;
       const bLive = b.isDemo ? 0 : 1;
       if (aLive !== bLive) return bLive - aLive;
@@ -1072,6 +1182,8 @@ export async function updateCollectibleItemRecord(params: {
   tags: string[];
   panelStatus?: 'none' | 'confirmed' | 'disputed';
   panelConfirmedAt?: string;
+  featured?: boolean;
+  featuredOrder?: number;
 }): Promise<void> {
   const path = `items/${params.item.id}`;
   const cleanTitle = (params.title.trim() || 'Untitled Piece').slice(0, 140);
@@ -1079,29 +1191,34 @@ export async function updateCollectibleItemRecord(params: {
   const minGbp = Math.max(0, Math.round(Number(params.valueMinGbp) || 0));
   const maxGbp = Math.max(minGbp, Math.round(Number(params.valueMaxGbp) || minGbp));
 
+  const payload: Record<string, unknown> = {
+    title: cleanTitle,
+    titleLower: cleanTitle.toLowerCase(),
+    story: params.story.trim().slice(0, 1500),
+    category: params.category,
+    attributes: params.attributes,
+    year: placard.year.slice(0, 32),
+    maker: placard.maker.slice(0, 120),
+    setNumber: placard.catNumber.slice(0, 80),
+    condition: (placard.condition || 'Good').slice(0, 80),
+    valueMinGbp: minGbp,
+    valueMaxGbp: maxGbp,
+    valuationReason: params.valuationReason.trim().slice(0, 320),
+    grail: params.grail,
+    tags: params.tags
+      .map((t) => t.toLowerCase().trim().slice(0, 40))
+      .filter(Boolean)
+      .slice(0, 12),
+    updatedAt: serverTimestamp(),
+  };
+
+  if (params.panelStatus !== undefined) payload.panelStatus = params.panelStatus;
+  if (params.panelConfirmedAt !== undefined) payload.panelConfirmedAt = params.panelConfirmedAt;
+  if (params.featured !== undefined) payload.featured = Boolean(params.featured);
+  if (params.featuredOrder !== undefined) payload.featuredOrder = Number(params.featuredOrder) || 0;
+
   try {
-    await updateDoc(doc(db, 'items', params.item.id), {
-      title: cleanTitle,
-      titleLower: cleanTitle.toLowerCase(),
-      story: params.story.trim().slice(0, 1500),
-      category: params.category,
-      attributes: params.attributes,
-      year: placard.year.slice(0, 32),
-      maker: placard.maker.slice(0, 120),
-      setNumber: placard.catNumber.slice(0, 80),
-      condition: (placard.condition || 'Good').slice(0, 80),
-      valueMinGbp: minGbp,
-      valueMaxGbp: maxGbp,
-      valuationReason: params.valuationReason.trim().slice(0, 320),
-      grail: params.grail,
-      tags: params.tags
-        .map((t) => t.toLowerCase().trim().slice(0, 40))
-        .filter(Boolean)
-        .slice(0, 12),
-      ...(params.panelStatus ? { panelStatus: params.panelStatus } : {}),
-      ...(params.panelConfirmedAt ? { panelConfirmedAt: params.panelConfirmedAt } : {}),
-      updatedAt: serverTimestamp(),
-    });
+    await updateDoc(doc(db, 'items', params.item.id), payload);
     await recomputeAndSyncCollectionStats(params.collectionRecord, params.item.ownerId);
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
@@ -1215,6 +1332,8 @@ export async function createFreshFindRecord(params: {
   thumbUrl: string;
   valueRange?: string;
   panelStatus?: 'none' | 'confirmed' | 'disputed';
+  featured?: boolean;
+  featuredOrder?: number;
   isDemo?: boolean;
 }): Promise<FreshFindRecord> {
   const findId = makeSafeId('find');
@@ -1233,6 +1352,8 @@ export async function createFreshFindRecord(params: {
     thumbUrl: cleanThumb,
     ...(params.valueRange ? { valueRange: params.valueRange.trim().slice(0, 80) } : {}),
     ...(params.panelStatus ? { panelStatus: params.panelStatus } : {}),
+    featured: Boolean(params.featured),
+    ...(params.featuredOrder !== undefined ? { featuredOrder: params.featuredOrder } : {}),
     isDemo: Boolean(params.isDemo),
     createdAt: serverTimestamp(),
   };
@@ -1290,7 +1411,6 @@ export async function listFreshFinds(params: {
   const combined = [...liveFinds];
 
   if (!isBuiltinDemoHidden()) {
-    // Import demo catalog fresh finds dynamically/safely
     const { DEMO_FRESH_FINDS } = await import('../data/demoCatalog');
     for (const demo of DEMO_FRESH_FINDS) {
       if (seen.has(demo.id)) continue;
@@ -1301,8 +1421,13 @@ export async function listFreshFinds(params: {
     }
   }
 
-  // Newest first: live non-demo items ahead of demo, sorted by createdAt
   combined.sort((a, b) => {
+    const aOrd = a.featuredOrder ?? 999;
+    const bOrd = b.featuredOrder ?? 999;
+    if (aOrd !== bOrd) return aOrd - bOrd;
+    const aFeat = a.featured ? 0 : 1;
+    const bFeat = b.featured ? 0 : 1;
+    if (aFeat !== bFeat) return aFeat - bFeat;
     const aLive = a.isDemo ? 0 : 1;
     const bLive = b.isDemo ? 0 : 1;
     if (aLive !== bLive) return bLive - aLive;
@@ -1354,51 +1479,38 @@ export async function exportAllUserData(uid: string) {
 }
 
 export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
+  const [collections, items] = await Promise.all([
+    listOwnerCollections(uid, uid, 200),
+    listOwnerItems(uid, 500),
+  ]);
+
+  for (const item of items) {
+    await deleteCollectibleItemRecord(item, collections.find((c) => c.id === item.collectionId) || {
+      id: item.collectionId,
+      ownerId: uid,
+      ownerName: '',
+      ownerHandle: '',
+      title: '',
+      story: '',
+      coverImageUrl: '',
+      category: item.category,
+      visibility: 'public',
+      itemCount: 1,
+      setTargetCount: 0,
+      estimatedTotalMinGbp: 0,
+      estimatedTotalMaxGbp: 0,
+      featured: false,
+    });
+  }
+
+  for (const col of collections) {
+    await deleteDoc(doc(db, 'collections', col.id)).catch(() => {});
+  }
+
   await deleteAllUserStorageFiles(uid);
 
-  try {
-    const privItemsQ = query(
-      collection(db, 'users', uid, 'itemPrivate'),
-      where('uid', '==', uid),
-      limit(500),
-    );
-    const privItemsSnap = await getDocs(privItemsQ);
-    for (const d of privItemsSnap.docs) {
-      await deleteDoc(doc(db, 'users', uid, 'itemPrivate', d.id));
-    }
-  } catch {
-    // Proceed with remaining cleanup
-  }
-
-  try {
-    const itemsQ = query(collection(db, 'items'), where('ownerId', '==', uid), limit(500));
-    const itemSnap = await getDocs(itemsQ);
-    for (const d of itemSnap.docs) {
-      await deleteDoc(doc(db, 'items', d.id));
-    }
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, 'items');
-  }
-
-  const cols = await listOwnerCollections(uid, uid, 200);
-  for (const col of cols) {
-    try {
-      await deleteDoc(doc(db, 'collections', col.id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `collections/${col.id}`);
-    }
-  }
-
-  try {
-    const privSnap = await getDoc(doc(db, 'users', uid, 'private', 'account'));
-    if (privSnap.exists()) {
-      await deleteDoc(doc(db, 'users', uid, 'private', 'account'));
-    }
-    const userSnap = await getDoc(doc(db, 'users', uid));
-    if (userSnap.exists()) {
-      await deleteDoc(doc(db, 'users', uid));
-    }
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
-  }
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'users', uid, 'private', 'account'));
+  batch.delete(doc(db, 'users', uid));
+  await batch.commit().catch(() => {});
 }

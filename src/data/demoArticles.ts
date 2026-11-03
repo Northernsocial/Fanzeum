@@ -1,0 +1,40 @@
+import type { ArticleRecord } from '../types/domain';
+
+export const DEMO_ARTICLES: ArticleRecord[] = [
+  {
+    id: 'demo_art_1',
+    title: 'Stanley Gibbons King George VI Stamp Discoveries: What to Look For',
+    summary: 'A guide to watermark variants and unmounted mint conditions for collectors seeking SG key values.',
+    content: 'King George VI definitives remain one of the most absorbing fields for British philatelists. From the 1937 Coronation issues to the 1951 High Values printed by Waterlow and Bradbury Wilkinson, paper thickness and watermark orientation can swing valuation from a modest sum into four figures. Always inspect perforations under high magnification and ensure gum is unmounted and original.',
+    category: 'stamps',
+    authorName: 'Helen Vance',
+    authorHandle: 'helen_sg1',
+    coverImageUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80',
+    featured: true,
+    featuredOrder: 1,
+  },
+  {
+    id: 'demo_art_2',
+    title: 'Panini Mexico 70: The Holy Grail of Football Album Collecting',
+    summary: 'Inside the legendary 1970 World Cup sticker album and why complete mid-century sets command premier prices.',
+    content: 'First published for the Mexico World Cup in 1970, Panini albums from this era are exceptionally scarce in pristine condition. Finding unused or professionally glued sets featuring Pelé and Bobby Moore is the pinnacle of football memorabilia collecting. Check for clean back pages and original order forms.',
+    category: 'football_cards',
+    authorName: 'Dez Parker',
+    authorHandle: 'dez_panini',
+    coverImageUrl: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=800&q=80',
+    featured: true,
+    featuredOrder: 2,
+  },
+  {
+    id: 'demo_art_3',
+    title: 'Northern Soul 45s on Casino and Goldmine Labels: A Collector Primer',
+    summary: 'How rare original UK pressings from Wigan Casino and the Twisted Wheel became British club culture icons.',
+    content: 'The rare soul scene nurtured in Northern England during the late 1960s and 70s turned obscure American US releases into legendary UK dancefloor anthems. Original demos on Columbia, Ric-Tic, and Casino spin-offs are meticulously prized for their styrene or vinyl sheen and matrix runouts.',
+    category: 'vinyl',
+    authorName: 'Terry Briggs',
+    authorHandle: 'terry_wigansoul',
+    coverImageUrl: 'https://images.unsplash.com/photo-1539375665275-f9de415ef9ac?auto=format&fit=crop&w=800&q=80',
+    featured: true,
+    featuredOrder: 3,
+  },
+];

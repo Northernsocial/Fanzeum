@@ -203,7 +203,7 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
-    // Validation Blueprint: Collection
+    // Validation Blueprint: Collection (Phase 7C: Added optional featuredOrder for admin curation)
     function isValidCollection(data) {
       return data.keys().hasAll([
           'ownerId',
@@ -237,6 +237,7 @@ service cloud.firestore {
           'estimatedTotalMinGbp',
           'estimatedTotalMaxGbp',
           'featured',
+          'featuredOrder',
           'isDemo',
           'createdAt',
           'updatedAt'
@@ -254,6 +255,7 @@ service cloud.firestore {
         (data.estimatedTotalMinGbp is int || data.estimatedTotalMinGbp is float) && data.estimatedTotalMinGbp >= 0 &&
         (data.estimatedTotalMaxGbp is int || data.estimatedTotalMaxGbp is float) && data.estimatedTotalMaxGbp >= data.estimatedTotalMinGbp &&
         data.featured is bool &&
+        (!('featuredOrder' in data) || (data.featuredOrder is int && data.featuredOrder >= 0 && data.featuredOrder <= 10000)) &&
         data.isDemo is bool &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
@@ -413,7 +415,7 @@ service cloud.firestore {
         data.createdAt is timestamp;
     }
 
-    // Validation Blueprint: CollectibleItem
+    // Validation Blueprint: CollectibleItem (Phase 7C: Added optional featured and featuredOrder for admin curation)
     function isValidCollectibleItem(data) {
       return data.keys().hasAll([
           'collectionId',
@@ -475,6 +477,8 @@ service cloud.firestore {
           'helpedBy',
           'panelStatus',
           'panelConfirmedAt',
+          'featured',
+          'featuredOrder',
           'isDemo',
           'createdAt',
           'updatedAt'
@@ -510,12 +514,14 @@ service cloud.firestore {
         (!('helpedBy' in data) || (data.helpedBy is string && data.helpedBy.size() <= 120)) &&
         (!('panelStatus' in data) || (data.panelStatus is string && data.panelStatus in ['none', 'confirmed', 'disputed'])) &&
         (!('panelConfirmedAt' in data) || (data.panelConfirmedAt is string && data.panelConfirmedAt.size() <= 64)) &&
+        (!('featured' in data) || (data.featured is bool)) &&
+        (!('featuredOrder' in data) || (data.featuredOrder is int && data.featuredOrder >= 0 && data.featuredOrder <= 10000)) &&
         data.isDemo is bool &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
 
-    // Validation Blueprint: FreshFindRecord
+    // Validation Blueprint: FreshFindRecord (Phase 7C: Added optional featured and featuredOrder)
     function isValidFreshFind(data) {
       return data.keys().hasAll([
           'itemId',
@@ -535,6 +541,8 @@ service cloud.firestore {
           'thumbUrl',
           'valueRange',
           'panelStatus',
+          'featured',
+          'featuredOrder',
           'isDemo',
           'createdAt'
         ]) &&
@@ -546,6 +554,8 @@ service cloud.firestore {
         data.thumbUrl is string && data.thumbUrl.size() >= 1 && data.thumbUrl.size() <= 2048 &&
         (!('valueRange' in data) || (data.valueRange is string && data.valueRange.size() <= 80)) &&
         (!('panelStatus' in data) || (data.panelStatus is string && data.panelStatus in ['none', 'confirmed', 'disputed'])) &&
+        (!('featured' in data) || (data.featured is bool)) &&
+        (!('featuredOrder' in data) || (data.featuredOrder is int && data.featuredOrder >= 0 && data.featuredOrder <= 10000)) &&
         (!('isDemo' in data) || data.isDemo is bool) &&
         data.createdAt is timestamp;
     }
@@ -644,6 +654,49 @@ service cloud.firestore {
         isValidCategory(data.itemCategory) &&
         data.read is bool &&
         data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: ArticleRecord (Phase 7C: "From the news" articles & editorial content)
+    function isValidArticle(data) {
+      return data.keys().hasAll([
+          'id',
+          'title',
+          'summary',
+          'content',
+          'category',
+          'authorName',
+          'authorHandle',
+          'coverImageUrl',
+          'featured',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'title',
+          'summary',
+          'content',
+          'category',
+          'authorName',
+          'authorHandle',
+          'coverImageUrl',
+          'featured',
+          'featuredOrder',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+        data.summary is string && data.summary.size() <= 500 &&
+        data.content is string && data.content.size() <= 20000 &&
+        isValidCategory(data.category) &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+        data.authorHandle is string && data.authorHandle.size() >= 2 && data.authorHandle.size() <= 32 &&
+        data.coverImageUrl is string && data.coverImageUrl.size() <= 2048 &&
+        data.featured is bool &&
+        (!('featuredOrder' in data) || (data.featuredOrder is int && data.featuredOrder >= 0 && data.featuredOrder <= 10000)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
     }
 
     // 1. Out-of-band Admin Registry
@@ -800,7 +853,7 @@ service cloud.firestore {
               existing().uid == request.auth.uid &&
               incoming().uid == existing().uid &&
               incoming().itemId == existing().itemId &&
-              incoming().createdAt == existing().createdAt &&
+              incoming().createdAt == request.time &&
               incoming().updatedAt == request.time &&
               exists(/databases/$(database)/documents/users/$(userId)) &&
               incoming().diff(existing()).affectedKeys().hasOnly([
@@ -854,7 +907,7 @@ service cloud.firestore {
         );
     }
 
-    // 5. Collections
+    // 5. Collections (Phase 7C: Admins can update featured status and featuredOrder)
     match /collections/{collectionId} {
       allow get: if isValidId(collectionId) && (
         (resource != null && resource.data.visibility == 'public') ||
@@ -889,7 +942,14 @@ service cloud.firestore {
       allow update: if isVerifiedUser() &&
         isValidId(collectionId) &&
         isValidCollection(incoming()) && (
-          isAdmin() ||
+          // Admin can set featured and featuredOrder
+          (
+            isAdmin() &&
+            incoming().ownerId == existing().ownerId &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['featured', 'featuredOrder', 'updatedAt'])
+          ) ||
           // Action 1: Owner updates collection details or piece/valuation totals
           (
             existing().ownerId == request.auth.uid &&
@@ -959,7 +1019,7 @@ service cloud.firestore {
         (existing().ownerId == request.auth.uid || isAdmin());
     }
 
-    // 6. Collectible Pieces
+    // 6. Collectible Pieces (Phase 7C: Admins can update featured status and featuredOrder)
     match /items/{itemId} {
       allow get: if isValidId(itemId) && (
         (resource != null && resource.data.visibility == 'public') ||
@@ -991,7 +1051,15 @@ service cloud.firestore {
       allow update: if isVerifiedUser() &&
         isValidId(itemId) &&
         isValidCollectibleItem(incoming()) && (
-          isAdmin() ||
+          // Admin can set featured and featuredOrder
+          (
+            isAdmin() &&
+            incoming().ownerId == existing().ownerId &&
+            incoming().collectionId == existing().collectionId &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['featured', 'featuredOrder', 'updatedAt'])
+          ) ||
           // Action 1: Owner edits piece details, category fields, valuation, or custom sort order
           (
             existing().ownerId == request.auth.uid &&
@@ -1183,7 +1251,10 @@ service cloud.firestore {
           (isAdmin() && incoming().isDemo == true)
         );
 
-      allow update: if false;
+      allow update: if isAdmin() &&
+        isValidFreshFind(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['featured', 'featuredOrder']);
 
       allow delete: if isVerifiedUser() &&
         isValidId(findId) &&
@@ -1307,6 +1378,24 @@ service cloud.firestore {
       allow delete: if isSignedIn() &&
         isValidId(notificationId) &&
         (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 14. Articles ("From the news" editorial content; public reads, admin writes)
+    match /articles/{articleId} {
+      allow get, list: if true;
+
+      allow create: if isAdmin() &&
+        isValidId(articleId) &&
+        isValidArticle(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isAdmin() &&
+        isValidArticle(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+
+      allow delete: if isAdmin();
     }
   }
 }
