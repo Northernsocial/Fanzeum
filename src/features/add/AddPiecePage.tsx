@@ -36,6 +36,7 @@ import {
   makeSafeId,
   upsertPanelChatRecord,
 } from '../../lib/firestoreRepo';
+import { checkAndTriggerWantAlerts } from '../../lib/interactionRepo';
 import {
   processCollectiblePhoto,
   uploadProcessedItemPhoto,
@@ -479,6 +480,9 @@ export const AddPiecePage: React.FC = () => {
         confidence: currentCard.overallConfidence,
         status: 'saved',
       });
+
+      // Trigger want alerts for other collectors matching this new find
+      void checkAndTriggerWantAlerts(created);
 
       await refreshProfile();
       navigate(`/i/${created.id}`);

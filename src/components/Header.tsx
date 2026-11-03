@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Camera, Moon, Sun } from 'lucide-react';
+import { Bookmark, Camera, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { NotificationsButton } from './NotificationsButton';
 import {
   FANZEUM_LOGO_ALT,
   FANZEUM_LOGO_SRC,
@@ -55,13 +56,18 @@ export const Header: React.FC = () => {
               My Showcase
             </NavLink>
           )}
+          <NavLink to="/wantlist" className={navLinkClass}>
+            Wantlist
+          </NavLink>
           <NavLink to="/settings" className={navLinkClass}>
             Settings
           </NavLink>
         </nav>
 
-        {/* Zone 3: Theme Switch + Single Primary Action */}
+        {/* Zone 3: Notifications + Theme Switch + Single Primary Action */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <NotificationsButton />
+
           <button
             type="button"
             onClick={toggleTheme}

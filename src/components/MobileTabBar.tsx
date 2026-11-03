@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Compass, Home, LayoutGrid, User } from 'lucide-react';
+import { Bookmark, Camera, Compass, Home, LayoutGrid, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export const MobileTabBar: React.FC = () => {
@@ -55,6 +55,11 @@ export const MobileTabBar: React.FC = () => {
           <span className="text-[11px] font-medium text-ink mt-0.5">Add</span>
         </div>
 
+        <NavLink to="/wantlist" className={({ isActive }) => itemClass(isActive)}>
+          <Bookmark className="w-5 h-5 mb-0.5" strokeWidth={1.5} />
+          <span>Wants</span>
+        </NavLink>
+
         <button
           type="button"
           onClick={() => {
@@ -69,11 +74,6 @@ export const MobileTabBar: React.FC = () => {
           <LayoutGrid className="w-5 h-5 mb-0.5" strokeWidth={1.5} />
           <span>Showcase</span>
         </button>
-
-        <NavLink to="/settings" className={({ isActive }) => itemClass(isActive)}>
-          <User className="w-5 h-5 mb-0.5" strokeWidth={1.5} />
-          <span>Profile</span>
-        </NavLink>
       </div>
     </nav>
   );

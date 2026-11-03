@@ -60,6 +60,14 @@ import { EmptyState, Skeleton } from '../../components/ui/EmptyState';
 import { PanelConfirmedBadge } from '../../components/ui/PanelConfirmedBadge';
 import { PieceStage } from '../../components/ui/PieceStage';
 import { Placard } from '../../components/ui/Placard';
+import { ItemSignalButtons } from '../../components/ItemSignalButtons';
+import { IdCorrectionSheet } from '../../components/IdCorrectionSheet';
+import {
+  acceptIdCorrection,
+  dismissIdCorrection,
+  listIdCorrectionsForItem,
+} from '../../lib/interactionRepo';
+import type { IdCorrectionRecord } from '../../types/domain';
 import { Sheet } from '../../components/ui/Sheet';
 
 export const ItemPage: React.FC = () => {
@@ -126,6 +134,11 @@ export const ItemPage: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
   const [itemError, setItemError] = useState<string | null>(null);
 
+  // ID Corrections
+  const [idCorrectionOpen, setIdCorrectionOpen] = useState(false);
+  const [idCorrections, setIdCorrections] = useState<IdCorrectionRecord[]>([]);
+  const [processingCorrectionId, setProcessingCorrectionId] = useState<string | null>(null);
+
   const isOwner = Boolean(
     firebaseUser?.emailVerified &&
       item &&
@@ -191,6 +204,17 @@ export const ItemPage: React.FC = () => {
           setSaved(saveState.saved);
           setSaveCount(saveState.count);
           setComments(commentList);
+        }
+
+        // Fetch ID corrections
+        try {
+          const corrs = await listIdCorrectionsForItem(
+            fetched.id,
+            Boolean(firebaseUser?.emailVerified),
+          );
+          if (active) setIdCorrections(corrs);
+        } catch {
+          // ignore
         }
       } finally {
         if (active) setLoading(false);
@@ -492,6 +516,49 @@ export const ItemPage: React.FC = () => {
   const hideValues = ownerHideValues && !isOwner;
   const catConfig = CATEGORIES[item.category];
   const activePhoto = item.photos?.[selectedPhotoIdx] || item.photos?.[0];
+  const pendingCorrections = idCorrections.filter((c) => c.status === 'pending');
+
+  const handleAcceptCorrection = async (corr: IdCorrectionRecord) => {
+    if (!collectionRecord || !item) return;
+    setProcessingCorrectionId(corr.id);
+    try {
+      await acceptIdCorrection({
+        correction: corr,
+        item,
+        collectionRecord,
+        isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+      });
+      setItem((prev) =>
+        prev
+          ? {
+              ...prev,
+              title: corr.suggestedCorrection,
+              helpedBy: `@${corr.suggesterHandle}`,
+            }
+          : prev,
+      );
+      setIdCorrections((prev) =>
+        prev.map((c) => (c.id === corr.id ? { ...c, status: 'accepted' } : c)),
+      );
+    } finally {
+      setProcessingCorrectionId(null);
+    }
+  };
+
+  const handleDismissCorrection = async (corrId: string) => {
+    setProcessingCorrectionId(corrId);
+    try {
+      await dismissIdCorrection({
+        correctionId: corrId,
+        isVerifiedUser: Boolean(firebaseUser?.emailVerified),
+      });
+      setIdCorrections((prev) =>
+        prev.map((c) => (c.id === corrId ? { ...c, status: 'dismissed' } : c)),
+      );
+    } finally {
+      setProcessingCorrectionId(null);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-12 pb-28 space-y-14">
@@ -591,6 +658,17 @@ export const ItemPage: React.FC = () => {
             <Placard item={item} hideValues={hideValues} size="lg" />
           </div>
 
+          {/* Got One / Want One Community Counts & Wantlist Add */}
+          <ItemSignalButtons item={item} />
+
+          {/* Community ID Attribution Badge if accepted */}
+          {item.helpedBy && (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brass/10 border border-brass/40 text-xs text-ink font-mono">
+              <span className="text-brass">★ ID confirmed with help from</span>
+              <span className="font-semibold text-brass">{item.helpedBy}</span>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-3">
             {item.panelStatus === 'confirmed' && (
               <PanelConfirmedBadge date={item.panelConfirmedAt} size="md" />
@@ -673,7 +751,65 @@ export const ItemPage: React.FC = () => {
                 )}
               </>
             )}
+
+            {!isOwner && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIdCorrectionOpen(true)}
+              >
+                <span>Suggest ID correction</span>
+              </Button>
+            )}
           </div>
+
+          {/* Pending ID Corrections Panel for Owner */}
+          {isOwner && pendingCorrections.length > 0 && (
+            <Card raised className="p-4 sm:p-5 border-brass/50 bg-surface-raised space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-ink">
+                  Suggested ID Corrections ({pendingCorrections.length})
+                </span>
+                <span className="text-xs text-brass font-mono">Community review</span>
+              </div>
+              <div className="space-y-3">
+                {pendingCorrections.map((corr) => (
+                  <div
+                    key={corr.id}
+                    className="p-3 rounded-xl bg-bg border border-border space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-brass font-medium">
+                        @{corr.suggesterHandle} ({corr.suggesterName})
+                      </span>
+                      <span className="text-muted">Suggested</span>
+                    </div>
+                    <div className="font-medium text-ink text-sm">
+                      &quot;{corr.suggestedCorrection}&quot;
+                    </div>
+                    {corr.note && <p className="text-muted leading-relaxed">{corr.note}</p>}
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-border">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={processingCorrectionId === corr.id}
+                        onClick={() => void handleDismissCorrection(corr.id)}
+                      >
+                        Dismiss
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={processingCorrectionId === corr.id}
+                        onClick={() => void handleAcceptCorrection(corr)}
+                      >
+                        Accept &amp; update item
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {item.story && (
             <p className="text-base sm:text-lg text-ink/95 leading-relaxed">{item.story}</p>
@@ -1290,6 +1426,18 @@ export const ItemPage: React.FC = () => {
           </div>
         </div>
       </Sheet>
+
+      {/* Suggest ID Correction Sheet */}
+      <IdCorrectionSheet
+        item={item}
+        open={idCorrectionOpen}
+        onClose={() => setIdCorrectionOpen(false)}
+        onSubmitted={() => {
+          void listIdCorrectionsForItem(item.id, Boolean(firebaseUser?.emailVerified)).then(
+            setIdCorrections,
+          );
+        }}
+      />
 
       {/* Report Content Sheet */}
       <Sheet

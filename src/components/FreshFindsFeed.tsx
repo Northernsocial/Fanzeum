@@ -23,6 +23,7 @@ import { CategoryIcon } from './ui/CategoryIcon';
 import { EmptyState, Skeleton } from './ui/EmptyState';
 import { PieceStage } from './ui/PieceStage';
 import { Placard } from './ui/Placard';
+import { ItemSignalButtons } from './ItemSignalButtons';
 import { Tabs } from './ui/Tabs';
 
 type FreshFindsTab = 'all' | 'following';
@@ -601,6 +602,11 @@ export const FreshFindsFeed: React.FC = () => {
                           {socialStats[item.id]?.saveCount ?? 0}
                         </span>
                       </button>
+                    </div>
+
+                    {/* Compact Got One / Want One interaction */}
+                    <div className="pt-1 flex items-center justify-end">
+                      <ItemSignalButtons item={item} compact />
                     </div>
                   </div>
                 </div>

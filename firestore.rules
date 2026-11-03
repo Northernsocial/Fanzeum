@@ -472,6 +472,7 @@ service cloud.firestore {
           'customOrder',
           'forSale',
           'mediaCredit',
+          'helpedBy',
           'panelStatus',
           'panelConfirmedAt',
           'isDemo',
@@ -506,6 +507,7 @@ service cloud.firestore {
         data.customOrder is int && data.customOrder >= 0 && data.customOrder <= 100000 &&
         data.forSale is bool &&
         (!('mediaCredit' in data) || isValidMediaCredit(data.mediaCredit)) &&
+        (!('helpedBy' in data) || (data.helpedBy is string && data.helpedBy.size() <= 120)) &&
         (!('panelStatus' in data) || (data.panelStatus is string && data.panelStatus in ['none', 'confirmed', 'disputed'])) &&
         (!('panelConfirmedAt' in data) || (data.panelConfirmedAt is string && data.panelConfirmedAt.size() <= 64)) &&
         data.isDemo is bool &&
@@ -545,6 +547,102 @@ service cloud.firestore {
         (!('valueRange' in data) || (data.valueRange is string && data.valueRange.size() <= 80)) &&
         (!('panelStatus' in data) || (data.panelStatus is string && data.panelStatus in ['none', 'confirmed', 'disputed'])) &&
         (!('isDemo' in data) || data.isDemo is bool) &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: IdCorrectionRecord
+    function isValidIdCorrection(data) {
+      return data.keys().hasAll([
+          'itemId',
+          'itemOwnerId',
+          'suggesterId',
+          'suggesterHandle',
+          'suggesterName',
+          'suggestedCorrection',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'itemId',
+          'itemOwnerId',
+          'suggesterId',
+          'suggesterHandle',
+          'suggesterName',
+          'suggestedCorrection',
+          'note',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.itemId) &&
+        isValidId(data.itemOwnerId) &&
+        isValidId(data.suggesterId) &&
+        data.suggesterHandle is string && data.suggesterHandle.size() >= 2 && data.suggesterHandle.size() <= 32 && data.suggesterHandle.matches('^[a-z0-9_\\-]+$') &&
+        data.suggesterName is string && data.suggesterName.size() >= 1 && data.suggesterName.size() <= 80 &&
+        data.suggestedCorrection is string && data.suggestedCorrection.size() >= 1 && data.suggestedCorrection.size() <= 200 &&
+        (!('note' in data) || (data.note is string && data.note.size() <= 1000)) &&
+        data.status is string && data.status in ['pending', 'accepted', 'dismissed'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: ItemSignalRecord (Got one / Want one)
+    function isValidItemSignal(data) {
+      return data.keys().hasAll(['itemId', 'userId', 'signalType', 'createdAt']) &&
+        data.keys().hasOnly(['itemId', 'userId', 'signalType', 'createdAt']) &&
+        isValidId(data.itemId) &&
+        isValidId(data.userId) &&
+        data.signalType is string && data.signalType in ['got', 'want'] &&
+        data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: WantItemRecord
+    function isValidWant(data) {
+      return data.keys().hasAll(['userId', 'category', 'title', 'keyFields', 'notes', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['userId', 'category', 'title', 'keyFields', 'notes', 'maxPriceGbp', 'createdAt', 'updatedAt']) &&
+        isValidId(data.userId) &&
+        isValidCategory(data.category) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.keyFields is map && data.keyFields.size() <= 24 &&
+        data.notes is string && data.notes.size() <= 1000 &&
+        (!('maxPriceGbp' in data) || ((data.maxPriceGbp is int || data.maxPriceGbp is float) && data.maxPriceGbp >= 0)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: NotificationRecord
+    function isValidNotification(data) {
+      return data.keys().hasAll([
+          'userId',
+          'type',
+          'title',
+          'message',
+          'itemId',
+          'itemTitle',
+          'itemCategory',
+          'read',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId',
+          'type',
+          'title',
+          'message',
+          'itemId',
+          'itemTitle',
+          'itemCategory',
+          'read',
+          'createdAt'
+        ]) &&
+        isValidId(data.userId) &&
+        data.type is string && data.type in ['want_match', 'id_correction_received', 'id_correction_accepted'] &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 500 &&
+        isValidId(data.itemId) &&
+        data.itemTitle is string && data.itemTitle.size() >= 1 && data.itemTitle.size() <= 140 &&
+        isValidCategory(data.itemCategory) &&
+        data.read is bool &&
         data.createdAt is timestamp;
     }
 
@@ -929,6 +1027,7 @@ service cloud.firestore {
               'customOrder',
               'forSale',
               'mediaCredit',
+              'helpedBy',
               'panelStatus',
               'panelConfirmedAt',
               'updatedAt'
@@ -1089,6 +1188,125 @@ service cloud.firestore {
       allow delete: if isVerifiedUser() &&
         isValidId(findId) &&
         (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 10. ID Corrections (Any verified user can suggest; item owner can accept/dismiss)
+    match /idCorrections/{correctionId} {
+      allow get, list: if isSignedIn();
+
+      allow create: if isVerifiedUser() &&
+        isValidId(correctionId) &&
+        isValidIdCorrection(incoming()) &&
+        incoming().suggesterId == request.auth.uid &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(correctionId) &&
+        isValidIdCorrection(incoming()) && (
+          isAdmin() ||
+          (
+            existing().itemOwnerId == request.auth.uid &&
+            incoming().itemOwnerId == existing().itemOwnerId &&
+            incoming().itemId == existing().itemId &&
+            incoming().suggesterId == existing().suggesterId &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(correctionId) &&
+        (existing().suggesterId == request.auth.uid || existing().itemOwnerId == request.auth.uid || isAdmin());
+    }
+
+    // 11. Item Signals (Got One / Want One)
+    match /itemSignals/{signalId} {
+      allow get, list: if true;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(signalId) &&
+        isValidItemSignal(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        incoming().createdAt == request.time;
+
+      allow update: if false;
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(signalId) &&
+        (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 12. Wants (Wantlist items; public reads for Fresh Finds matching by category; owner writes)
+    match /wants/{wantId} {
+      allow get, list: if true;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(wantId) &&
+        isValidWant(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(wantId) &&
+        isValidWant(incoming()) && (
+          isAdmin() ||
+          (
+            existing().userId == request.auth.uid &&
+            incoming().userId == existing().userId &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'category',
+              'title',
+              'keyFields',
+              'notes',
+              'maxPriceGbp',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(wantId) &&
+        (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 13. In-App Notifications (Recipients read; verified system/users create; recipient marks read)
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isValidId(notificationId) && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (
+        (request.query.limit <= 100 && resource.data.userId == request.auth.uid) ||
+        isAdmin()
+      );
+
+      allow create: if isVerifiedUser() &&
+        isValidId(notificationId) &&
+        isValidNotification(incoming()) &&
+        incoming().userId != request.auth.uid &&
+        incoming().read == false &&
+        incoming().createdAt == request.time;
+
+      allow update: if isSignedIn() &&
+        isValidId(notificationId) &&
+        isValidNotification(incoming()) && (
+          isAdmin() ||
+          (
+            existing().userId == request.auth.uid &&
+            incoming().userId == existing().userId &&
+            incoming().type == existing().type &&
+            incoming().itemId == existing().itemId &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['read'])
+          )
+        );
+
+      allow delete: if isSignedIn() &&
+        isValidId(notificationId) &&
+        (existing().userId == request.auth.uid || isAdmin());
     }
   }
 }

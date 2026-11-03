@@ -58,6 +58,10 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
         '/items/{itemId}/saves/{userId}',
         '/items/{itemId}/comments/{commentId}',
         '/follows/{followId}',
+        '/idCorrections/{correctionId}',
+        '/itemSignals/{signalId}',
+        '/wants/{wantId}',
+        '/notifications/{notificationId}',
         '/reports/{reportId}',
         '/freshFinds/{findId}',
       ]),
@@ -73,6 +77,10 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('match /likes/{userId}');
     expect(rulesSource).toContain('match /comments/{commentId}');
     expect(rulesSource).toContain('match /follows/{followId}');
+    expect(rulesSource).toContain('match /idCorrections/{correctionId}');
+    expect(rulesSource).toContain('match /itemSignals/{signalId}');
+    expect(rulesSource).toContain('match /wants/{wantId}');
+    expect(rulesSource).toContain('match /notifications/{notificationId}');
     expect(rulesSource).toContain('match /reports/{reportId}');
     expect(rulesSource).toContain('match /freshFinds/{findId}');
   });
@@ -82,6 +90,16 @@ describe('Fanzeum Security Rules — Dirty Dozen Invariant Verification', () => 
     expect(rulesSource).toContain('incoming().followerId == request.auth.uid');
     expect(rulesSource).toContain('allow update: if false;');
     expect(rulesSource).toContain('existing().followerId == request.auth.uid || isAdmin()');
+  });
+
+  it('2f. Enforces strict schema and validation on Phase 2C collections (idCorrections, itemSignals, wants, notifications)', () => {
+    expect(rulesSource).toContain('isValidIdCorrection(incoming())');
+    expect(rulesSource).toContain("incoming().status == 'pending'");
+    expect(rulesSource).toContain('isValidItemSignal(incoming())');
+    expect(rulesSource).toContain('isValidWant(incoming())');
+    expect(rulesSource).toContain('isValidNotification(incoming())');
+    expect(rulesSource).toContain("affectedKeys().hasOnly(['status', 'updatedAt'])");
+    expect(rulesSource).toContain("affectedKeys().hasOnly(['read'])");
   });
 
   it('2c. Enforces one like per user per item with doc id = uid and immutable likes', () => {
