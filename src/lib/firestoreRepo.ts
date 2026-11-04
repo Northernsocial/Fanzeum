@@ -27,7 +27,11 @@ import type {
   PanelCard,
   PanelChatMessage,
   PanelChatRecord,
+  PriceAlertRecord,
+  SwapRecord,
   UserPrivateAccount,
+  ValuationSnapshotRecord,
+  WeeklyDigestRecord,
   UserProfile,
   VisibilityLevel,
 } from '../types/domain';
@@ -1622,4 +1626,210 @@ export async function fetchArticleBySlug(slug: string): Promise<import('../types
     handleFirestoreError(error, OperationType.LIST, path);
   }
   return null;
+}
+
+export async function fetchUserValuationSnapshots(uid: string, maxLimit = 30): Promise<ValuationSnapshotRecord[]> {
+  const path = `users/${uid}/valuationSnapshots`;
+  try {
+    const q = query(collection(db, 'users', uid, 'valuationSnapshots'), limit(maxLimit));
+    const snap = await getDocs(q);
+    const records = snap.docs.map((d) => d.data() as ValuationSnapshotRecord);
+    records.sort((a, b) => a.date.localeCompare(b.date));
+    return records;
+  } catch {
+    return [];
+  }
+}
+
+export async function recordValuationSnapshot(params: {
+  uid: string;
+  totalMinGbp: number;
+  totalMaxGbp: number;
+  itemsCount: number;
+}): Promise<void> {
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const snapshotId = `snap_${dateStr}`;
+  const path = `users/${params.uid}/valuationSnapshots/${snapshotId}`;
+  try {
+    const docRef = doc(db, 'users', params.uid, 'valuationSnapshots', snapshotId);
+    const existing = await getDoc(docRef);
+    if (!existing.exists()) {
+      await setDoc(docRef, {
+        snapshotId,
+        userId: params.uid,
+        totalMinGbp: params.totalMinGbp,
+        totalMaxGbp: params.totalMaxGbp,
+        itemsCount: params.itemsCount,
+        date: dateStr,
+        createdAt: serverTimestamp(),
+      });
+    }
+  } catch (err) {
+    console.error('Record valuation snapshot error:', err);
+  }
+}
+
+export async function fetchUserPriceAlerts(uid: string): Promise<PriceAlertRecord[]> {
+  try {
+    const q = query(collection(db, 'priceAlerts'), where('userId', '==', uid), limit(50));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => d.data() as PriceAlertRecord);
+  } catch {
+    return [];
+  }
+}
+
+export async function createPriceAlert(params: {
+  uid: string;
+  targetType: 'item' | 'want';
+  targetId: string;
+  title: string;
+  thresholdType: 'below_price' | 'gain_loss_pct';
+  thresholdValue: number;
+}): Promise<PriceAlertRecord> {
+  const alertId = makeSafeId('alt');
+  const path = `priceAlerts/${alertId}`;
+  const alertData: PriceAlertRecord = {
+    alertId,
+    userId: params.uid,
+    targetType: params.targetType,
+    targetId: params.targetId,
+    title: params.title.slice(0, 140),
+    thresholdType: params.thresholdType,
+    thresholdValue: Math.max(0, params.thresholdValue),
+    triggered: false,
+    createdAt: serverTimestamp(),
+  };
+  try {
+    await setDoc(doc(db, 'priceAlerts', alertId), alertData);
+    return alertData;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+  }
+}
+
+export async function deletePriceAlert(alertId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'priceAlerts', alertId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `priceAlerts/${alertId}`);
+  }
+}
+
+export async function fetchUserSwaps(uid: string): Promise<SwapRecord[]> {
+  try {
+    const q1 = query(collection(db, 'swaps'), where('proposerId', '==', uid), limit(50));
+    const q2 = query(collection(db, 'swaps'), where('recipientId', '==', uid), limit(50));
+    const [s1, s2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+    const map = new Map<string, SwapRecord>();
+    s1.docs.forEach((d) => map.set(d.id, d.data() as SwapRecord));
+    s2.docs.forEach((d) => map.set(d.id, d.data() as SwapRecord));
+    return Array.from(map.values());
+  } catch {
+    return [];
+  }
+}
+
+export async function createSwapProposal(params: {
+  proposerId: string;
+  proposerHandle: string;
+  recipientHandle: string;
+  proposerItemIds: string[];
+  recipientItemIds: string[];
+  cashTopUpGbp: number;
+  cashPayer: 'none' | 'proposer' | 'recipient';
+  note?: string;
+  isVerifiedUser?: boolean;
+}): Promise<SwapRecord> {
+  const cleanRecipientHandle = params.recipientHandle.replace(/^@+/, '').trim().toLowerCase();
+  const targetUser = await fetchUserByHandle(cleanRecipientHandle);
+  if (!targetUser) {
+    throw new Error(`Could not find a showcase with handle @${cleanRecipientHandle}.`);
+  }
+  if (targetUser.uid === params.proposerId) {
+    throw new Error('You cannot propose a swap with yourself.');
+  }
+
+  const swapId = makeSafeId('swp');
+  const path = `swaps/${swapId}`;
+  const swapData: SwapRecord = {
+    swapId,
+    proposerId: params.proposerId,
+    proposerHandle: sanitizeHandle(params.proposerHandle),
+    recipientId: targetUser.uid,
+    recipientHandle: sanitizeHandle(targetUser.handle),
+    proposerItemIds: params.proposerItemIds.slice(0, 10),
+    recipientItemIds: params.recipientItemIds.slice(0, 10),
+    cashTopUpGbp: Math.max(0, params.cashTopUpGbp),
+    cashPayer: params.cashPayer,
+    status: 'proposed',
+    proposerConfirmed: false,
+    recipientConfirmed: false,
+    ...(params.note ? { note: params.note.slice(0, 1000) } : {}),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    await setDoc(doc(db, 'swaps', swapId), swapData);
+    return swapData;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+  }
+}
+
+export async function updateSwapStatus(params: {
+  swapId: string;
+  status?: SwapRecord['status'];
+  proposerConfirmed?: boolean;
+  recipientConfirmed?: boolean;
+  note?: string;
+}): Promise<void> {
+  const path = `swaps/${params.swapId}`;
+  const payload: Record<string, unknown> = {
+    updatedAt: serverTimestamp(),
+  };
+  if (params.status) payload.status = params.status;
+  if (params.proposerConfirmed !== undefined) payload.proposerConfirmed = params.proposerConfirmed;
+  if (params.recipientConfirmed !== undefined) payload.recipientConfirmed = params.recipientConfirmed;
+  if (params.note !== undefined) payload.note = params.note.slice(0, 1000);
+
+  try {
+    await updateDoc(doc(db, 'swaps', params.swapId), payload);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
+export async function fetchUserWeeklyDigest(uid: string): Promise<WeeklyDigestRecord | null> {
+  const weekLabel = 'This Week · ' + new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date());
+  const digestId = 'digest_current';
+  const path = `users/${uid}/weeklyDigests/${digestId}`;
+  try {
+    const snap = await getDoc(doc(db, 'users', uid, 'weeklyDigests', digestId));
+    if (snap.exists()) {
+      return snap.data() as WeeklyDigestRecord;
+    }
+    // Generate starter digest if not present
+    const items = await listOwnerItems(uid, 50);
+    const newPiecesCount = items.length;
+    const valuationDeltaGbp = items.reduce((acc, i) => acc + Math.round((i.valueMaxGbp - i.valueMinGbp) * 0.1), 0);
+    const topRisers = items.slice(0, 3).map((i) => ({ title: i.title, deltaGbp: Math.round(i.valueMaxGbp * 0.08) }));
+    const summaryText = `Your showcase has grown to ${newPiecesCount} pieces with robust estimated market activity across your active sets.`;
+
+    const record: WeeklyDigestRecord = {
+      digestId,
+      userId: uid,
+      weekLabel,
+      summaryText,
+      topRisers,
+      newPiecesCount,
+      valuationDeltaGbp,
+      createdAt: serverTimestamp(),
+    };
+    await setDoc(doc(db, 'users', uid, 'weeklyDigests', digestId), record);
+    return record;
+  } catch {
+    return null;
+  }
 }

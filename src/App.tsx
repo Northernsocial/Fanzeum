@@ -68,6 +68,12 @@ const NewsPage = lazy(() =>
 const ArticlePage = lazy(() =>
   import('./features/news/ArticlePage').then((m) => ({ default: m.ArticlePage })),
 );
+const PortfolioValuationPage = lazy(() =>
+  import('./features/portfolio/PortfolioValuationPage').then((m) => ({ default: m.PortfolioValuationPage })),
+);
+const SwapsHubPage = lazy(() =>
+  import('./features/swaps/SwapsHubPage').then((m) => ({ default: m.SwapsHubPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -185,6 +191,8 @@ export default function App() {
                     <Route path="/matches" element={<MatchesPage />} />
                     <Route path="/news" element={<NewsPage />} />
                     <Route path="/news/:slug" element={<ArticlePage />} />
+                    <Route path="/portfolio" element={<PortfolioValuationPage />} />
+                    <Route path="/swaps" element={<SwapsHubPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />

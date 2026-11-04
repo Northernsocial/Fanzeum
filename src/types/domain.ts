@@ -360,3 +360,57 @@ export interface ArticleRecord {
   authorId: string;
   updatedAt?: unknown;
 }
+
+export interface ValuationSnapshotRecord {
+  snapshotId: string;
+  userId: string;
+  totalMinGbp: number;
+  totalMaxGbp: number;
+  itemsCount: number;
+  date: string; // YYYY-MM-DD
+  createdAt?: unknown;
+}
+
+export interface PriceAlertRecord {
+  alertId: string;
+  userId: string;
+  targetType: 'item' | 'want';
+  targetId: string;
+  title: string;
+  thresholdType: 'below_price' | 'gain_loss_pct';
+  thresholdValue: number;
+  triggered: boolean;
+  triggeredAt?: unknown;
+  createdAt?: unknown;
+}
+
+export type SwapStatus = 'proposed' | 'countered' | 'accepted' | 'shipped' | 'completed' | 'declined' | 'cancelled';
+
+export interface SwapRecord {
+  swapId: string;
+  proposerId: string;
+  proposerHandle: string;
+  recipientId: string;
+  recipientHandle: string;
+  proposerItemIds: string[];
+  recipientItemIds: string[];
+  cashTopUpGbp: number;
+  cashPayer: 'none' | 'proposer' | 'recipient';
+  status: SwapStatus;
+  proposerConfirmed: boolean;
+  recipientConfirmed: boolean;
+  note?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface WeeklyDigestRecord {
+  digestId: string;
+  userId: string;
+  weekLabel: string;
+  summaryText: string;
+  topRisers: { title: string; deltaGbp: number }[];
+  newPiecesCount: number;
+  valuationDeltaGbp: number;
+  createdAt?: unknown;
+}

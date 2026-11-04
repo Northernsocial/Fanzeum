@@ -12,6 +12,8 @@ import {
   Pencil,
   Share2,
   Sparkles,
+  TrendingUp,
+  ArrowRightLeft,
   UserCheck,
   UserPlus,
   UserX,
@@ -490,6 +492,14 @@ export const CabinetPage: React.FC = () => {
 
             {isOwnCabinet && (
               <>
+                <Button variant="secondary" size="sm" onClick={() => navigate('/portfolio')} title="Portfolio value & ROI">
+                  <TrendingUp className="w-4 h-4 text-brass" strokeWidth={1.5} />
+                  <span>Portfolio</span>
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => navigate('/swaps')} title="Collector Swaps">
+                  <ArrowRightLeft className="w-4 h-4 text-brass" strokeWidth={1.5} />
+                  <span>Swaps</span>
+                </Button>
                 <Button variant="secondary" size="sm" onClick={openEditProfile}>
                   <Pencil className="w-4 h-4" strokeWidth={1.5} />
                   <span>Edit profile</span>
