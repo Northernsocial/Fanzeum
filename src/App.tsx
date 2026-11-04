@@ -47,6 +47,12 @@ const SettingsPage = lazy(() =>
 const WantlistPage = lazy(() =>
   import('./features/wantlist/WantlistPage').then((m) => ({ default: m.WantlistPage })),
 );
+const NewsPage = lazy(() =>
+  import('./features/news/NewsPage').then((m) => ({ default: m.NewsPage })),
+);
+const ArticlePage = lazy(() =>
+  import('./features/news/ArticlePage').then((m) => ({ default: m.ArticlePage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -157,6 +163,8 @@ export default function App() {
                     <Route path="/add" element={<AddPiecePage />} />
                     <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route path="/wantlist" element={<WantlistPage />} />
+                    <Route path="/news" element={<NewsPage />} />
+                    <Route path="/news/:slug" element={<ArticlePage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />
@@ -205,8 +213,8 @@ export default function App() {
                     <Link to="/explore" className="hover:text-ink">
                       Explore
                     </Link>
-                    <Link to="/add" className="hover:text-ink">
-                      Add piece
+                    <Link to="/news" className="hover:text-ink">
+                      News &amp; Blog
                     </Link>
                     <Link to="/privacy" className="hover:text-ink">
                       Privacy &amp; UK GDPR

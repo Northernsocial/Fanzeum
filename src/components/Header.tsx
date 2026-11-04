@@ -59,6 +59,9 @@ export const Header: React.FC = () => {
           <NavLink to="/wantlist" className={navLinkClass}>
             Wantlist
           </NavLink>
+          <NavLink to="/news" className={navLinkClass}>
+            News &amp; Blog
+          </NavLink>
           <NavLink to="/settings" className={navLinkClass}>
             Settings
           </NavLink>

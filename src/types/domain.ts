@@ -320,3 +320,15 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export interface ArticleRecord {
+  id: string;
+  title: string;
+  slug: string;
+  body: string;
+  category: CategorySlug;
+  coverImage: string;
+  publishedAt?: unknown;
+  authorId: string;
+  updatedAt?: unknown;
+}

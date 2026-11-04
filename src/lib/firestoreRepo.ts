@@ -39,6 +39,7 @@ import {
   uploadProcessedItemPhoto,
 } from './imageUtils';
 import { buildCollectorArtDataUrl } from './placeholderArt';
+import { DEMO_ARTICLES } from '../data/demoArticles';
 
 const HIDE_DEMO_STORAGE_KEY = 'fanzeum_hide_demo_catalog';
 
@@ -1401,4 +1402,48 @@ export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
   }
+}
+
+export async function listArticles(maxResults = 20): Promise<import('../types/domain').ArticleRecord[]> {
+  const path = 'articles';
+  let live: import('../types/domain').ArticleRecord[] = [];
+  try {
+    const q = query(collection(db, 'articles'), limit(maxResults));
+    const snap = await getDocs(q);
+    live = snap.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<import('../types/domain').ArticleRecord, 'id'>),
+    }));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+
+  const seen = new Set(live.map((a) => a.id));
+  const combined = [...live];
+  for (const demo of DEMO_ARTICLES) {
+    if (!seen.has(demo.id)) combined.push(demo);
+  }
+  return combined.slice(0, maxResults);
+}
+
+export async function fetchArticleBySlug(slug: string): Promise<import('../types/domain').ArticleRecord | null> {
+  const clean = slug.trim().toLowerCase();
+  const demo = DEMO_ARTICLES.find((a) => a.slug === clean);
+  if (demo) return demo;
+
+  const path = 'articles';
+  try {
+    const q = query(collection(db, 'articles'), where('slug', '==', clean), limit(1));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const d = snap.docs[0];
+      return {
+        id: d.id,
+        ...(d.data() as Omit<import('../types/domain').ArticleRecord, 'id'>),
+      };
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+  return null;
 }
