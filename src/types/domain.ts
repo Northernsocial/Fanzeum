@@ -320,3 +320,11 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export interface PhotoSearchState {
+  active: boolean;
+  photoUrl?: string;
+  keywords: string[];
+  category?: CategorySlug;
+  description: string;
+}
