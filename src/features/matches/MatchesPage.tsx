@@ -75,7 +75,7 @@ export const MatchesPage: React.FC = () => {
 
           let reason = 'Active collector in the community';
           if (wantlistOverlap.length > 0) {
-            reason = `Has ${wantlistOverlap.length} item${wantlistOverlap.length > 1 ? 's' : ''} matching your Wantlist`;
+            reason = `Has ${wantlistOverlap.length} item${wantlistOverlap.length > 1 ? 's' : ''} matching your Want List`;
           } else if (sharedCategories.size > 0) {
             const firstCat = CATEGORIES[Array.from(sharedCategories)[0]]?.shortLabel || 'category';
             reason = `Shares an interest in ${firstCat}`;
@@ -144,7 +144,7 @@ export const MatchesPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-display font-semibold text-ink">Collector Matches</h1>
           <p className="text-sm text-muted mt-1">
-            Discover collectors who share your collecting specialties and hold pieces on your Wantlist.
+            Discover collectors who share your collecting specialties and hold pieces on your Want List.
           </p>
         </div>
         <Link to="/explore">
@@ -165,11 +165,11 @@ export const MatchesPage: React.FC = () => {
         <EmptyState
           icon={<Users className="w-8 h-8" strokeWidth={1.5} />}
           title="No collector matches found"
-          description="Add items to your Wantlist or select your collecting specialties in your settings to find matching collectors."
+          description="Add items to your Want List or select your collecting specialties in your settings to find matching collectors."
           action={
             <div className="flex items-center gap-3">
               <Link to="/wantlist">
-                <Button variant="secondary">Manage Wantlist</Button>
+                <Button variant="secondary">Manage Want List</Button>
               </Link>
               <Link to="/settings">
                 <Button>Update Specialties</Button>
@@ -238,7 +238,7 @@ export const MatchesPage: React.FC = () => {
 
                   {wantlistOverlapItems.length > 0 && (
                     <div className="p-3 rounded-xl bg-brass/5 border border-brass/30 space-y-2">
-                      <div className="text-xs font-mono text-brass font-semibold">Wantlist Overlap Items:</div>
+                      <div className="text-xs font-mono text-brass font-semibold">Want List Overlap Items:</div>
                       <div className="space-y-1.5">
                         {wantlistOverlapItems.slice(0, 2).map((item) => (
                           <Link

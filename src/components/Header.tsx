@@ -47,7 +47,7 @@ export const Header: React.FC = () => {
     { to: showcaseHref, label: 'My Showcase', show: !!firebaseUser },
     { to: '/communities', label: 'Communities' },
     { to: '/matches', label: 'Matches' },
-    { to: '/wantlist', label: 'Wantlist' },
+    { to: '/wantlist', label: 'Wants' },
     { to: '/plans', label: 'Plans' },
     { to: '/news', label: 'News & Blog' },
     { to: '/settings', label: 'Settings' },
@@ -95,7 +95,7 @@ export const Header: React.FC = () => {
             Matches
           </NavLink>
           <NavLink to="/wantlist" className={navLinkClass}>
-            Wantlist
+            Wants
           </NavLink>
           <NavLink to="/plans" className={navLinkClass}>
             Plans

@@ -83,7 +83,7 @@ export const NotificationsPage: React.FC = () => {
         <EmptyState
           icon={<Bell className="w-8 h-8" strokeWidth={1.5} />}
           title="Sign in to view notifications"
-          description="Track your Wantlist alerts, identification corrections and community activity."
+          description="Track your Want List alerts, identification corrections and community activity."
           action={<Button onClick={openAuthModal}>Sign in</Button>}
         />
       </div>
@@ -96,7 +96,7 @@ export const NotificationsPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-display font-semibold text-ink">Notifications</h1>
           <p className="text-sm text-muted mt-1">
-            Wantlist matches, identification updates and alerts from the community.
+            Want List matches, identification updates and alerts from the community.
           </p>
         </div>
         {notifications.length > 0 && unreadCount > 0 && (
@@ -117,11 +117,11 @@ export const NotificationsPage: React.FC = () => {
         <EmptyState
           icon={<Bell className="w-8 h-8" strokeWidth={1.5} />}
           title="No notifications yet"
-          description="Add pieces to your Wantlist or publish your collection to receive community alerts here."
+          description="Add pieces to your Want List or publish your collection to receive community alerts here."
           action={
             <div className="flex items-center gap-3">
               <Link to="/wantlist">
-                <Button variant="secondary">Manage Wantlist</Button>
+                <Button variant="secondary">Manage Want List</Button>
               </Link>
               <Link to="/explore">
                 <Button>Explore pieces</Button>

@@ -140,7 +140,7 @@ export const ItemSignalButtons: React.FC<ItemSignalButtonsProps> = ({ item, comp
         <button
           type="button"
           onClick={handleToggleWant}
-          title={hasWant ? 'In your wantlist' : 'I want one (adds to wantlist)'}
+          title={hasWant ? 'In your Want List' : 'I want one (adds to Want List)'}
           className={`min-h-[30px] px-2 py-0.5 rounded-lg border transition-colors inline-flex items-center gap-1 cursor-pointer ${
             hasWant
               ? 'bg-brass/20 border-brass text-brass font-semibold'
@@ -196,7 +196,7 @@ export const ItemSignalButtons: React.FC<ItemSignalButtonsProps> = ({ item, comp
 
       {wantToast && (
         <p className="text-xs font-mono text-brass animate-in fade-in slide-in-from-top-1">
-          ✓ Added to your Wantlist!
+          ✓ Added to your Want List!
         </p>
       )}
     </div>

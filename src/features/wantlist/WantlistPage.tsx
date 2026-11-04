@@ -18,7 +18,7 @@ export const WantlistPage: React.FC = () => {
   const isVerified = Boolean(firebaseUser?.emailVerified);
 
   useDocumentMeta({
-    title: 'My Wantlist · Fanzeum',
+    title: 'My Want List · Fanzeum',
     description: 'Track pieces you are looking for. Get in-app alerts when a matching Fresh Find appears.',
   });
 
@@ -127,7 +127,7 @@ export const WantlistPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-sm font-mono text-brass">
             <Bookmark className="w-4 h-4" strokeWidth={1.5} />
-            <span>Collector Wantlist</span>
+            <span>Collector Want List</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-display font-semibold text-ink mt-1">
             My Wantlist
@@ -192,7 +192,7 @@ export const WantlistPage: React.FC = () => {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<BookmarkPlus className="w-6 h-6" strokeWidth={1.5} />}
-          title={wants.length === 0 ? 'Your wantlist is empty' : 'No wants in this hobby'}
+          title={wants.length === 0 ? 'Your Want List is empty' : 'No wants in this hobby'}
           description={
             wants.length === 0
               ? 'Click "I want one" on any showcase piece or Fresh Find, or add your wishlist targets here.'
@@ -259,7 +259,7 @@ export const WantlistPage: React.FC = () => {
                     type="button"
                     onClick={() => void handleDelete(want.id)}
                     className="p-1.5 text-muted hover:text-danger rounded-lg transition-colors cursor-pointer"
-                    title="Remove from wantlist"
+                    title="Remove from Want List"
                   >
                     <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                   </button>

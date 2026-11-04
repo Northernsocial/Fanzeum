@@ -116,7 +116,7 @@ export const NotificationsButton: React.FC = () => {
             <EmptyState
               icon={<Bell className="w-6 h-6" strokeWidth={1.5} />}
               title="No notifications yet"
-              description="Add pieces to your Wantlist. You'll get an alert here when a matching Fresh Find is catalogued."
+              description="Add pieces to your Want List. You'll get an alert here when a matching Fresh Find is catalogued."
               action={
                 <Button
                   variant="secondary"
@@ -125,7 +125,7 @@ export const NotificationsButton: React.FC = () => {
                     navigate('/wantlist');
                   }}
                 >
-                  Manage Wantlist
+                  Manage Want List
                 </Button>
               }
             />
