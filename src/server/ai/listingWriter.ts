@@ -7,18 +7,20 @@ import type { CategorySlug } from '../../types/domain';
 import { createGeminiClient, generateContentWithRetry } from './client';
 import { GEMINI_FLASH_MODEL } from './constants';
 
-export async function handleListingWriterApi(req: Request): Promise<Response> {
-  try {
-    const body = await req.json().catch(() => ({}));
-    const title = String(body.title || 'Collectible Piece');
-    const category = (body.category as CategorySlug) || 'memorabilia';
-    const condition = String(body.condition || 'Good');
-    const valueEstGbp = Number(body.valueEstGbp) || 50;
-    const userNotes = String(body.userNotes || '');
+export async function handleListingWriterApi(
+  rawInput: unknown,
+  apiKey?: string,
+): Promise<{ title: string; description: string; suggestedPriceGbp: number }> {
+  const body = rawInput as Record<string, unknown>;
+  const title = String(body.title || 'Collectible Piece');
+  const category = (body.category as CategorySlug) || 'memorabilia';
+  const condition = String(body.condition || 'Good');
+  const valueEstGbp = Number(body.valueEstGbp) || 50;
+  const userNotes = String(body.userNotes || '');
 
-    const ai = createGeminiClient(process.env.GEMINI_API_KEY);
+  const ai = createGeminiClient(apiKey);
 
-    const prompt = `You are an expert collectibles marketplace writer for Fanzeum in the UK.
+  const prompt = `You are an expert collectibles marketplace writer for Fanzeum in the UK.
 Write an engaging, clear fixed-price listing description for a collector piece.
 Title: ${title}
 Category: ${category}
@@ -33,20 +35,20 @@ Return ONLY clean valid JSON with:
   "suggestedPriceGbp": ${valueEstGbp}
 }`;
 
-    const resp = await generateContentWithRetry(ai, {
-      model: GEMINI_FLASH_MODEL,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: {
-        temperature: 0.3,
-        responseMimeType: 'application/json',
-      },
-    });
+  const resp = await generateContentWithRetry(ai, {
+    model: GEMINI_FLASH_MODEL,
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    config: {
+      temperature: 0.3,
+      responseMimeType: 'application/json',
+    },
+  });
 
-    const text = resp.text || '{}';
-    const parsed = JSON.parse(text);
-    return Response.json(parsed);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'AI Listing Writer error';
-    return Response.json({ error: msg }, { status: 500 });
-  }
+  const text = resp.text || '{}';
+  const parsed = JSON.parse(text);
+  return {
+    title: String(parsed.title || title).slice(0, 140),
+    description: String(parsed.description || '').slice(0, 1500),
+    suggestedPriceGbp: Number(parsed.suggestedPriceGbp) || valueEstGbp,
+  };
 }

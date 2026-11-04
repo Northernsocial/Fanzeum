@@ -14,6 +14,7 @@ export {
 export { identifyItem, IdentifyRequestSchema, type IdentifyRequestInput } from './identifyItem.ts';
 export { onboardingSuggest, OnboardingInputSchema } from './onboardingSuggest.ts';
 export { enhanceStory, EnhanceStoryInputSchema } from './enhanceStory.ts';
+export { handleListingWriterApi } from './listingWriter.ts';
 export {
   processPanelChatTurn,
   PanelChatTurnRequestSchema,

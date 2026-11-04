@@ -3,6 +3,7 @@ import {
   checkIdentifyRateLimit,
   checkPanelDailyRateLimit,
   enhanceStory,
+  handleListingWriterApi,
   identifyItem,
   onboardingSuggest,
   processPanelChatTurn,
@@ -117,6 +118,38 @@ export async function onRequestPost(context: CloudflarePagesContext): Promise<Re
     if (route === 'enhance-story') {
       const result = await enhanceStory(body, apiKey);
       return jsonResponse(result, 200);
+    }
+
+    if (route === 'listing-writer') {
+      const authHeader = context.request.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return jsonResponse({ error: 'Please sign in to use the AI listing writer.' }, 401);
+      }
+
+      const ip =
+        context.request.headers.get('CF-Connecting-IP') ||
+        context.request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
+        'cf-anon';
+      const userId = typeof body.userId === 'string' ? body.userId : undefined;
+      const limit = checkIdentifyRateLimit({ ip, userId });
+
+      if (!limit.allowed) {
+        return jsonResponse(
+          {
+            error: `You've used your 20 photo identifications for this hour. Try again in ${Math.ceil(limit.retryAfterSeconds / 60)} minutes, or enter the piece manually.`,
+          },
+          429,
+          {
+            'Retry-After': String(limit.retryAfterSeconds),
+            'X-RateLimit-Remaining': '0',
+          },
+        );
+      }
+
+      const result = await handleListingWriterApi(body, apiKey);
+      return jsonResponse(result, 200, {
+        'X-RateLimit-Remaining': String(limit.remaining),
+      });
     }
 
     return jsonResponse({ error: `Unknown AI route: ${route || ''}` }, 404);

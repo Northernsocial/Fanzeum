@@ -8,6 +8,7 @@ import {
   checkIdentifyRateLimit,
   checkPanelDailyRateLimit,
   enhanceStory,
+  handleListingWriterApi,
   identifyItem,
   onboardingSuggest,
   processPanelChatTurn,
@@ -126,6 +127,37 @@ async function startServer() {
       res.status(200).json(result);
     } catch (error) {
       console.error('enhance-story error:', error);
+      const { status, message } = formatApiError(error);
+      res.status(status).json({ error: message });
+    }
+  });
+
+  app.post('/api/ai/listing-writer', async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        res.status(401).json({ error: 'Please sign in to use the AI listing writer.' });
+        return;
+      }
+
+      const ip = extractClientIp(req);
+      const userId =
+        req.body && typeof req.body.userId === 'string' ? req.body.userId : undefined;
+      const limit = checkIdentifyRateLimit({ ip, userId });
+
+      res.setHeader('X-RateLimit-Remaining', String(limit.remaining));
+      if (!limit.allowed) {
+        res.setHeader('Retry-After', String(limit.retryAfterSeconds));
+        res.status(429).json({
+          error: `You've used your 20 photo identifications for this hour. Try again in ${Math.ceil(limit.retryAfterSeconds / 60)} minutes, or enter the piece manually.`,
+        });
+        return;
+      }
+
+      const result = await handleListingWriterApi(req.body, process.env.GEMINI_API_KEY);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('listing-writer error:', error);
       const { status, message } = formatApiError(error);
       res.status(status).json({ error: message });
     }

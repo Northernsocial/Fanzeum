@@ -101,11 +101,29 @@ export async function generateListingDescription(params: {
   condition: string;
   valueEstGbp: number;
   userNotes?: string;
+  userId?: string;
 }): Promise<{ title: string; description: string; suggestedPriceGbp: number }> {
+  const { getAuth } = await import('firebase/auth');
+  const { auth } = await import('../lib/firebase');
+  const currentUser = auth.currentUser;
+  let idToken: string | undefined;
+  if (currentUser) {
+    try {
+      idToken = await currentUser.getIdToken();
+    } catch {
+      // Token unavailable; proceed without it (server will reject if required)
+    }
+  }
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (idToken) {
+    headers['Authorization'] = `Bearer ${idToken}`;
+  }
+
   const res = await fetch('/api/ai/listing-writer', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    headers,
+    body: JSON.stringify({ ...params, userId: params.userId || currentUser?.uid }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
