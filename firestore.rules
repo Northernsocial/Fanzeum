@@ -1308,5 +1308,124 @@ service cloud.firestore {
         isValidId(notificationId) &&
         (existing().userId == request.auth.uid || isAdmin());
     }
-  }
+
+    function isValidConversation(data) {
+      return data.keys().hasAll([
+          'participantIds',
+          'participantHandles',
+          'participantNames',
+          'participantAvatarUrls',
+          'lastMessageText',
+          'lastMessageSenderId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'participantIds',
+          'participantHandles',
+          'participantNames',
+          'participantAvatarUrls',
+          'lastMessageText',
+          'lastMessageSenderId',
+          'itemId',
+          'itemTitle',
+          'itemThumbUrl',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.participantIds is list && data.participantIds.size() == 2 &&
+        isValidId(data.participantIds[0]) && isValidId(data.participantIds[1]) &&
+        data.participantHandles is list && data.participantHandles.size() == 2 &&
+        data.participantNames is list && data.participantNames.size() == 2 &&
+        data.participantAvatarUrls is list && data.participantAvatarUrls.size() == 2 &&
+        data.lastMessageText is string && data.lastMessageText.size() <= 1000 &&
+        isValidId(data.lastMessageSenderId) &&
+        (!('itemId' in data) || isValidId(data.itemId)) &&
+        (!('itemTitle' in data) || (data.itemTitle is string && data.itemTitle.size() <= 140)) &&
+        (!('itemThumbUrl' in data) || (data.itemThumbUrl is string && data.itemThumbUrl.size() <= 2048)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDirectMessage(data) {
+      return data.keys().hasAll([
+          'id',
+          'conversationId',
+          'senderId',
+          'senderHandle',
+          'text',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'conversationId',
+          'senderId',
+          'senderHandle',
+          'text',
+          'itemId',
+          'itemTitle',
+          'itemThumbUrl',
+          'createdAt'
+        ]) &&
+        isValidId(data.id) &&
+        isValidId(data.conversationId) &&
+        isValidId(data.senderId) &&
+        data.senderHandle is string && data.senderHandle.size() >= 2 && data.senderHandle.size() <= 32 &&
+        data.text is string && data.text.size() >= 1 && data.text.size() <= 1000 &&
+        (!('itemId' in data) || isValidId(data.itemId)) &&
+        (!('itemTitle' in data) || (data.itemTitle is string && data.itemTitle.size() <= 140)) &&
+        (!('itemThumbUrl' in data) || (data.itemThumbUrl is string && data.itemThumbUrl.size() <= 2048)) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidBlockRecord(data) {
+      return data.keys().hasAll(['uid', 'blockedUid', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'blockedUid', 'createdAt']) &&
+        isValidId(data.uid) &&
+        isValidId(data.blockedUid) &&
+        data.createdAt is timestamp;
+    }
+
+    match /users/{userId}/blocks/{blockId} {
+      allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isVerifiedUser() && request.auth.uid == userId && isValidBlockRecord(incoming()) && incoming().uid == request.auth.uid && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser() && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && resource != null && request.auth.uid in resource.data.participantIds;
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+
+      allow create: if isVerifiedUser() &&
+        isValidConversation(incoming()) &&
+        request.auth.uid in incoming().participantIds &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidConversation(incoming()) &&
+        request.auth.uid in existing().participantIds &&
+        request.auth.uid in incoming().participantIds &&
+        incoming().participantIds == existing().participantIds &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+
+      allow delete: if isVerifiedUser() && request.auth.uid in existing().participantIds;
+
+      match /messages/{messageId} {
+        allow get, list: if isSignedIn();
+
+        allow create: if isVerifiedUser() &&
+          isValidId(messageId) &&
+          isValidDirectMessage(incoming()) &&
+          incoming().senderId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+
+        allow update, delete: if false;
+      }
+    }
+}
 }

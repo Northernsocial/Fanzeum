@@ -320,3 +320,45 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export type CollectorLevel = 'Newcomer' | 'Collector' | 'Specialist' | 'Authority';
+
+export interface ReputationStats {
+  acceptedCorrectionsCount: number;
+  helpfulCommentsCount: number;
+  panelConfirmedCount: number;
+  level: CollectorLevel;
+}
+
+export interface ConversationRecord {
+  id: string;
+  participantIds: string[];
+  participantHandles: string[];
+  participantNames: string[];
+  participantAvatarUrls: string[];
+  lastMessageText: string;
+  lastMessageSenderId: string;
+  itemId?: string;
+  itemTitle?: string;
+  itemThumbUrl?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface DirectMessageRecord {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderHandle: string;
+  text: string;
+  itemId?: string;
+  itemTitle?: string;
+  itemThumbUrl?: string;
+  createdAt?: unknown;
+}
+
+export interface BlockRecord {
+  uid: string;
+  blockedUid: string;
+  createdAt?: unknown;
+}

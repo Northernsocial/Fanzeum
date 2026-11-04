@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Bookmark, Camera, Moon, Sun } from 'lucide-react';
+import { Bookmark, Camera, MessageSquare, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { NotificationsButton } from './NotificationsButton';
@@ -52,9 +52,14 @@ export const Header: React.FC = () => {
             Explore
           </NavLink>
           {firebaseUser && (
-            <NavLink to={showcaseHref} className={navLinkClass}>
-              My Showcase
-            </NavLink>
+            <>
+              <NavLink to={showcaseHref} className={navLinkClass}>
+                My Showcase
+              </NavLink>
+              <NavLink to="/messages" className={navLinkClass}>
+                Messages
+              </NavLink>
+            </>
           )}
           <NavLink to="/wantlist" className={navLinkClass}>
             Wantlist

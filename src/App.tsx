@@ -157,6 +157,7 @@ export default function App() {
                     <Route path="/add" element={<AddPiecePage />} />
                     <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route path="/wantlist" element={<WantlistPage />} />
+                    <Route path="/messages" element={<MessagesPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />
@@ -225,3 +226,8 @@ export default function App() {
     </AppErrorBoundary>
   );
 }
+
+const MessagesPage = lazy(() =>
+  import('./features/messages/MessagesPage').then((m) => ({ default: m.MessagesPage })),
+);
+=== END FILE: src/App.tsx ===

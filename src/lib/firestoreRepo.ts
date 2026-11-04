@@ -1402,3 +1402,229 @@ export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
   }
 }
+
+export async function fetchReputationStats(uid: string): Promise<import('../types/domain').ReputationStats> {
+  let acceptedCorrectionsCount = 0;
+  let panelConfirmedCount = 0;
+  let helpfulCommentsCount = 0;
+
+  try {
+    const corrsQ = query(
+      collection(db, 'idCorrections'),
+      where('itemOwnerId', '==', uid),
+      where('status', '==', 'accepted'),
+      limit(200),
+    );
+    const corrsSnap = await getDocs(corrsQ);
+    acceptedCorrectionsCount = corrsSnap.size;
+  } catch {
+    // optional
+  }
+
+  try {
+    const itemsQ = query(
+      collection(db, 'items'),
+      where('ownerId', '==', uid),
+      where('panelStatus', '==', 'confirmed'),
+      limit(200),
+    );
+    const itemsSnap = await getDocs(itemsQ);
+    panelConfirmedCount = itemsSnap.size;
+  } catch {
+    // optional
+  }
+
+  const totalPoints = acceptedCorrectionsCount * 15 + panelConfirmedCount * 25 + helpfulCommentsCount * 5;
+  let level: import('../types/domain').CollectorLevel = 'Newcomer';
+  if (totalPoints >= 150) level = 'Authority';
+  else if (totalPoints >= 70) level = 'Specialist';
+  else if (totalPoints >= 25) level = 'Collector';
+
+  return {
+    acceptedCorrectionsCount,
+    helpfulCommentsCount,
+    panelConfirmedCount,
+    level,
+  };
+}
+
+export async function blockUser(uid: string, blockedUid: string): Promise<void> {
+  const blockId = `${uid}_${blockedUid}`;
+  await setDoc(doc(db, `users/${uid}/blocks`, blockId), {
+    uid,
+    blockedUid,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function unblockUser(uid: string, blockedUid: string): Promise<void> {
+  const blockId = `${uid}_${blockedUid}`;
+  await deleteDoc(doc(db, `users/${uid}/blocks`, blockId));
+}
+
+export async function isUserBlocked(uid: string, targetUid: string): Promise<boolean> {
+  if (!uid || !targetUid) return false;
+  try {
+    const snap = await getDoc(doc(db, `users/${uid}/blocks`, `${uid}_${targetUid}`));
+    if (snap.exists()) return true;
+    const reverseSnap = await getDoc(doc(db, `users/${targetUid}/blocks`, `${targetUid}_${uid}`));
+    return reverseSnap.exists();
+  } catch {
+    return false;
+  }
+}
+
+export async function startConversation(params: {
+  currentProfile: import('../types/domain').UserProfile;
+  targetProfile: import('../types/domain').UserProfile;
+  initialText: string;
+  item?: CollectibleItemRecord;
+}): Promise<string> {
+  const { currentProfile, targetProfile, initialText, item } = params;
+  if (currentProfile.uid === targetProfile.uid) {
+    throw new Error('You cannot message yourself.');
+  }
+
+  const blocked = await isUserBlocked(currentProfile.uid, targetProfile.uid);
+  if (blocked) {
+    throw new Error('Unable to start conversation with this user.');
+  }
+
+  const sortedIds = [currentProfile.uid, targetProfile.uid].sort();
+  const convId = `${sortedIds[0]}_${sortedIds[1]}`;
+  const convRef = doc(db, 'conversations', convId);
+
+  const cleanText = initialText.trim().slice(0, 1000);
+
+  const batch = writeBatch(db);
+  batch.set(
+    convRef,
+    {
+      participantIds: sortedIds,
+      participantHandles: [currentProfile.handle, targetProfile.handle],
+      participantNames: [currentProfile.displayName, targetProfile.displayName],
+      participantAvatarUrls: [currentProfile.avatarUrl || '', targetProfile.avatarUrl || ''],
+      lastMessageText: cleanText,
+      lastMessageSenderId: currentProfile.uid,
+      ...(item ? { itemId: item.id, itemTitle: item.title, itemThumbUrl: item.thumbUrl || item.imageUrl } : {}),
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  const msgId = makeSafeId('msg');
+  const msgRef = doc(db, 'conversations', convId, 'messages', msgId);
+  batch.set(msgRef, {
+    id: msgId,
+    conversationId: convId,
+    senderId: currentProfile.uid,
+    senderHandle: currentProfile.handle,
+    text: cleanText,
+    ...(item ? { itemId: item.id, itemTitle: item.title, itemThumbUrl: item.thumbUrl || item.imageUrl } : {}),
+    createdAt: serverTimestamp(),
+  });
+
+  await batch.commit();
+  return convId;
+}
+
+export async function sendDirectMessage(params: {
+  conversationId: string;
+  senderProfile: import('../types/domain').UserProfile;
+  text: string;
+  item?: CollectibleItemRecord;
+}): Promise<void> {
+  const { conversationId, senderProfile, text, item } = params;
+  const cleanText = text.trim().slice(0, 1000);
+  if (!cleanText) return;
+
+  const convRef = doc(db, 'conversations', conversationId);
+  const msgId = makeSafeId('msg');
+  const msgRef = doc(db, 'conversations', conversationId, 'messages', msgId);
+
+  const batch = writeBatch(db);
+  batch.update(convRef, {
+    lastMessageText: cleanText,
+    lastMessageSenderId: senderProfile.uid,
+    ...(item ? { itemId: item.id, itemTitle: item.title, itemThumbUrl: item.thumbUrl || item.imageUrl } : {}),
+    updatedAt: serverTimestamp(),
+  });
+
+  batch.set(msgRef, {
+    id: msgId,
+    conversationId,
+    senderId: senderProfile.uid,
+    senderHandle: senderProfile.handle,
+    text: cleanText,
+    ...(item ? { itemId: item.id, itemTitle: item.title, itemThumbUrl: item.thumbUrl || item.imageUrl } : {}),
+    createdAt: serverTimestamp(),
+  });
+
+  await batch.commit();
+}
+
+export async function listUserConversations(uid: string): Promise<import('../types/domain').ConversationRecord[]> {
+  try {
+    const q = query(
+      collection(db, 'conversations'),
+      where('participantIds', 'array-contains', uid),
+      limit(50),
+    );
+    const snap = await getDocs(q);
+    const list: import('../types/domain').ConversationRecord[] = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        participantIds: Array.isArray(data.participantIds) ? data.participantIds.map(String) : [],
+        participantHandles: Array.isArray(data.participantHandles) ? data.participantHandles.map(String) : [],
+        participantNames: Array.isArray(data.participantNames) ? data.participantNames.map(String) : [],
+        participantAvatarUrls: Array.isArray(data.participantAvatarUrls) ? data.participantAvatarUrls.map(String) : [],
+        lastMessageText: String(data.lastMessageText || ''),
+        lastMessageSenderId: String(data.lastMessageSenderId || ''),
+        itemId: data.itemId ? String(data.itemId) : undefined,
+        itemTitle: data.itemTitle ? String(data.itemTitle) : undefined,
+        itemThumbUrl: data.itemThumbUrl ? String(data.itemThumbUrl) : undefined,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
+    });
+    list.sort((a, b) => {
+      const aSec = (a.updatedAt as { seconds?: number } | undefined)?.seconds || 0;
+      const bSec = (b.updatedAt as { seconds?: number } | undefined)?.seconds || 0;
+      return bSec - aSec;
+    });
+    return list;
+  } catch {
+    return [];
+  }
+}
+
+export async function listConversationMessages(conversationId: string): Promise<import('../types/domain').DirectMessageRecord[]> {
+  try {
+    const q = query(collection(db, 'conversations', conversationId, 'messages'), limit(100));
+    const snap = await getDocs(q);
+    const list: import('../types/domain').DirectMessageRecord[] = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        conversationId,
+        senderId: String(data.senderId || ''),
+        senderHandle: String(data.senderHandle || ''),
+        text: String(data.text || ''),
+        itemId: data.itemId ? String(data.itemId) : undefined,
+        itemTitle: data.itemTitle ? String(data.itemTitle) : undefined,
+        itemThumbUrl: data.itemThumbUrl ? String(data.itemThumbUrl) : undefined,
+        createdAt: data.createdAt,
+      };
+    });
+    list.sort((a, b) => {
+      const aSec = (a.createdAt as { seconds?: number } | undefined)?.seconds || 0;
+      const bSec = (b.createdAt as { seconds?: number } | undefined)?.seconds || 0;
+      return aSec - bSec;
+    });
+    return list;
+  } catch {
+    return [];
+  }
+}
