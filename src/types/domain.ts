@@ -121,6 +121,8 @@ export interface CollectionRecord {
   estimatedTotalMinGbp: number;
   estimatedTotalMaxGbp: number;
   featured: boolean;
+  collaboratorIds?: string[];
+  setDefinitionId?: string;
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
