@@ -82,6 +82,14 @@ def write(out):
         c = re.sub(r"^```[a-z]*\n", "", c); c = re.sub(r"\n```\s*$", "", c)
         if p.startswith((".github/", "/")) or ".." in p: continue
         exists = os.path.isfile(p); old = open(p, errors="ignore").read() if exists else ""
+        if "<<<<<<< SEARCH" in c and exists: kind = "EDIT"
+        elif re.search(r"^(<<<<<<<|>>>>>>>)", c, flags=re.M) or re.search(r"^=======$", c, flags=re.M):
+            REJECTED.append(f"{p}: conflict markers (<<<<<<<, =======, >>>>>>>) are not allowed in a {kind} block. Use the EDIT format only for existing files."); continue
+        if kind == "APPEND" and exists:
+            names = lambda t: set(re.findall(r"(?:export\s+(?:async\s+)?(?:function|const|interface|type|class|enum)\s+|^\s*function\s+)(\w+)", t, flags=re.M)) | set(re.findall(r"^\s*match\s+(/\S+)", t, flags=re.M))
+            dup = names(c) & names(old)
+            if dup:
+                REJECTED.append(f"{p}: APPEND refused, these already exist in the file (do not redeclare them; use EDIT to change them): {sorted(dup)[:8]}"); continue
         if kind == "FILE":
             if exists and (len(old) > BIG or len(c.splitlines()) < 0.8 * len(old.splitlines())):
                 REJECTED.append(f"{p}: FILE overwrite refused (existing file is large or your version drops lines). Resend only your additions as APPEND, or targeted EDIT blocks."); continue
@@ -155,6 +163,12 @@ for name, m, u, k in panel:
 report = f"Tests: {'all passing' if green else 'NOT passing'}\nReview panel: {passes}/{len(panel)} PASS\n\n" + "\n\n".join(reviews)
 if not green: report += "\n\n<details><summary>Test output</summary>\n\n```\n" + log[-3000:] + "\n```\n</details>"
 open("/tmp/report.md", "w").write(report)
-ok = green and passes * 2 >= len(panel) and bool(full.strip()) and dels <= 120
+added = [l[1:] for l in full.splitlines() if l.startswith("+") and not l.startswith("+++")]
+markers = any(re.match(r"(<<<<<<<|>>>>>>>)", l) or l == "=======" for l in added)
+rules_bad = False
+if os.path.isfile("firestore.rules"):
+    rt = open("firestore.rules", errors="ignore").read(); rules_bad = rt.count("{") != rt.count("}")
+if markers or rules_bad: report += "\n\nAUTO-BLOCK: " + ("conflict markers in the diff. " if markers else "") + ("firestore.rules braces do not balance." if rules_bad else ""); open("/tmp/report.md", "w").write(report)
+ok = green and passes * 2 >= len(panel) and bool(full.strip()) and dels <= 120 and not markers and not rules_bad
 open(os.environ["GITHUB_OUTPUT"], "a").write(f"ok={'true' if ok else 'false'}\nchanged={'true' if full.strip() else 'false'}\n")
 print(report)
