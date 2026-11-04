@@ -1402,3 +1402,31 @@ export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
   }
 }
+
+export async function submitCommunityReport(params: {
+  reporterId: string;
+  targetType: 'thread' | 'reply';
+  targetId: string;
+  reason: string;
+}): Promise<string> {
+  const reportId = makeSafeId('rpt');
+  const now = new Date().toISOString();
+  const record = {
+    id: reportId,
+    reporterId: params.reporterId,
+    targetType: params.targetType,
+    targetId: params.targetId,
+    itemId: params.targetId,
+    reason: params.reason.slice(0, 500),
+    createdAt: now,
+  };
+  try {
+    await setDoc(doc(db, 'reports', reportId), {
+      ...record,
+      createdAt: serverTimestamp(),
+    });
+    return reportId;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, `reports/${reportId}`);
+  }
+}

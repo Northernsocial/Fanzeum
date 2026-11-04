@@ -320,3 +320,41 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export interface CommunityPoll {
+  question: string;
+  options: string[];
+  votes: Record<string, number>; // optionIndex -> count
+  userVotes: Record<string, number>; // userId -> optionIndex
+}
+
+export interface CommunityThreadRecord {
+  id: string;
+  category: CategorySlug;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatarUrl: string;
+  title: string;
+  body: string;
+  photoUrl?: string;
+  linkedItemId?: string;
+  poll?: CommunityPoll;
+  replyCount: number;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface CommunityReplyRecord {
+  id: string;
+  threadId: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatarUrl: string;
+  text: string;
+  photoUrl?: string;
+  linkedItemId?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
