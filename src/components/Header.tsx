@@ -31,10 +31,10 @@ export const Header: React.FC = () => {
   }, [menuOpen]);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `transition-colors whitespace-nowrap shrink-0 py-1 border-b-2 text-sm font-medium ${
+    `transition-colors whitespace-nowrap shrink-0 py-1 border-b-2 text-[15px] font-semibold tracking-wide ${
       isActive
         ? 'text-ink border-brass'
-        : 'text-muted border-transparent hover:text-ink'
+        : 'text-ink/85 border-transparent hover:text-brass'
     }`;
 
   const showcaseHref = profile?.handle ? `/@${profile.handle}` : '/onboarding';
@@ -169,7 +169,7 @@ export const Header: React.FC = () => {
                       end={l.end}
                       onClick={() => setMenuOpen(false)}
                       className={({ isActive }) =>
-                        `block py-3 text-base font-medium border-b border-border/60 ${
+                        `block py-3.5 text-lg font-semibold tracking-wide border-b border-border/60 ${
                           isActive ? 'text-brass' : 'text-ink hover:text-brass'
                         }`
                       }
