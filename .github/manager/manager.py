@@ -45,7 +45,7 @@ def chat(model, msgs, url=POOL, key=None, max_tokens=32000):
     if model == "team/coder":
         # Coders in order: free Gemini (most reliable), Groq, then the shared pool. Each tried twice.
         chain = []
-        if GEMINI_KEY: chain += [("gemini-flash-latest", GEMINI, GEMINI_KEY), ("gemini-flash-lite-latest", GEMINI, GEMINI_KEY)]
+        if GEMINI_KEY: chain += [("gemini-flash-latest", GEMINI, GEMINI_KEY), ("gemini-2.5-flash", GEMINI, GEMINI_KEY)]
         if GROQ_KEY: chain.append(("openai/gpt-oss-120b", GROQ, GROQ_KEY))
         chain += [(m, POOL, None) for m in CODERS]
     else:
@@ -53,8 +53,11 @@ def chat(model, msgs, url=POOL, key=None, max_tokens=32000):
     for a in range(len(chain) * 2):
         m, u, k = chain[a % len(chain)]
         c = _call(m, msgs, u, k, max_tokens, 600)
+        # quality gate for coders: a tiny reply (types only, a stub) is a failed attempt, so fall to the next coder
+        if c and model == "team/coder" and len(c) < 2500 and "Typecheck/test output" not in str(msgs) and "refused" not in str(msgs[-1]):
+            print("coder reply too small, trying next coder", len(c), flush=True); c = ""
         if c: return c
-        time.sleep(15)
+        time.sleep(30 if "429" in str(sys.last_value if hasattr(sys, "last_value") else "") else 15)
     return ""
 
 def files_block(paths):
@@ -124,7 +127,7 @@ print("context:", ctx_files, flush=True)
 
 # 2. build
 sys_msg = {"role": "system", "content": "You are a senior engineer on Fanzeum, a UK collectors app.\n" + RULES + FMT}
-out = chat("team/coder", [sys_msg, {"role": "user", "content": files_block(ctx_files) + "\n\n" + task + "\n\nImplement it with tests. Output all files you create or change."}])
+out = chat("team/coder", [sys_msg, {"role": "user", "content": files_block(ctx_files) + "\n\n" + task + "\n\nImplement the WHOLE issue end to end: pages, routes, components, data access, firestore.rules and tests. Adding only types or stubs is a failure. Output all files you create or change."}])
 write(out)
 if REJECTED:
     fb = "Some of your output was refused:\n" + "\n".join(REJECTED[:10]); REJECTED.clear()
