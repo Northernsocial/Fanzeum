@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { Check, ShieldCheck, Sparkles, Store, Zap } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getEntitlements, isPremium } from '../../lib/entitlements';
+import { isPremium, isStorePlan } from '../../lib/entitlements';
+import { fetchCommissionRates } from '../../lib/firestoreRepo';
 import { useDocumentMeta } from '../../components/DocumentMeta';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -10,60 +11,85 @@ import { Card } from '../../components/ui/Card';
 export const PlansPage: React.FC = () => {
   const { firebaseUser, profile, openAuthModal } = useAuth();
   const navigate = useNavigate();
-  const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const [loadingCheckout, setLoadingCheckout] = useState<'premium' | 'store' | null>(null);
   const [errorNote, setErrorNote] = useState<string | null>(null);
+  const [commissionRates, setCommissionRates] = useState({ freeRate: 8.5, premiumRate: 4.5, storeRate: 3.5 });
 
   useDocumentMeta({
     title: 'Fanzeum Plans · Collector Plus & Dealer Showcase',
-    description: 'Compare Free and Collector Plus plans for unlimited collections, expert panel access, and Fresh Finds boost.',
+    description: 'Compare Free, Collector Plus, and Dealer & Store plans for dedicated storefronts, lowest seller fees, and unlimited showcases.',
   });
 
-  const premiumActive = isPremium(profile);
+  useEffect(() => {
+    let active = true;
+    async function loadRates() {
+      const rates = await fetchCommissionRates();
+      if (active) setCommissionRates(rates);
+    }
+    void loadRates();
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const handleUpgrade = async () => {
+  const premiumActive = isPremium(profile);
+  const storeActive = isStorePlan(profile);
+
+  const handleUpgrade = async (tier: 'premium' | 'store') => {
     if (!firebaseUser) {
       openAuthModal();
       return;
     }
-    setLoadingCheckout(true);
+    setLoadingCheckout(tier);
     setErrorNote(null);
     try {
       const res = await fetch('/api/billing/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: firebaseUser.uid, email: firebaseUser.email }),
+        body: JSON.stringify({ userId: firebaseUser.uid, email: firebaseUser.email, plan: tier }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to start billing session.');
+        throw new Error(
+          data.error ||
+            (tier === 'store'
+              ? 'Dealer & Store checkout is coming soon in Stripe test mode. Contact hello@fanzeum.co.uk for early store access.'
+              : 'Failed to start billing session.'),
+        );
       }
       if (data.url) {
         window.location.href = data.url;
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      setErrorNote(err instanceof Error ? err.message : 'Billing unavailable.');
+      setErrorNote(
+        err instanceof Error
+          ? err.message
+          : tier === 'store'
+          ? 'Dealer & Store checkout is coming soon in Stripe test mode.'
+          : 'Billing unavailable.',
+      );
     } finally {
-      setLoadingCheckout(false);
+      setLoadingCheckout(null);
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-14 pb-28 space-y-12">
-      <div className="text-center max-w-2xl mx-auto space-y-3">
+    <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-14 pb-28 space-y-12">
+      <div className="text-center max-w-3xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-2 text-xs font-mono text-brass">
           <Sparkles className="w-4 h-4" strokeWidth={1.5} />
-          <span>Collector Memberships</span>
+          <span>Collector &amp; Dealer Memberships</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-display font-semibold text-ink">
-          Properly lit showcases for serious collections
+          Properly lit showcases for serious collectors &amp; shops
         </h1>
         <p className="text-base text-muted leading-relaxed">
-          From free multi-collection showcases to Collector Plus with expert panel collaboration, priority AI estimates, and Fresh Finds boosting.
+          From free multi-collection showcases to high-volume Dealer &amp; Store fronts with custom branding, holiday mode, and our lowest marketplace commission.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
         {/* Free Tier */}
         <Card className="p-8 flex flex-col justify-between space-y-8">
           <div className="space-y-6">
@@ -88,7 +114,11 @@ export const PlansPage: React.FC = () => {
               </li>
               <li className="flex items-start gap-3">
                 <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
-                <span>Private purchase price Vault &amp; UK GDPR data export</span>
+                <span><strong>{commissionRates.freeRate}%</strong> marketplace seller fee</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
+                <span>Private purchase price Vault &amp; UK GDPR export</span>
               </li>
               <li className="flex items-start gap-3">
                 <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
@@ -138,7 +168,11 @@ export const PlansPage: React.FC = () => {
               </li>
               <li className="flex items-start gap-3">
                 <Zap className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
-                <span><strong>Expert panel discussions</strong> for rare variants and attribution advice</span>
+                <span>Reduced <strong>{commissionRates.premiumRate}%</strong> marketplace seller fee</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Zap className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
+                <span><strong>Expert panel discussions</strong> for rare variants</span>
               </li>
               <li className="flex items-start gap-3">
                 <Zap className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
@@ -148,27 +182,91 @@ export const PlansPage: React.FC = () => {
                 <Zap className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
                 <span>Priority Fresh Finds community feed visibility boost</span>
               </li>
+            </ul>
+          </div>
+
+          <div className="space-y-3">
+            {premiumActive && !storeActive ? (
+              <Button fullWidth disabled>
+                Collector Plus Active
+              </Button>
+            ) : (
+              <Button
+                fullWidth
+                disabled={loadingCheckout === 'premium' || storeActive}
+                onClick={() => handleUpgrade('premium')}
+              >
+                {loadingCheckout === 'premium' ? 'Preparing checkout…' : 'Upgrade to Collector Plus'}
+              </Button>
+            )}
+          </div>
+        </Card>
+
+        {/* Dealer & Store Tier */}
+        <Card className="p-8 flex flex-col justify-between space-y-8 border-border hover:border-brass/50 transition-colors relative">
+          <div className="space-y-6">
+            <div>
+              <span className="text-xs font-mono text-brass">Dealer &amp; Store</span>
+              <h2 className="text-2xl font-display font-semibold text-ink mt-1">Dedicated Storefront</h2>
+              <p className="text-sm text-muted mt-1">For UK dealers, shops, and high-volume sellers needing their own storefront &amp; lowest fees.</p>
+            </div>
+
+            <div className="text-3xl font-mono font-semibold text-ink">
+              £19.99 <span className="text-sm font-sans font-normal text-muted">/ month (Test mode)</span>
+            </div>
+
+            <ul className="space-y-3.5 text-sm text-ink/90">
+              <li className="flex items-start gap-3">
+                <Store className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
+                <span><strong>Dedicated storefront URL</strong> (/store/@handle) with custom banner &amp; logo</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <ShieldCheck className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
+                <span><strong>Verified Store badge</strong> upon UK business verification &amp; ID check</span>
+              </li>
               <li className="flex items-start gap-3">
                 <Zap className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
-                <span>Certified insurance export pack with purchase price totals</span>
+                <span>Lowest <strong>{commissionRates.storeRate}%</strong> marketplace commission rate</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
+                <span><strong>Holiday mode</strong> to pause listings instantly without deleting inventory</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
+                <span>Custom UK returns policy &amp; buyer assurance banner</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
+                <span><strong>500/hour AI valuations</strong> and priority catalogue support</span>
               </li>
             </ul>
           </div>
 
           <div className="space-y-3">
-            {errorNote && <p className="text-xs text-danger">{errorNote}</p>}
-            {premiumActive ? (
+            {storeActive ? (
               <Button fullWidth disabled>
-                Collector Plus Active
+                Dealer &amp; Store Active
               </Button>
             ) : (
-              <Button fullWidth disabled={loadingCheckout} onClick={handleUpgrade}>
-                {loadingCheckout ? 'Preparing checkout…' : 'Upgrade to Collector Plus'}
+              <Button
+                fullWidth
+                variant="secondary"
+                disabled={loadingCheckout === 'store'}
+                onClick={() => handleUpgrade('store')}
+              >
+                {loadingCheckout === 'store' ? 'Preparing checkout…' : 'Upgrade to Dealer & Store'}
               </Button>
             )}
           </div>
         </Card>
       </div>
+
+      {errorNote && (
+        <div className="max-w-2xl mx-auto p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm text-center">
+          {errorNote}
+        </div>
+      )}
     </div>
   );
 };

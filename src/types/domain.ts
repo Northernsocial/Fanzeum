@@ -450,3 +450,30 @@ export interface CommunityReplyRecord {
   createdAt?: unknown;
   updatedAt?: unknown;
 }
+
+export type SellerIdVerificationStatus = 'unverified' | 'pending' | 'approved' | 'rejected';
+
+export interface StoreProfileRecord {
+  id: string; // matches userId
+  userId: string;
+  handle: string;
+  businessName: string;
+  businessAddress: string;
+  companyNumber?: string;
+  about: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  returnsPolicy: string;
+  holidayMode: boolean;
+  idVerificationStatus: SellerIdVerificationStatus;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface CommissionSettingsRecord {
+  id: string; // 'commission'
+  freeRate: number; // e.g. 8.5
+  premiumRate: number; // e.g. 4.5
+  storeRate: number; // e.g. 3.5
+  updatedAt?: unknown;
+}

@@ -1859,3 +1859,196 @@ export async function submitCommunityReport(params: {
     handleFirestoreError(error, OperationType.CREATE, `reports/${reportId}`);
   }
 }
+
+export async function fetchCommissionRates(): Promise<{ freeRate: number; premiumRate: number; storeRate: number }> {
+  try {
+    const snap = await getDoc(doc(db, 'platformSettings', 'commission'));
+    if (snap.exists()) {
+      const data = snap.data();
+      return {
+        freeRate: typeof data.freeRate === 'number' ? data.freeRate : 8.5,
+        premiumRate: typeof data.premiumRate === 'number' ? data.premiumRate : 4.5,
+        storeRate: typeof data.storeRate === 'number' ? data.storeRate : 3.5,
+      };
+    }
+  } catch {
+    // Return sensible defaults on error
+  }
+  return { freeRate: 8.5, premiumRate: 4.5, storeRate: 3.5 };
+}
+
+export async function updateCommissionRates(rates: {
+  freeRate: number;
+  premiumRate: number;
+  storeRate: number;
+}): Promise<void> {
+  const payload = {
+    id: 'commission',
+    freeRate: Math.max(0, Math.min(50, rates.freeRate)),
+    premiumRate: Math.max(0, Math.min(50, rates.premiumRate)),
+    storeRate: Math.max(0, Math.min(50, rates.storeRate)),
+    updatedAt: serverTimestamp(),
+  };
+  try {
+    await setDoc(doc(db, 'platformSettings', 'commission'), payload);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, 'platformSettings/commission');
+  }
+}
+
+export async function fetchStoreProfile(userId: string): Promise<import('../types/domain').StoreProfileRecord | null> {
+  if (!userId) return null;
+  try {
+    const snap = await getDoc(doc(db, 'stores', userId));
+    if (!snap.exists()) return null;
+    const d = snap.data();
+    return {
+      id: snap.id,
+      userId: d.userId || snap.id,
+      handle: d.handle || '',
+      businessName: d.businessName || '',
+      businessAddress: d.businessAddress || '',
+      companyNumber: d.companyNumber || '',
+      about: d.about || '',
+      logoUrl: d.logoUrl || '',
+      bannerUrl: d.bannerUrl || '',
+      returnsPolicy: d.returnsPolicy || '',
+      holidayMode: Boolean(d.holidayMode),
+      idVerificationStatus: d.idVerificationStatus || 'unverified',
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchStoreProfileByHandle(handle: string): Promise<import('../types/domain').StoreProfileRecord | null> {
+  const clean = handle.replace(/^@+/, '').trim().toLowerCase();
+  if (!clean) return null;
+  try {
+    const user = await fetchUserByHandle(clean);
+    if (!user) return null;
+    return await fetchStoreProfile(user.uid);
+  } catch {
+    return null;
+  }
+}
+
+export async function upsertStoreProfile(params: {
+  userId: string;
+  handle: string;
+  businessName: string;
+  businessAddress: string;
+  companyNumber?: string;
+  about: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  returnsPolicy: string;
+  holidayMode: boolean;
+  idVerificationStatus?: import('../types/domain').SellerIdVerificationStatus;
+}): Promise<import('../types/domain').StoreProfileRecord> {
+  const docRef = doc(db, 'stores', params.userId);
+  const snap = await getDoc(docRef);
+  const isCreate = !snap.exists();
+
+  const record: Record<string, unknown> = {
+    id: params.userId,
+    userId: params.userId,
+    handle: params.handle.toLowerCase().replace(/^@+/, '').slice(0, 32),
+    businessName: params.businessName.trim().slice(0, 120),
+    businessAddress: params.businessAddress.trim().slice(0, 500),
+    about: params.about.trim().slice(0, 3000),
+    returnsPolicy: params.returnsPolicy.trim().slice(0, 2000),
+    holidayMode: Boolean(params.holidayMode),
+    idVerificationStatus: params.idVerificationStatus || (snap.exists() ? snap.data().idVerificationStatus : 'unverified'),
+    updatedAt: serverTimestamp(),
+  };
+
+  if (params.companyNumber?.trim()) {
+    record.companyNumber = params.companyNumber.trim().slice(0, 50);
+  }
+  if (params.logoUrl?.trim()) {
+    record.logoUrl = params.logoUrl.trim().slice(0, 2048);
+  }
+  if (params.bannerUrl?.trim()) {
+    record.bannerUrl = params.bannerUrl.trim().slice(0, 2048);
+  }
+
+  try {
+    if (isCreate) {
+      record.createdAt = serverTimestamp();
+      await setDoc(docRef, record);
+    } else {
+      await updateDoc(docRef, record);
+    }
+
+    return {
+      id: params.userId,
+      userId: params.userId,
+      handle: String(record.handle),
+      businessName: String(record.businessName),
+      businessAddress: String(record.businessAddress),
+      companyNumber: record.companyNumber ? String(record.companyNumber) : undefined,
+      about: String(record.about),
+      logoUrl: record.logoUrl ? String(record.logoUrl) : undefined,
+      bannerUrl: record.bannerUrl ? String(record.bannerUrl) : undefined,
+      returnsPolicy: String(record.returnsPolicy),
+      holidayMode: Boolean(record.holidayMode),
+      idVerificationStatus: (record.idVerificationStatus as import('../types/domain').SellerIdVerificationStatus) || 'unverified',
+    };
+  } catch (error) {
+    handleFirestoreError(error, isCreate ? OperationType.CREATE : OperationType.UPDATE, `stores/${params.userId}`);
+  }
+}
+
+export async function toggleStoreHolidayMode(userId: string, holidayMode: boolean): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'stores', userId), {
+      holidayMode,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `stores/${userId}`);
+  }
+}
+
+export async function requestStoreIdVerification(userId: string): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'stores', userId), {
+      idVerificationStatus: 'pending',
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `stores/${userId}`);
+  }
+}
+
+export async function adminUpdateStoreIdVerification(
+  userId: string,
+  status: import('../types/domain').SellerIdVerificationStatus,
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'stores', userId), {
+      idVerificationStatus: status,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `stores/${userId}`);
+  }
+}
+
+export async function listStoreMarketplaceListings(sellerId: string): Promise<MarketplaceListingRecord[]> {
+  try {
+    const q = query(
+      collection(db, 'marketplace'),
+      where('sellerId', '==', sellerId),
+      where('status', '==', 'active'),
+      limit(100),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => normalizeMarketplaceDoc(d.id, d.data() as Record<string, unknown>));
+  } catch {
+    return [];
+  }
+}

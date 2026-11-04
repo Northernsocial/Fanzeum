@@ -107,3 +107,25 @@ export function sanitizeHandle(raw: string): string {
     .slice(0, 28);
   return cleaned.length >= 2 ? cleaned : `collector_${Math.floor(100 + Math.random() * 900)}`;
 }
+
+export function isStorePlan(profile: UserProfile | null | undefined): boolean {
+  if (!profile) return false;
+  return profile.plan === 'store' || profile.role === 'store' || profile.role === 'admin';
+}
+
+export const DEFAULT_COMMISSION_RATES = {
+  free: 8.5,
+  premium: 4.5,
+  store: 3.5,
+};
+
+export function isVerifiedStore(store: import('../types/domain').StoreProfileRecord | null | undefined): boolean {
+  if (!store) return false;
+  const hasBusinessDetails = Boolean(
+    store.businessName &&
+      store.businessName.trim().length > 0 &&
+      store.businessAddress &&
+      store.businessAddress.trim().length > 0,
+  );
+  return store.idVerificationStatus === 'approved' && hasBusinessDetails;
+}

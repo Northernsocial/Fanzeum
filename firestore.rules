@@ -1721,5 +1721,55 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+    function isValidCommissionSettings(data) {
+      return data.keys().hasAll(['id', 'freeRate', 'premiumRate', 'storeRate', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'freeRate', 'premiumRate', 'storeRate', 'updatedAt']) &&
+        data.id == 'commission' &&
+        data.freeRate is number && data.freeRate >= 0 && data.freeRate <= 50 &&
+        data.premiumRate is number && data.premiumRate >= 0 && data.premiumRate <= 50 &&
+        data.storeRate is number && data.storeRate >= 0 && data.storeRate <= 50;
+    }
+
+    match /platformSettings/{settingId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin() && isValidId(settingId) && isValidCommissionSettings(incoming());
+      allow delete: if isAdmin() && isValidId(settingId);
+    }
+
+    function isValidStoreProfile(data) {
+      return data.keys().hasAll(['id', 'userId', 'handle', 'businessName', 'businessAddress', 'about', 'returnsPolicy', 'holidayMode', 'idVerificationStatus', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'handle', 'businessName', 'businessAddress', 'companyNumber', 'about', 'logoUrl', 'bannerUrl', 'returnsPolicy', 'holidayMode', 'idVerificationStatus', 'createdAt', 'updatedAt']) &&
+        data.id == data.userId &&
+        data.userId is string && data.userId.size() >= 1 &&
+        data.handle is string && data.handle.size() >= 2 && data.handle.size() <= 32 &&
+        data.businessName is string && data.businessName.size() <= 120 &&
+        data.businessAddress is string && data.businessAddress.size() <= 500 &&
+        (!('companyNumber' in data) || (data.companyNumber is string && data.companyNumber.size() <= 50)) &&
+        data.about is string && data.about.size() <= 3000 &&
+        (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 2048)) &&
+        (!('bannerUrl' in data) || (data.bannerUrl is string && data.bannerUrl.size() <= 2048)) &&
+        data.returnsPolicy is string && data.returnsPolicy.size() <= 2000 &&
+        data.holidayMode is bool &&
+        data.idVerificationStatus in ['unverified', 'pending', 'approved', 'rejected'];
+    }
+
+    match /stores/{storeId} {
+      allow get, list: if true;
+      allow create: if isVerifiedUser() && isValidId(storeId) &&
+        request.auth.uid == storeId &&
+        isValidStoreProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(storeId) &&
+        (request.auth.uid == storeId || isAdmin()) &&
+        isValidStoreProfile(incoming()) &&
+        incoming().userId == storeId &&
+        (isAdmin() ||
+          incoming().idVerificationStatus == existing().idVerificationStatus ||
+          (existing().idVerificationStatus == 'unverified' && incoming().idVerificationStatus == 'pending'));
+      allow delete: if isVerifiedUser() && isValidId(storeId) &&
+        (request.auth.uid == storeId || isAdmin());
+    }
+}
 }
