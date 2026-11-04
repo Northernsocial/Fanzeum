@@ -320,3 +320,7 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export interface UserProfileExtensions {
+  waitlistPremium?: boolean;
+}
