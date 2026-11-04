@@ -1402,3 +1402,153 @@ export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
   }
 }
+
+// 15. Marketplace Listings (Fixed Price)
+
+export interface MarketplaceListingRecord {
+  id: string;
+  itemId: string;
+  sellerId: string;
+  sellerHandle: string;
+  sellerName: string;
+  sellerAvatarUrl?: string;
+  title: string;
+  description: string;
+  photos: ItemPhoto[];
+  priceGbp: number;
+  condition: string;
+  category: CategorySlug;
+  status: 'active' | 'sold' | 'withdrawn';
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+function normalizeMarketplaceDoc(id: string, raw: Record<string, unknown>): MarketplaceListingRecord {
+  const category = (raw.category as CategorySlug) || 'memorabilia';
+  const title = String(raw.title || 'Untitled Listing');
+  const rawPhotos = Array.isArray(raw.photos) ? (raw.photos as ItemPhoto[]) : [];
+  const photos: ItemPhoto[] =
+    rawPhotos.length > 0
+      ? rawPhotos
+      : [
+          {
+            url: String(raw.imageUrl || ''),
+            thumbUrl: String(raw.thumbUrl || raw.imageUrl || ''),
+            width: 800,
+            height: 1000,
+          },
+        ];
+
+  return {
+    id,
+    itemId: String(raw.itemId || ''),
+    sellerId: String(raw.sellerId || ''),
+    sellerHandle: String(raw.sellerHandle || 'collector'),
+    sellerName: String(raw.sellerName || 'Collector'),
+    sellerAvatarUrl: raw.sellerAvatarUrl ? String(raw.sellerAvatarUrl) : undefined,
+    title,
+    description: String(raw.description || ''),
+    photos,
+    priceGbp: Number(raw.priceGbp) || 0,
+    condition: String(raw.condition || 'Good'),
+    category,
+    status: (raw.status as 'active' | 'sold' | 'withdrawn') || 'active',
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
+export async function fetchMarketplaceListingById(listingId: string): Promise<MarketplaceListingRecord | null> {
+  const path = `marketplace/${listingId}`;
+  try {
+    const snap = await getDoc(doc(db, 'marketplace', listingId));
+    if (!snap.exists()) return null;
+    return normalizeMarketplaceDoc(snap.id, snap.data() as Record<string, unknown>);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+}
+
+export async function listMarketplaceListings(params?: {
+  category?: CategorySlug | 'all';
+  maxResults?: number;
+}): Promise<MarketplaceListingRecord[]> {
+  const max = params?.maxResults || 50;
+  const path = 'marketplace';
+  try {
+    const q =
+      params?.category && params.category !== 'all'
+        ? query(
+            collection(db, 'marketplace'),
+            where('status', '==', 'active'),
+            where('category', '==', params.category),
+            limit(max),
+          )
+        : query(
+            collection(db, 'marketplace'),
+            where('status', '==', 'active'),
+            limit(max),
+          );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => normalizeMarketplaceDoc(d.id, d.data() as Record<string, unknown>));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
+export async function createMarketplaceListing(params: {
+  item: CollectibleItemRecord;
+  profile: UserProfile;
+  priceGbp: number;
+  description: string;
+}): Promise<MarketplaceListingRecord> {
+  const listingId = makeSafeId('mkt');
+  const path = `marketplace/${listingId}`;
+
+  const cleanTitle = (params.item.title || 'Untitled Piece').slice(0, 140);
+  const cleanDesc = params.description.trim().slice(0, 1500);
+  const price = Math.max(0, Math.round(Number(params.priceGbp) || 0));
+
+  const payload = {
+    itemId: params.item.id,
+    sellerId: params.profile.uid,
+    sellerHandle: sanitizeHandle(params.profile.handle),
+    sellerName: params.profile.displayName.slice(0, 80) || 'Collector',
+    sellerAvatarUrl: (params.profile.avatarUrl || '').slice(0, 2048),
+    title: cleanTitle,
+    description: cleanDesc,
+    photos: params.item.photos || [],
+    priceGbp: price,
+    condition: (params.item.condition || 'Good').slice(0, 80),
+    category: params.item.category,
+    status: 'active' as const,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    await setDoc(doc(db, 'marketplace', listingId), payload);
+    return {
+      id: listingId,
+      ...payload,
+    };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export async function updateMarketplaceListingStatus(
+  listingId: string,
+  sellerId: string,
+  status: 'active' | 'sold' | 'withdrawn',
+): Promise<void> {
+  const path = `marketplace/${listingId}`;
+  try {
+    await updateDoc(doc(db, 'marketplace', listingId), {
+      status,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}

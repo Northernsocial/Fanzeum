@@ -6,7 +6,7 @@ import {
 import { GEMINI_FLASH_FALLBACK_MODEL } from './constants.ts';
 
 export function createGeminiClient(apiKey?: string): GoogleGenAI {
-  const resolvedKey = apiKey?.trim();
+  const resolvedKey = (apiKey || process.env.GEMINI_API_KEY || '').trim();
   if (!resolvedKey) {
     throw new Error(
       'GEMINI_API_KEY is not configured on the server. Add it in Settings > Secrets or your Cloudflare environment.',

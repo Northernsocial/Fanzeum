@@ -239,6 +239,26 @@ export interface ItemPrivateRecord {
   updatedAt?: unknown;
 }
 
+export type MarketplaceListingStatus = 'active' | 'sold' | 'withdrawn';
+
+export interface MarketplaceListingRecord {
+  id: string;
+  itemId: string;
+  sellerId: string;
+  sellerHandle: string;
+  sellerName: string;
+  sellerAvatarUrl?: string;
+  title: string;
+  description: string;
+  photos: ItemPhoto[];
+  priceGbp: number;
+  condition: string;
+  category: CategorySlug;
+  status: MarketplaceListingStatus;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
 export interface AIIdentifyFieldEntry {
   value: string | boolean;
   confidence: ConfidenceLevel;

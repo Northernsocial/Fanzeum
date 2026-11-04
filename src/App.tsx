@@ -47,6 +47,12 @@ const SettingsPage = lazy(() =>
 const WantlistPage = lazy(() =>
   import('./features/wantlist/WantlistPage').then((m) => ({ default: m.WantlistPage })),
 );
+const MarketplacePage = lazy(() =>
+  import('./features/marketplace/MarketplacePage').then((m) => ({ default: m.MarketplacePage })),
+);
+const MarketplaceDetailPage = lazy(() =>
+  import('./features/marketplace/MarketplaceDetailPage').then((m) => ({ default: m.MarketplaceDetailPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -150,6 +156,8 @@ export default function App() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/fresh-finds" element={<FreshFindsPage />} />
                     <Route path="/explore" element={<ExplorePage />} />
+                    <Route path="/marketplace" element={<MarketplacePage />} />
+                    <Route path="/marketplace/:listingId" element={<MarketplaceDetailPage />} />
                     <Route path="/category/:categorySlug" element={<ExplorePage />} />
                     <Route path="/c/:collectionId" element={<CollectionPage />} />
                     <Route path="/exhibition/:collectionId" element={<LegacyExhibitionRedirect />} />

@@ -36,6 +36,11 @@ export const MobileTabBar: React.FC = () => {
           <span>Explore</span>
         </NavLink>
 
+        <NavLink to="/marketplace" className={({ isActive }) => itemClass(isActive)}>
+          <Home className="w-5 h-5 mb-0.5" strokeWidth={1.5} />
+          <span>Market</span>
+        </NavLink>
+
         {/* Centre Raised Brass Add Piece Action */}
         <div className="flex flex-col items-center justify-center -mt-4">
           <button

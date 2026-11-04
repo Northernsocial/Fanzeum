@@ -1308,5 +1308,95 @@ service cloud.firestore {
         isValidId(notificationId) &&
         (existing().userId == request.auth.uid || isAdmin());
     }
-  }
+
+    // Validation Blueprint: MarketplaceListingRecord
+    function isValidMarketplaceListing(data) {
+      return data.keys().hasAll([
+          'itemId',
+          'sellerId',
+          'sellerHandle',
+          'sellerName',
+          'title',
+          'description',
+          'photos',
+          'priceGbp',
+          'condition',
+          'category',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'itemId',
+          'sellerId',
+          'sellerHandle',
+          'sellerName',
+          'sellerAvatarUrl',
+          'title',
+          'description',
+          'photos',
+          'priceGbp',
+          'condition',
+          'category',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.itemId) &&
+        isValidId(data.sellerId) &&
+        data.sellerHandle is string && data.sellerHandle.size() >= 2 && data.sellerHandle.size() <= 32 && data.sellerHandle.matches('^[a-z0-9_\\-]+$') &&
+        data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80 &&
+        (!('sellerAvatarUrl' in data) || (data.sellerAvatarUrl is string && data.sellerAvatarUrl.size() <= 2048)) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.description is string && data.description.size() <= 1500 &&
+        data.photos is list && data.photos.size() >= 1 && data.photos.size() <= 6 &&
+        isValidPhotoEntry(data.photos[0]) &&
+        (data.priceGbp is int || data.priceGbp is float) && data.priceGbp >= 0 && data.priceGbp <= 10000000 &&
+        data.condition is string && data.condition.size() >= 1 && data.condition.size() <= 80 &&
+        isValidCategory(data.category) &&
+        data.status is string && data.status in ['active', 'sold', 'withdrawn'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // 14. Marketplace Listings
+    match /marketplace/{listingId} {
+      allow get, list: if true;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(listingId) &&
+        isValidMarketplaceListing(incoming()) &&
+        incoming().sellerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/items/$(incoming().itemId)) &&
+        get(/databases/$(database)/documents/items/$(incoming().itemId)).data.ownerId == request.auth.uid;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(listingId) &&
+        isValidMarketplaceListing(incoming()) && (
+          isAdmin() ||
+          (
+            existing().sellerId == request.auth.uid &&
+            incoming().sellerId == existing().sellerId &&
+            incoming().itemId == existing().itemId &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title',
+              'description',
+              'photos',
+              'priceGbp',
+              'condition',
+              'status',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(listingId) &&
+        (existing().sellerId == request.auth.uid || isAdmin());
+    }
+}
 }
