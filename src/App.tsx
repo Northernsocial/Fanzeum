@@ -74,6 +74,9 @@ const PortfolioValuationPage = lazy(() =>
 const SwapsHubPage = lazy(() =>
   import('./features/swaps/SwapsHubPage').then((m) => ({ default: m.SwapsHubPage })),
 );
+const CommunitiesPage = lazy(() =>
+  import('./features/communities/CommunitiesPage').then((m) => ({ default: m.CommunitiesPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -193,6 +196,7 @@ export default function App() {
                     <Route path="/news/:slug" element={<ArticlePage />} />
                     <Route path="/portfolio" element={<PortfolioValuationPage />} />
                     <Route path="/swaps" element={<SwapsHubPage />} />
+                    <Route path="/communities" element={<CommunitiesPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />

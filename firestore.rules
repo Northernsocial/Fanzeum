@@ -406,7 +406,7 @@ service cloud.firestore {
           'createdAt'
         ]) &&
         isValidId(data.reporterId) &&
-        data.targetType is string && data.targetType in ['comment', 'item'] &&
+        data.targetType is string && data.targetType in ['comment', 'item', 'thread', 'reply'] &&
         isValidId(data.targetId) &&
         isValidId(data.itemId) &&
         data.reason is string && data.reason.size() >= 1 && data.reason.size() <= 500 &&
@@ -1621,6 +1621,105 @@ service cloud.firestore {
       allow update: if false;
 
       allow delete: if isVerifiedUser() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Phase 3A: Community threads and replies
+    function isValidCommunityThread(data) {
+      return data.keys().hasAll([
+          'id', 'category', 'authorId', 'authorName', 'authorHandle', 'authorAvatarUrl',
+          'title', 'body', 'replyCount', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'category', 'authorId', 'authorName', 'authorHandle', 'authorAvatarUrl',
+          'title', 'body', 'photoUrl', 'linkedItemId', 'poll', 'replyCount', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        isValidCategory(data.category) &&
+        isValidId(data.authorId) &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+        data.authorHandle is string && data.authorHandle.size() >= 2 && data.authorHandle.size() <= 32 &&
+        data.authorAvatarUrl is string && data.authorAvatarUrl.size() <= 2048 &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 140 &&
+        data.body is string && data.body.size() <= 3000 &&
+        (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 2048)) &&
+        (!('linkedItemId' in data) || isValidId(data.linkedItemId)) &&
+        (!('poll' in data) || data.poll is map) &&
+        data.replyCount is int && data.replyCount >= 0 && data.replyCount <= 100000;
+    }
+
+    match /communityThreads/{threadId} {
+      allow get, list: if true;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(threadId) &&
+        isValidCommunityThread(incoming()) &&
+        incoming().id == threadId &&
+        incoming().authorId == request.auth.uid &&
+        incoming().replyCount == 0 &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        (!('poll' in incoming()) || (
+          incoming().poll.keys().hasOnly(['question', 'options', 'votes', 'userVotes']) &&
+          incoming().poll.options is list && incoming().poll.options.size() >= 2 && incoming().poll.options.size() <= 4 &&
+          incoming().poll.userVotes.size() == 0
+        ));
+
+      allow update: if isVerifiedUser() && isValidId(threadId) && isValidCommunityThread(incoming()) && (
+        isAdmin() ||
+        // Author edits title or body
+        (
+          existing().authorId == request.auth.uid &&
+          incoming().authorId == existing().authorId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'body', 'updatedAt'])
+        ) ||
+        // Any verified member adds a reply: reply count goes up by exactly one
+        (
+          incoming().replyCount == existing().replyCount + 1 &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['replyCount'])
+        ) ||
+        // Any verified member votes once in a poll
+        (
+          'poll' in existing() &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['poll', 'updatedAt']) &&
+          !(request.auth.uid in existing().poll.userVotes) &&
+          request.auth.uid in incoming().poll.userVotes &&
+          incoming().poll.userVotes.size() == existing().poll.userVotes.size() + 1 &&
+          incoming().poll.question == existing().poll.question &&
+          incoming().poll.options == existing().poll.options
+        )
+      );
+
+      allow delete: if isVerifiedUser() && isValidId(threadId) &&
+        (existing().authorId == request.auth.uid || isAdmin());
+
+      match /replies/{replyId} {
+        allow get, list: if true;
+
+        allow create: if isVerifiedUser() &&
+          isValidId(replyId) &&
+          incoming().keys().hasAll(['id', 'threadId', 'authorId', 'authorName', 'authorHandle', 'authorAvatarUrl', 'text', 'createdAt', 'updatedAt']) &&
+          incoming().keys().hasOnly(['id', 'threadId', 'authorId', 'authorName', 'authorHandle', 'authorAvatarUrl', 'text', 'photoUrl', 'linkedItemId', 'createdAt', 'updatedAt']) &&
+          incoming().id == replyId &&
+          incoming().threadId == threadId &&
+          incoming().authorId == request.auth.uid &&
+          incoming().authorName is string && incoming().authorName.size() >= 1 && incoming().authorName.size() <= 80 &&
+          incoming().authorHandle is string && incoming().authorHandle.size() >= 2 && incoming().authorHandle.size() <= 32 &&
+          incoming().authorAvatarUrl is string && incoming().authorAvatarUrl.size() <= 2048 &&
+          incoming().text is string && incoming().text.size() >= 1 && incoming().text.size() <= 1500 &&
+          (!('photoUrl' in incoming()) || (incoming().photoUrl is string && incoming().photoUrl.size() <= 2048)) &&
+          (!('linkedItemId' in incoming()) || isValidId(incoming().linkedItemId)) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/communityThreads/$(threadId));
+
+        allow update: if false;
+
+        allow delete: if isVerifiedUser() &&
+          (existing().authorId == request.auth.uid || isAdmin());
+      }
     }
   }
 }

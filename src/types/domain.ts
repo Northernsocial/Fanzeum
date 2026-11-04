@@ -403,6 +403,29 @@ export interface SwapRecord {
   createdAt?: unknown;
   updatedAt?: unknown;
 }
+export interface CommunityPoll {
+  question: string;
+  options: string[];
+  votes: Record<string, number>; // optionIndex -> count
+  userVotes: Record<string, number>; // userId -> optionIndex
+}
+
+export interface CommunityThreadRecord {
+  id: string;
+  category: CategorySlug;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatarUrl: string;
+  title: string;
+  body: string;
+  photoUrl?: string;
+  linkedItemId?: string;
+  poll?: CommunityPoll;
+  replyCount: number;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
 
 export interface WeeklyDigestRecord {
   digestId: string;
@@ -413,4 +436,17 @@ export interface WeeklyDigestRecord {
   newPiecesCount: number;
   valuationDeltaGbp: number;
   createdAt?: unknown;
+}
+export interface CommunityReplyRecord {
+  id: string;
+  threadId: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatarUrl: string;
+  text: string;
+  photoUrl?: string;
+  linkedItemId?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
