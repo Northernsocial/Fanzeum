@@ -94,3 +94,22 @@ export async function polishCollectionStory(params: {
   }
   return String(data.story || params.draftStory);
 }
+
+export async function generateListingDescription(params: {
+  title: string;
+  category: CategorySlug;
+  condition: string;
+  valueEstGbp: number;
+  userNotes?: string;
+}): Promise<{ title: string; description: string; suggestedPriceGbp: number }> {
+  const res = await fetch('/api/ai/listing-writer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || 'Could not draft listing description right now.');
+  }
+  return data as { title: string; description: string; suggestedPriceGbp: number };
+}

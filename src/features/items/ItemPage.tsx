@@ -14,6 +14,7 @@ import {
   Pencil,
   Send,
   Share2,
+  Tag,
   Trash2,
   X,
   ZoomIn,
@@ -62,6 +63,7 @@ import { PieceStage } from '../../components/ui/PieceStage';
 import { Placard } from '../../components/ui/Placard';
 import { ItemSignalButtons } from '../../components/ItemSignalButtons';
 import { IdCorrectionSheet } from '../../components/IdCorrectionSheet';
+import { SellItemModal } from '../../features/marketplace/SellItemModal';
 import {
   acceptIdCorrection,
   dismissIdCorrection,
@@ -125,10 +127,11 @@ export const ItemPage: React.FC = () => {
   const [editPrivNotes, setEditPrivNotes] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Move & Delete sheets
+  // Move & Delete & Sell sheets
   const [moveOpen, setMoveOpen] = useState(false);
   const [targetCollectionId, setTargetCollectionId] = useState('');
   const [moving, setMoving] = useState(false);
+  const [sellOpen, setSellOpen] = useState(false);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -734,6 +737,14 @@ export const ItemPage: React.FC = () => {
                 <Button variant="secondary" size="sm" onClick={openEditSheet}>
                   <Pencil className="w-4 h-4" strokeWidth={1.5} />
                   <span>Edit</span>
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setSellOpen(true)}
+                >
+                  <Tag className="w-4 h-4" strokeWidth={1.5} />
+                  <span>Sell this</span>
                 </Button>
                 {myCollections.length > 1 && (
                   <Button
@@ -1438,6 +1449,18 @@ export const ItemPage: React.FC = () => {
           );
         }}
       />
+
+      {/* Sell Item Modal */}
+      {item && isOwner && (
+        <SellItemModal
+          item={item}
+          open={sellOpen}
+          onClose={() => setSellOpen(false)}
+          onCreated={() => {
+            navigate('/marketplace');
+          }}
+        />
+      )}
 
       {/* Report Content Sheet */}
       <Sheet

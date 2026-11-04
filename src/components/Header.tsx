@@ -51,6 +51,9 @@ export const Header: React.FC = () => {
           <NavLink to="/explore" className={navLinkClass}>
             Explore
           </NavLink>
+          <NavLink to="/marketplace" className={navLinkClass}>
+            Marketplace
+          </NavLink>
           {firebaseUser && (
             <NavLink to={showcaseHref} className={navLinkClass}>
               My Showcase
