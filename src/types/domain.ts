@@ -320,3 +320,22 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export interface User2faRecord {
+  uid: string;
+  enabled: boolean;
+  secret: string;
+  recoveryCodes: string[]; // Hashed recovery codes
+  verifiedAt?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface UserSessionRecord {
+  id: string;
+  uid: string;
+  deviceInfo: string;
+  ipAddress?: string;
+  lastActiveAt: unknown;
+  createdAt: unknown;
+}

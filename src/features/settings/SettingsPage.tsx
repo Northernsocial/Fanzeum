@@ -23,6 +23,7 @@ import {
 } from '../../lib/firestoreRepo';
 import { useDocumentMeta } from '../../components/DocumentMeta';
 import { PWAInstallButton } from '../../components/PWAInstallButton';
+import { SecuritySettingsSection } from '../../components/SecuritySettingsSection';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Sheet } from '../../components/ui/Sheet';
@@ -150,6 +151,9 @@ export const SettingsPage: React.FC = () => {
           Lighting theme, showcase privacy, UK GDPR data portability, and account controls.
         </p>
       </div>
+
+      {/* Security & 2FA Section */}
+      <SecuritySettingsSection />
 
       {/* Gallery Appearance & Install */}
       <Card className="p-6 space-y-5">

@@ -8,6 +8,8 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useParams } from 'react-r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthModal } from './components/AuthModal';
+import { TwoFactorModal } from './components/TwoFactorModal';
+import { ReAuthModal } from './components/ReAuthModal';
 import { CookieConsentBar } from './components/CookieConsentBar';
 import { Header } from './components/Header';
 import { MobileTabBar } from './components/MobileTabBar';
@@ -132,6 +134,8 @@ export default function App() {
             <div className="min-h-screen flex flex-col bg-bg text-ink transition-colors duration-200">
               <Header />
               <AuthModal />
+              <TwoFactorModal />
+              <ReAuthModal />
 
               <main className="flex-1">
                 <Suspense

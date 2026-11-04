@@ -1308,5 +1308,50 @@ service cloud.firestore {
         isValidId(notificationId) &&
         (existing().userId == request.auth.uid || isAdmin());
     }
-  }
+
+    // Validation Blueprint: User2faRecord (Phase 9A: TOTP 2FA & Active Sessions)
+    function isValidUser2faRecord(data) {
+      return data.keys().hasAll([
+          'uid',
+          'enabled',
+          'secret',
+          'recoveryCodes',
+          'verifiedAt',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'enabled',
+          'secret',
+          'recoveryCodes',
+          'verifiedAt',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.enabled is bool &&
+        data.secret is string && data.secret.size() <= 128 &&
+        data.recoveryCodes is list && data.recoveryCodes.size() <= 20 &&
+        (data.recoveryCodes.size() == 0 || (data.recoveryCodes[0] is string && data.recoveryCodes[0].size() >= 60 && data.recoveryCodes[0].size() <= 128)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // 14. Two-Factor Authentication Subcollection (Strict Owner Only)
+    match /users/{userId}/private/twoFactor {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin()) && exists(/databases/$(database)/documents/users/$(userId));
+      allow list: if false;
+
+      allow create, update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUser2faRecord(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(userId));
+
+      allow delete: if isVerifiedUser() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+    }
+}
 }

@@ -1402,3 +1402,5 @@ export async function eraseAllUserFirestoreData(uid: string): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
   }
 }
+
+// (Duplicate blocks removed to fix build error)
