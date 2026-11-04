@@ -1398,5 +1398,65 @@ service cloud.firestore {
         isValidId(listingId) &&
         (existing().sellerId == request.auth.uid || isAdmin());
     }
-}
+
+    // 14. Articles (Admin write-only or public read)
+    match /articles/{articleId} {
+      allow get, list: if true;
+
+      allow create: if isAdmin() &&
+        isValidId(articleId) &&
+        isValidArticle(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().publishedAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isAdmin() &&
+        isValidId(articleId) &&
+        isValidArticle(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().publishedAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title',
+          'slug',
+          'body',
+          'category',
+          'coverImage',
+          'updatedAt'
+        ]);
+
+      allow delete: if isAdmin() && isValidId(articleId);
+    }
+
+    function isValidArticle(data) {
+      return data.keys().hasAll([
+          'title',
+          'slug',
+          'body',
+          'category',
+          'coverImage',
+          'publishedAt',
+          'authorId',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title',
+          'slug',
+          'body',
+          'category',
+          'coverImage',
+          'publishedAt',
+          'authorId',
+          'updatedAt'
+        ]) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+        data.slug is string && data.slug.size() >= 2 && data.slug.size() <= 160 &&
+        data.body is string && data.body.size() >= 10 && data.body.size() <= 20000 &&
+        isValidCategory(data.category) &&
+        data.coverImage is string && data.coverImage.size() <= 2048 &&
+        data.publishedAt is timestamp &&
+        isValidId(data.authorId) &&
+        data.updatedAt is timestamp;
+    }
+  }
 }

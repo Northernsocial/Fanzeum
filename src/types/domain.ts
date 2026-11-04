@@ -349,3 +349,14 @@ export interface CollectorMatchSuggestion {
   sharedCategories: CategorySlug[];
   wantlistOverlapItems: CollectibleItemRecord[];
 }
+export interface ArticleRecord {
+  id: string;
+  title: string;
+  slug: string;
+  body: string;
+  category: CategorySlug;
+  coverImage: string;
+  publishedAt?: unknown;
+  authorId: string;
+  updatedAt?: unknown;
+}
