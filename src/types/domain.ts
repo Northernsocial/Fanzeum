@@ -200,7 +200,7 @@ export interface WantItemRecord {
   updatedAt?: unknown;
 }
 
-export type NotificationType = 'want_match' | 'id_correction_received' | 'id_correction_accepted';
+export type NotificationType = 'want_match' | 'id_correction_received' | 'id_correction_accepted' | 'collector_alert' | 'follow' | 'like' | 'comment';
 
 export interface NotificationRecord {
   id: string;
@@ -320,3 +320,12 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export interface CollectorMatchSuggestion {
+  collector: UserProfile;
+  score: number;
+  reason: string;
+  matchingItemsCount: number;
+  sharedCategories: CategorySlug[];
+  wantlistOverlapItems: CollectibleItemRecord[];
+}

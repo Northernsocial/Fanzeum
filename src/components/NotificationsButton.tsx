@@ -33,12 +33,13 @@ export const NotificationsButton: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!firebaseUser) return;
     void loadNotifs();
     const interval = setInterval(() => {
       void loadNotifs();
     }, 20000);
     return () => clearInterval(interval);
-  }, [uid, isVerified]);
+  }, [firebaseUser, uid, isVerified]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -50,16 +51,24 @@ export const NotificationsButton: React.FC = () => {
       );
     }
     setOpen(false);
-    navigate(`/i/${n.itemId}`);
+    if (n.itemId) {
+      navigate(`/i/${n.itemId}`);
+    } else {
+      navigate('/notifications');
+    }
   };
 
   const handleMarkAllRead = async () => {
-    for (const n of notifications) {
-      if (!n.read) {
-        await markNotificationRead({ notificationId: n.id, isVerifiedUser: isVerified });
+    try {
+      for (const n of notifications) {
+        if (!n.read) {
+          await markNotificationRead({ notificationId: n.id, isVerifiedUser: isVerified });
+        }
       }
+      setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+    } catch {
+      // ignore
     }
-    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
   };
 
   return (
