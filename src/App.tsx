@@ -77,6 +77,9 @@ const SwapsHubPage = lazy(() =>
 const CommunitiesPage = lazy(() =>
   import('./features/communities/CommunitiesPage').then((m) => ({ default: m.CommunitiesPage })),
 );
+const StartCollectingPage = lazy(() =>
+  import('./features/start-collecting/StartCollectingPage').then((m) => ({ default: m.StartCollectingPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -197,6 +200,7 @@ export default function App() {
                     <Route path="/portfolio" element={<PortfolioValuationPage />} />
                     <Route path="/swaps" element={<SwapsHubPage />} />
                     <Route path="/communities" element={<CommunitiesPage />} />
+                    <Route path="/start-collecting" element={<StartCollectingPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />
@@ -241,6 +245,9 @@ export default function App() {
                   <div className="flex flex-wrap items-center gap-6">
                     <Link to="/fresh-finds" className="hover:text-ink">
                       Fresh Finds
+                    </Link>
+                    <Link to="/start-collecting" className="hover:text-ink">
+                      Start collecting
                     </Link>
                     <Link to="/explore" className="hover:text-ink">
                       Explore

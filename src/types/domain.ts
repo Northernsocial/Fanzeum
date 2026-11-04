@@ -450,3 +450,17 @@ export interface CommunityReplyRecord {
   createdAt?: unknown;
   updatedAt?: unknown;
 }
+
+export interface StartCollectingPageData {
+  category: CategorySlug;
+  guide: CategoryGuide;
+  starterPicks: MarketplaceListingRecord[];
+  hasListings: boolean;
+}
+
+export interface CategoryGuide {
+  whatToLookFor: string;
+  conditionGrades: string[];
+  typicalBudgetRange: string;
+  valueHistoryNote: string;
+}

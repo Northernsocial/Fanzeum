@@ -1859,3 +1859,33 @@ export async function submitCommunityReport(params: {
     handleFirestoreError(error, OperationType.CREATE, `reports/${reportId}`);
   }
 }
+
+export async function fetchMarketplaceListingsByCategory(
+  category: CategorySlug,
+  maxPriceGbp?: number,
+  maxResults = 20,
+): Promise<MarketplaceListingRecord[]> {
+  try {
+    let q = query(
+      collection(db, 'marketplace'),
+      where('category', '==', category),
+      where('status', '==', 'active'),
+      limit(maxResults),
+    );
+
+    const snap = await getDocs(q);
+    let items = snap.docs.map((d) => {
+      const data = d.data() as MarketplaceListingRecord;
+      return { ...data, id: d.id };
+    });
+
+    if (maxPriceGbp !== undefined) {
+      items = items.filter((item) => item.priceGbp <= maxPriceGbp);
+    }
+
+    return items.slice(0, maxResults);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, `marketplace/category/${category}`);
+    return [];
+  }
+}

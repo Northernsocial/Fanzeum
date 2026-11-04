@@ -48,6 +48,9 @@ export const Header: React.FC = () => {
           <NavLink to="/fresh-finds" className={navLinkClass}>
             Fresh Finds
           </NavLink>
+          <NavLink to="/start-collecting" className={navLinkClass}>
+            Start collecting
+          </NavLink>
           <NavLink to="/explore" className={navLinkClass}>
             Explore
           </NavLink>
