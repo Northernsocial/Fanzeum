@@ -26,7 +26,7 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-bg/90 backdrop-blur-md">
-      <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-6 px-4 sm:px-8 h-16 md:h-[76px]">
+      <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-6 px-4 sm:px-8 h-[80px] md:h-[108px]">
         {/* Zone 1: Wordmark */}
         <Link
           to="/"
