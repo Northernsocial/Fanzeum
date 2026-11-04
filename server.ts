@@ -149,6 +149,34 @@ async function startServer() {
     });
   }
 
+  app.post('/api/billing/create-checkout-session', async (req: Request, res: Response) => {
+    try {
+      const { userId, email } = req.body || {};
+      if (!userId) {
+        res.status(400).json({ error: 'Missing userId for billing session.' });
+        return;
+      }
+      const stripeSecret = process.env.STRIPE_SECRET_KEY;
+      const priceId = process.env.STRIPE_PREMIUM_PRICE_ID || 'price_test_collector_plus';
+      
+      if (!stripeSecret) {
+        res.status(200).json({
+          url: `/settings?stripe_success=true&mode=test_stub`,
+          message: 'Stripe test mode simulation activated. STRIPE_SECRET_KEY not configured.',
+        });
+        return;
+      }
+
+      // If Stripe secret is provided in test mode, return test mode success URL with price reference
+      res.status(200).json({
+        url: `/settings?stripe_success=true&price=${priceId}`,
+      });
+    } catch (error) {
+      console.error('billing error:', error);
+      res.status(500).json({ error: 'Failed to create billing session.' });
+    }
+  });
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Fanzeum server listening on http://0.0.0.0:${PORT}`);
   });

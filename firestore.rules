@@ -686,7 +686,7 @@ service cloud.firestore {
         isValidId(userId) &&
         isValidUserProfile(incoming()) && (
           isAdmin() ||
-          // Action 1: Owner edits public cabinet details and privacy preferences
+          // Action 1: Owner edits public showcase details and privacy preferences (plan and role are strictly server-only writable)
           (
             request.auth.uid == userId &&
             existing().uid == request.auth.uid &&
@@ -697,6 +697,7 @@ service cloud.firestore {
             incoming().isDemo == existing().isDemo &&
             incoming().createdAt == existing().createdAt &&
             incoming().updatedAt == request.time &&
+            isValidUserProfileUpdate(existing(), incoming()) &&
             incoming().diff(existing()).affectedKeys().hasOnly([
               'handle',
               'displayName',
@@ -1308,5 +1309,15 @@ service cloud.firestore {
         isValidId(notificationId) &&
         (existing().userId == request.auth.uid || isAdmin());
     }
-  }
+
+    // Addition for Phase 6A: Ensure users cannot upgrade their plan field via client updates
+    function isValidUserProfileUpdate(existingData, incomingData) {
+      return existingData.uid == incomingData.uid &&
+        existingData.role == incomingData.role &&
+        existingData.plan == incomingData.plan &&
+        existingData.isVerifiedExpert == existingData.isVerifiedExpert &&
+        existingData.isDemo == existingData.isDemo &&
+        existingData.createdAt == existingData.createdAt;
+    }
+}
 }

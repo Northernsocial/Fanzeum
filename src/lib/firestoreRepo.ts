@@ -329,6 +329,18 @@ export async function bootstrapVerifiedUserProfile(params: {
   }
 }
 
+export async function updateUserPlanServerSide(uid: string, plan: 'free' | 'premium' | 'store'): Promise<void> {
+  const path = `users/${uid}`;
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      plan,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
 export async function updateUserPublicProfile(
   uid: string,
   updates: Partial<{

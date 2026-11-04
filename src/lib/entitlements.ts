@@ -34,8 +34,13 @@ const PLAN_LIMITS: Record<PlanTier, PlanEntitlements> = {
   },
 };
 
+export function isPremium(profile: UserProfile | null | undefined): boolean {
+  if (!profile) return false;
+  return profile.plan === 'premium' || profile.plan === 'store' || profile.role === 'admin';
+}
+
 export function getEntitlements(profile: UserProfile | null | undefined): PlanEntitlements {
-  const tier: PlanTier = profile?.plan ?? 'free';
+  const tier: PlanTier = isPremium(profile) ? (profile?.plan === 'store' ? 'store' : 'premium') : 'free';
   return PLAN_LIMITS[tier];
 }
 
