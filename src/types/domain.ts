@@ -320,3 +320,52 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export type CollectorLevel = 'Rookie' | 'Enthusiast' | 'Connoisseur' | 'Master' | 'Legend';
+
+export interface CollectorJourneyRecord {
+  uid: string;
+  level: CollectorLevel;
+  xp: number;
+  itemsAddedCount: number;
+  setsCompletedCount: number;
+  helpfulCorrectionsCount: number;
+  positiveTradesCount: number;
+  communityAnswersCount: number;
+  badges: string[];
+  updatedAt?: unknown;
+}
+
+export interface SetChecklistRecord {
+  id: string;
+  uid: string;
+  collectionId: string;
+  category: CategorySlug;
+  setTitle: string;
+  ownedIds: string[];
+  totalTargetCount: number;
+  updatedAt?: unknown;
+}
+
+export interface WeeklyChallengeRecord {
+  id: string;
+  category: CategorySlug;
+  weekLabel: string;
+  title: string;
+  description: string;
+  targetCount: number;
+  rewardXp: number;
+  createdAt?: unknown;
+}
+
+export interface MentorshipRequestRecord {
+  id: string;
+  menteeId: string;
+  menteeHandle: string;
+  category: CategorySlug;
+  message: string;
+  status: 'pending' | 'active' | 'completed';
+  mentorId?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}

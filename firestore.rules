@@ -1308,5 +1308,210 @@ service cloud.firestore {
         isValidId(notificationId) &&
         (existing().userId == request.auth.uid || isAdmin());
     }
-  }
+
+    // --- Phase 10C Additions: Collector Journeys, Checklists, Challenges & Mentors ---
+    function isValidCollectorJourney(data) {
+      return data.keys().hasAll([
+          'uid',
+          'level',
+          'xp',
+          'itemsAddedCount',
+          'setsCompletedCount',
+          'helpfulCorrectionsCount',
+          'positiveTradesCount',
+          'communityAnswersCount',
+          'badges',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'level',
+          'xp',
+          'itemsAddedCount',
+          'setsCompletedCount',
+          'helpfulCorrectionsCount',
+          'positiveTradesCount',
+          'communityAnswersCount',
+          'badges',
+          'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.level is string && data.level in ['Rookie', 'Enthusiast', 'Connoisseur', 'Master', 'Legend'] &&
+        (data.xp is int || data.xp is float) && data.xp >= 0 && data.xp <= 1000000 &&
+        data.itemsAddedCount is int && data.itemsAddedCount >= 0 && data.itemsAddedCount <= 50000 &&
+        data.setsCompletedCount is int && data.setsCompletedCount >= 0 && data.setsCompletedCount <= 10000 &&
+        data.helpfulCorrectionsCount is int && data.helpfulCorrectionsCount >= 0 && data.helpfulCorrectionsCount <= 5000 &&
+        data.positiveTradesCount is int && data.positiveTradesCount >= 0 && data.positiveTradesCount <= 5000 &&
+        data.communityAnswersCount is int && data.communityAnswersCount >= 0 && data.communityAnswersCount <= 5000 &&
+        data.badges is list && data.badges.size() <= 32 &&
+        (data.badges.size() == 0 || (data.badges[0] is string && data.badges[0].size() <= 64)) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSetChecklist(data) {
+      return data.keys().hasAll([
+          'id',
+          'uid',
+          'collectionId',
+          'category',
+          'setTitle',
+          'ownedIds',
+          'totalTargetCount',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'uid',
+          'collectionId',
+          'category',
+          'setTitle',
+          'ownedIds',
+          'totalTargetCount',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        isValidId(data.uid) &&
+        isValidId(data.collectionId) &&
+        isValidCategory(data.category) &&
+        data.setTitle is string && data.setTitle.size() >= 1 && data.setTitle.size() <= 140 &&
+        data.ownedIds is list && data.ownedIds.size() <= 50000 &&
+        data.totalTargetCount is int && data.totalTargetCount >= 1 && data.totalTargetCount <= 50000 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidWeeklyChallenge(data) {
+      return data.keys().hasAll([
+          'id',
+          'category',
+          'weekLabel',
+          'title',
+          'description',
+          'targetCount',
+          'rewardXp',
+          'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'category',
+          'weekLabel',
+          'title',
+          'description',
+          'targetCount',
+          'rewardXp',
+          'createdAt'
+        ]) &&
+        isValidId(data.id) &&
+        isValidCategory(data.category) &&
+        data.weekLabel is string && data.weekLabel.size() <= 32 &&
+        data.title is string && data.title.size() <= 120 &&
+        data.description is string && data.description.size() <= 500 &&
+        data.targetCount is int && data.targetCount >= 1 && data.targetCount <= 1000 &&
+        data.rewardXp is int && data.rewardXp >= 1 && data.rewardXp <= 10000 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidMentorshipRequest(data) {
+      return data.keys().hasAll([
+          'id',
+          'menteeId',
+          'menteeHandle',
+          'category',
+          'message',
+          'status',
+          'mentorId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'menteeId',
+          'menteeHandle',
+          'category',
+          'message',
+          'status',
+          'mentorId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        isValidId(data.menteeId) &&
+        data.menteeHandle is string && data.menteeHandle.size() >= 2 && data.menteeHandle.size() <= 32 &&
+        isValidCategory(data.category) &&
+        data.message is string && data.message.size() <= 1000 &&
+        data.status is string && data.status in ['pending', 'active', 'completed'] &&
+        (!('mentorId' in data) || data.mentorId is string) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // 14. Collector Journeys
+    match /collectorJourneys/{journeyId} {
+      allow get, list: if true;
+      allow create: if isVerifiedUser() &&
+        isValidId(journeyId) &&
+        isValidCollectorJourney(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(journeyId) &&
+        isValidCollectorJourney(incoming()) &&
+        existing().uid == request.auth.uid &&
+        incoming().uid == existing().uid &&
+        incoming().updatedAt == request.time;
+      allow delete: if isVerifiedUser() &&
+        isValidId(journeyId) &&
+        (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    // 15. Set Checklists
+    match /setChecklists/{checklistId} {
+      allow get, list: if true;
+      allow create: if isVerifiedUser() &&
+        isValidId(checklistId) &&
+        isValidSetChecklist(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(checklistId) &&
+        isValidSetChecklist(incoming()) &&
+        existing().uid == request.auth.uid &&
+        incoming().uid == existing().uid &&
+        incoming().updatedAt == request.time;
+      allow delete: if isVerifiedUser() &&
+        isValidId(checklistId) &&
+        (existing().uid == request.auth.uid || isAdmin());
+    }
+
+    // 16. Weekly Challenges
+    match /weeklyChallenges/{challengeId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 17. Mentorship Requests
+    match /mentorshipRequests/{requestId} {
+      allow get, list: if isSignedIn();
+      allow create: if isVerifiedUser() &&
+        isValidId(requestId) &&
+        isValidMentorshipRequest(incoming()) &&
+        incoming().menteeId == request.auth.uid &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(requestId) &&
+        isValidMentorshipRequest(incoming()) &&
+        (
+          existing().menteeId == request.auth.uid ||
+          incoming().mentorId == request.auth.uid ||
+          isAdmin()
+        ) &&
+        incoming().menteeId == existing().menteeId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time;
+      allow delete: if isVerifiedUser() &&
+        isValidId(requestId) &&
+        (existing().menteeId == request.auth.uid || (existing().mentorId is string && existing().mentorId == request.auth.uid) || isAdmin());
+    }
+}
 }
