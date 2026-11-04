@@ -26,7 +26,7 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-bg/90 backdrop-blur-md">
-      <div className="max-w-6xl mx-auto flex items-center justify-between gap-6 px-4 sm:px-8 h-14 sm:h-16">
+      <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-6 px-4 sm:px-8 h-16 md:h-[76px]">
         {/* Zone 1: Wordmark */}
         <Link
           to="/"
@@ -35,7 +35,7 @@ export const Header: React.FC = () => {
           <img
             src={FANZEUM_LOGO_SRC}
             alt={FANZEUM_LOGO_ALT}
-            className="h-[43px] md:h-[53px] w-auto object-contain"
+            className="h-[57px] md:h-[71px] w-auto object-contain"
             loading="eager"
           />
         </Link>
