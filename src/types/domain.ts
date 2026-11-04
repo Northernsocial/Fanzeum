@@ -157,6 +157,10 @@ export interface CollectibleItemRecord {
   helpedBy?: string; // Collector handle or note of who contributed ID correction
   panelStatus?: 'none' | 'confirmed' | 'disputed';
   panelConfirmedAt?: string;
+  receiptUrl?: string;
+  receiptName?: string;
+  provenanceNotes?: string;
+  serialOrHallmark?: string;
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -320,3 +324,13 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export interface InsurancePackShareRecord {
+  id: string;
+  collectionId: string;
+  ownerId: string;
+  shareToken: string;
+  revoked: boolean;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}

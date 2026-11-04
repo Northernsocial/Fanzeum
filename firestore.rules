@@ -1030,6 +1030,10 @@ service cloud.firestore {
               'helpedBy',
               'panelStatus',
               'panelConfirmedAt',
+              'receiptUrl',
+              'receiptName',
+              'provenanceNotes',
+              'serialOrHallmark',
               'updatedAt'
             ])
           ) ||
