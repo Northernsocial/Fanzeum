@@ -1308,5 +1308,169 @@ service cloud.firestore {
         isValidId(notificationId) &&
         (existing().userId == request.auth.uid || isAdmin());
     }
-  }
+
+    // 14. Valuation Snapshots (Portfolio daily estimate over time)
+    match /users/{userId}/valuationSnapshots/{snapshotId} {
+      allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidId(snapshotId) &&
+        request.auth.uid == userId &&
+        incoming().keys().hasAll(['snapshotId', 'userId', 'totalMinGbp', 'totalMaxGbp', 'itemsCount', 'date', 'createdAt']) &&
+        incoming().keys().hasOnly(['snapshotId', 'userId', 'totalMinGbp', 'totalMaxGbp', 'itemsCount', 'date', 'createdAt']) &&
+        incoming().snapshotId == snapshotId &&
+        incoming().userId == request.auth.uid &&
+        (incoming().totalMinGbp is int || incoming().totalMinGbp is float) && incoming().totalMinGbp >= 0 &&
+        (incoming().totalMaxGbp is int || incoming().totalMaxGbp is float) && incoming().totalMaxGbp >= incoming().totalMinGbp &&
+        incoming().itemsCount is int && incoming().itemsCount >= 0 &&
+        incoming().date is string && incoming().date.size() <= 40 &&
+        incoming().createdAt == request.time;
+
+      allow update: if false;
+
+      allow delete: if isVerifiedUser() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+    }
+
+    // 15. Price Alerts (Notify when wanted item < target price or owned valuation moves > 15%)
+    match /priceAlerts/{alertId} {
+      allow get, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(alertId) &&
+        incoming().keys().hasAll(['alertId', 'userId', 'targetType', 'targetId', 'title', 'thresholdType', 'thresholdValue', 'triggered', 'createdAt']) &&
+        incoming().keys().hasOnly(['alertId', 'userId', 'targetType', 'targetId', 'title', 'thresholdType', 'thresholdValue', 'triggered', 'triggeredAt', 'createdAt']) &&
+        incoming().alertId == alertId &&
+        incoming().userId == request.auth.uid &&
+        incoming().targetType is string && incoming().targetType in ['item', 'want'] &&
+        isValidId(incoming().targetId) &&
+        incoming().title is string && incoming().title.size() >= 1 && incoming().title.size() <= 140 &&
+        incoming().thresholdType is string && incoming().thresholdType in ['below_price', 'gain_loss_pct'] &&
+        (incoming().thresholdValue is int || incoming().thresholdValue is float) && incoming().thresholdValue >= 0 &&
+        incoming().triggered is bool &&
+        (!('triggeredAt' in incoming()) || incoming().triggeredAt is timestamp) &&
+        incoming().createdAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(alertId) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().alertId == existing().alertId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['triggered', 'triggeredAt']) &&
+        incoming().triggered is bool &&
+        (!('triggeredAt' in incoming()) || incoming().triggeredAt is timestamp);
+
+      allow delete: if isSignedIn() && isValidId(alertId) && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 16. Swaps (Trade item(s) for item(s) with optional cash top-up, counter-offers, both confirm, status flow)
+    match /swaps/{swapId} {
+      allow get, list: if isSignedIn() && (
+        resource.data.proposerId == request.auth.uid ||
+        resource.data.recipientId == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isVerifiedUser() &&
+        isValidId(swapId) &&
+        incoming().keys().hasAll([
+          'swapId',
+          'proposerId',
+          'proposerHandle',
+          'recipientId',
+          'recipientHandle',
+          'proposerItemIds',
+          'recipientItemIds',
+          'cashTopUpGbp',
+          'cashPayer',
+          'status',
+          'proposerConfirmed',
+          'recipientConfirmed',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        incoming().keys().hasOnly([
+          'swapId',
+          'proposerId',
+          'proposerHandle',
+          'recipientId',
+          'recipientHandle',
+          'proposerItemIds',
+          'recipientItemIds',
+          'cashTopUpGbp',
+          'cashPayer',
+          'status',
+          'proposerConfirmed',
+          'recipientConfirmed',
+          'note',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        incoming().swapId == swapId &&
+        incoming().proposerId == request.auth.uid &&
+        isValidId(incoming().recipientId) &&
+        incoming().recipientId != request.auth.uid &&
+        incoming().proposerHandle is string && incoming().proposerHandle.size() >= 2 && incoming().proposerHandle.size() <= 32 &&
+        incoming().recipientHandle is string && incoming().recipientHandle.size() >= 2 && incoming().recipientHandle.size() <= 32 &&
+        incoming().proposerItemIds is list && incoming().proposerItemIds.size() >= 1 && incoming().proposerItemIds.size() <= 10 &&
+        incoming().recipientItemIds is list && incoming().recipientItemIds.size() >= 1 && incoming().recipientItemIds.size() <= 10 &&
+        (incoming().cashTopUpGbp is int || incoming().cashTopUpGbp is float) && incoming().cashTopUpGbp >= 0 &&
+        incoming().cashPayer is string && incoming().cashPayer in ['none', 'proposer', 'recipient'] &&
+        incoming().status is string && incoming().status in ['proposed', 'countered', 'accepted', 'shipped', 'completed', 'declined', 'cancelled'] &&
+        incoming().proposerConfirmed is bool &&
+        incoming().recipientConfirmed is bool &&
+        (!('note' in incoming()) || (incoming().note is string && incoming().note.size() <= 1000)) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(swapId) &&
+        (existing().proposerId == request.auth.uid || existing().recipientId == request.auth.uid || isAdmin()) &&
+        incoming().swapId == existing().swapId &&
+        incoming().proposerId == existing().proposerId &&
+        incoming().recipientId == existing().recipientId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'proposerItemIds',
+          'recipientItemIds',
+          'cashTopUpGbp',
+          'cashPayer',
+          'status',
+          'proposerConfirmed',
+          'recipientConfirmed',
+          'note',
+          'updatedAt'
+        ]);
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(swapId) &&
+        (existing().proposerId == request.auth.uid || isAdmin());
+    }
+
+    // 17. Weekly Digests ('Your collection this week' digest in-app)
+    match /users/{userId}/weeklyDigests/{digestId} {
+      allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidId(digestId) &&
+        request.auth.uid == userId &&
+        incoming().keys().hasAll(['digestId', 'userId', 'weekLabel', 'summaryText', 'topRisers', 'newPiecesCount', 'valuationDeltaGbp', 'createdAt']) &&
+        incoming().keys().hasOnly(['digestId', 'userId', 'weekLabel', 'summaryText', 'topRisers', 'newPiecesCount', 'valuationDeltaGbp', 'createdAt']) &&
+        incoming().digestId == digestId &&
+        incoming().userId == request.auth.uid &&
+        incoming().weekLabel is string && incoming().weekLabel.size() <= 40 &&
+        incoming().summaryText is string && incoming().summaryText.size() <= 1500 &&
+        incoming().topRisers is list && incoming().topRisers.size() <= 5 &&
+        incoming().newPiecesCount is int && incoming().newPiecesCount >= 0 &&
+        (incoming().valuationDeltaGbp is int || incoming().valuationDeltaGbp is float) &&
+        incoming().createdAt == request.time;
+
+      allow update: if false;
+
+      allow delete: if isVerifiedUser() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+    }
+}
 }

@@ -47,6 +47,12 @@ const SettingsPage = lazy(() =>
 const WantlistPage = lazy(() =>
   import('./features/wantlist/WantlistPage').then((m) => ({ default: m.WantlistPage })),
 );
+const PortfolioValuationPage = lazy(() =>
+  import('./features/portfolio/PortfolioValuationPage').then((m) => ({ default: m.PortfolioValuationPage })),
+);
+const SwapsHubPage = lazy(() =>
+  import('./features/swaps/SwapsHubPage').then((m) => ({ default: m.SwapsHubPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -157,6 +163,8 @@ export default function App() {
                     <Route path="/add" element={<AddPiecePage />} />
                     <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route path="/wantlist" element={<WantlistPage />} />
+                    <Route path="/portfolio" element={<PortfolioValuationPage />} />
+                    <Route path="/swaps" element={<SwapsHubPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />
