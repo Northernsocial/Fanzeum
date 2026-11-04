@@ -320,3 +320,31 @@ export const GOAL_OPTIONS: Record<CollectorGoal, { title: string; subtitle: stri
     subtitle: 'Get my collection organised, graded, and priced ready for trading.',
   },
 };
+
+export type LoungePostType = 'show_and_tell' | 'trade_talk' | 'general';
+
+export interface LoungePostRecord {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatarUrl: string;
+  category: CategorySlug;
+  title: string;
+  body: string;
+  imageUrl?: string;
+  itemId?: string;
+  postType: LoungePostType;
+  likesCount: number;
+  commentsCount: number;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface CollectorInterestSettings {
+  uid: string;
+  preferredCategories: CategorySlug[];
+  preferredEras: string[];
+  hiddenTopics: string[];
+  updatedAt?: unknown;
+}
