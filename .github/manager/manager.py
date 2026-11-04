@@ -14,7 +14,7 @@ def pool_key():
             return json.load(urllib.request.urlopen(r, timeout=30))["value"]
         except Exception as e: print("oidc error", e, flush=True)
     return os.environ.get("POOL_KEY", "")
-CODERS = ["nvidia/deepseek-ai/deepseek-v4.1-flash", "nvidia/mistralai/mistral-large-4-1t-a52b", "team/coder"]
+CODERS = ["nvidia/deepseek-ai/deepseek-v4.1-flash", "nvidia/mistralai/mistral-large-4-1t-a52b", "team/coder", "team/thinker", "team/writer"]
 GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
 GEMINI = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 GEMINI_KEY = os.environ.get("GEMINI_TEAM_KEY", "")  # separate free key, never the live site's
