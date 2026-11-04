@@ -1217,6 +1217,21 @@ export async function deleteEntireCollection(
   }
 }
 
+export async function listAllPublicItemsForMatching(maxResults = 200): Promise<CollectibleItemRecord[]> {
+  const path = 'items';
+  try {
+    const q = query(
+      collection(db, 'items'),
+      where('visibility', '==', 'public'),
+      limit(maxResults),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => normalizeItemDoc(d.id, d.data() as Record<string, unknown>));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
 // 3.5 Fresh Finds Collection
 export async function createFreshFindRecord(params: {
   itemId: string;

@@ -56,6 +56,12 @@ const MarketplaceDetailPage = lazy(() =>
 const PlansPage = lazy(() =>
   import('./features/plans/PlansPage').then((m) => ({ default: m.PlansPage })),
 );
+const NotificationsPage = lazy(() =>
+  import('./features/notifications/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
+);
+const MatchesPage = lazy(() =>
+  import('./features/matches/MatchesPage').then((m) => ({ default: m.MatchesPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -169,6 +175,8 @@ export default function App() {
                     <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route path="/wantlist" element={<WantlistPage />} />
                     <Route path="/plans" element={<PlansPage />} />
+                    <Route path="/notifications" element={<NotificationsPage />} />
+                    <Route path="/matches" element={<MatchesPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />

@@ -575,9 +575,9 @@ export async function createInAppNotification(params: {
   type: NotificationType;
   title: string;
   message: string;
-  itemId: string;
-  itemTitle: string;
-  itemCategory: CategorySlug;
+  itemId?: string;
+  itemTitle?: string;
+  itemCategory?: CategorySlug;
   isVerifiedUser: boolean;
 }): Promise<NotificationRecord> {
   const notifId = makeSafeId('notif');
@@ -588,9 +588,9 @@ export async function createInAppNotification(params: {
     type: params.type,
     title: params.title.slice(0, 140),
     message: params.message.slice(0, 500),
-    itemId: params.itemId,
-    itemTitle: params.itemTitle.slice(0, 140),
-    itemCategory: params.itemCategory,
+    itemId: params.itemId || '',
+    itemTitle: (params.itemTitle || '').slice(0, 140),
+    itemCategory: params.itemCategory || 'memorabilia',
     read: false,
     createdAt: now,
   };
@@ -640,6 +640,38 @@ export async function markNotificationRead(params: {
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+export async function markAllNotificationsRead(params: {
+  userId: string;
+  isVerifiedUser: boolean;
+}): Promise<void> {
+  const localList = getLocalJson<NotificationRecord[]>(LOCAL_NOTIFS_KEY, []);
+  setLocalJson(
+    LOCAL_NOTIFS_KEY,
+    localList.map((n) => (n.userId === params.userId ? { ...n, read: true } : n)),
+  );
+
+  if (!params.isVerifiedUser) return;
+
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', params.userId),
+      where('read', '==', false),
+      limit(100),
+    );
+    const snap = await getDocs(q);
+    const batch = writeBatch(db);
+    snap.docs.forEach((d) => {
+      batch.update(d.ref, { read: true });
+    });
+    if (!snap.empty) {
+      await batch.commit();
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, 'notifications');
   }
 }
 
