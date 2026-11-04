@@ -80,7 +80,7 @@ export const PlansPage: React.FC = () => {
             <ul className="space-y-3.5 text-sm text-ink/90">
               <li className="flex items-start gap-3">
                 <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
-                <span>Up to 10 collections &amp; 500 pieces</span>
+                <span>1 collection of up to 20 items</span>
               </li>
               <li className="flex items-start gap-3">
                 <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
