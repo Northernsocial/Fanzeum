@@ -62,6 +62,9 @@ export const Header: React.FC = () => {
           <NavLink to="/wantlist" className={navLinkClass}>
             Wantlist
           </NavLink>
+          <NavLink to="/plans" className={navLinkClass}>
+            Plans
+          </NavLink>
           <NavLink to="/settings" className={navLinkClass}>
             Settings
           </NavLink>
