@@ -10,22 +10,18 @@ permissions:
   issues: write
   pull-requests: write
   id-token: write
-concurrency: { group: "ai-manager-${{ github.event.issue.number || 'queue' }}", cancel-in-progress: false }
+concurrency: { group: ai-manager, cancel-in-progress: false }
 jobs:
   build:
     if: github.event_name != 'issues' || github.event.label.name == 'ai-build'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - name: Pick the labelled issue (parallel), or oldest queued on manual run
+      - name: Pick next queued issue (oldest first, one at a time like CertServe)
         id: pick
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
-          if [ -n "${{ github.event.issue.number }}" ]; then
-            gh api "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}" | jq '[.]' > /tmp/i.json
-          else
-            gh api "repos/${{ github.repository }}/issues?labels=ai-build&state=open&sort=created&direction=asc&per_page=1" > /tmp/i.json
-          fi
+          gh api "repos/${{ github.repository }}/issues?labels=ai-build&state=open&sort=created&direction=asc&per_page=1" > /tmp/i.json
           echo "n=$(jq -r '.[0].number // empty' /tmp/i.json)" >> $GITHUB_OUTPUT
           jq -r '.[0].title // empty' /tmp/i.json > /tmp/title; jq -r '.[0].body // empty' /tmp/i.json > /tmp/body
       - uses: actions/checkout@v4
@@ -81,3 +77,14 @@ jobs:
             { echo "Needs a human look. Branch: \`$BR\`"; echo; cat /tmp/report.md; } > /tmp/c.md
             gh issue comment "$N" --body-file /tmp/c.md; gh issue edit "$N" --remove-label ai-build --add-label needs-review
           fi
+      - name: If this job failed or timed out, park it and start the next one
+        if: ${{ always() && steps.pick.outputs.n != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          N: ${{ steps.pick.outputs.n }}
+        run: |
+          if [ "${{ job.status }}" != "success" ]; then
+            gh issue comment "$N" --body "Build ran out of time or errored; parked for a human look." || true
+            gh issue edit "$N" --remove-label ai-build --add-label needs-review || true
+          fi
+          gh workflow run ai-manager.yml --ref main || true
