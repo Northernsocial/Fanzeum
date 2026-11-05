@@ -12,7 +12,7 @@ permissions:
   issues: write
 jobs:
   call-openhands-resolver:
-    uses: OpenHands/OpenHands/.github/workflows/openhands-resolver.yml@1.6.0
+    uses: ./.github/workflows/openhands-core.yml
     with:
       macro: "@openhands-agent"
       max_iterations: 50
