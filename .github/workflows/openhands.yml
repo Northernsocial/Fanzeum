@@ -1,0 +1,23 @@
+name: OpenHands agent (free Gemini)
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+jobs:
+  call-openhands-resolver:
+    uses: OpenHands/OpenHands/.github/workflows/openhands-resolver.yml@main
+    with:
+      macro: "@openhands-agent"
+      max_iterations: 50
+      target_branch: main
+      pr_type: draft
+      LLM_MODEL: "gemini/gemini-2.5-flash"
+    secrets:
+      LLM_API_KEY: ${{ secrets.GEMINI_TEAM_KEY }}
