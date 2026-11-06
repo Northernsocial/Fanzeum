@@ -400,6 +400,12 @@ export interface SwapRecord {
   proposerConfirmed: boolean;
   recipientConfirmed: boolean;
   note?: string;
+  // Trade rating fields
+  proposerRating?: number;
+  proposerRatingNote?: string;
+  recipientRating?: number;
+  recipientRatingNote?: string;
+  ratingCompletedAt?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
@@ -449,4 +455,12 @@ export interface CommunityReplyRecord {
   linkedItemId?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
+}
+
+export interface TradePartnerSuggestion {
+  user: UserProfile;
+  score: number;
+  reason: string;
+  offeredItems: CollectibleItemRecord[];
+  wantedItems: CollectibleItemRecord[];
 }
