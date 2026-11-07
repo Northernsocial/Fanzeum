@@ -49,6 +49,9 @@ import {
 import type {
   CollectibleItemRecord,
   CollectionRecord,
+  GradingCompany,
+  GradingSubmission,
+  GradingSubmissionStatus,
   ItemCommentRecord,
   ItemPrivateRecord,
 } from '../../types/domain';
@@ -136,6 +139,15 @@ export const ItemPage: React.FC = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [itemError, setItemError] = useState<string | null>(null);
+
+  // Grading tracker state
+  const [gradingOpen, setGradingOpen] = useState(false);
+  const [gradingCompany, setGradingCompany] = useState<GradingCompany>('PSA');
+  const [gradingDateSent, setGradingDateSent] = useState('');
+  const [gradingReference, setGradingReference] = useState('');
+  const [gradingStatus, setGradingStatus] = useState<GradingSubmissionStatus>('preparing');
+  const [gradingNotes, setGradingNotes] = useState('');
+  const [savingGrading, setSavingGrading] = useState(false);
 
   // ID Corrections
   const [idCorrectionOpen, setIdCorrectionOpen] = useState(false);
@@ -486,6 +498,40 @@ export const ItemPage: React.FC = () => {
       setItemError(getFriendlyFirebaseErrorMessage(err));
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleSaveGradingSubmission = async () => {
+    if (!item || !firebaseUser) return;
+    setSavingGrading(true);
+    setItemError(null);
+    try {
+      const submission: GradingSubmission = {
+        company: gradingCompany,
+        dateSent: gradingDateSent,
+        reference: gradingReference,
+        status: gradingStatus,
+        notes: gradingNotes || undefined,
+        updatedAt: new Date().toISOString(),
+      };
+      await saveItemGradingSubmission({
+        itemId: item.id,
+        ownerId: firebaseUser.uid,
+        gradingSubmission: submission,
+      });
+      const refreshed = await fetchItemById(item.id);
+      if (refreshed) setItem(refreshed);
+      setGradingOpen(false);
+      setGradingCompany('PSA');
+      setGradingDateSent('');
+      setGradingReference('');
+      setGradingStatus('preparing');
+      setGradingNotes('');
+    } catch (err) {
+      console.error('Save grading submission error:', err);
+      setItemError(getFriendlyFirebaseErrorMessage(err));
+    } finally {
+      setSavingGrading(false);
     }
   };
 
@@ -1460,6 +1506,99 @@ export const ItemPage: React.FC = () => {
             navigate('/marketplace');
           }}
         />
+      )}
+
+      {/* Grading Tracker Sheet */}
+      {item && isOwner && (
+        <Sheet
+          open={gradingOpen}
+          onClose={() => setGradingOpen(false)}
+          title="Track grading submission"
+          subtitle="Record details for PSA, CGC, BGS, SGC, PCGS, NGC or other submissions."
+        >
+          <form onSubmit={(e) => { e.preventDefault(); handleSaveGradingSubmission(); }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">Grading company</label>
+              <select
+                value={gradingCompany}
+                onChange={(e) => setGradingCompany(e.target.value as GradingCompany)}
+                className="w-full min-h-[44px] px-3.5 py-2 text-base rounded-xl border border-border bg-bg text-ink"
+              >
+                <option value="PSA">PSA</option>
+                <option value="CGC">CGC</option>
+                <option value="BGS">BGS</option>
+                <option value="SGC">SGC</option>
+                <option value="PCGS">PCGS</option>
+                <option value="NGC">NGC</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">Date sent</label>
+              <input
+                type="date"
+                value={gradingDateSent}
+                onChange={(e) => setGradingDateSent(e.target.value)}
+                className="w-full min-h-[44px] px-3.5 py-2 text-base rounded-xl border border-border bg-bg text-ink"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">Reference / Tracking number</label>
+              <input
+                type="text"
+                maxLength={100}
+                value={gradingReference}
+                onChange={(e) => setGradingReference(e.target.value)}
+                placeholder="e.g. 123456789"
+                className="w-full min-h-[44px] px-3.5 py-2 text-base rounded-xl border border-border bg-bg text-ink"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">Current status</label>
+              <select
+                value={gradingStatus}
+                onChange={(e) => setGradingStatus(e.target.value as GradingSubmissionStatus)}
+                className="w-full min-h-[44px] px-3.5 py-2 text-base rounded-xl border border-border bg-bg text-ink"
+              >
+                <option value="preparing">Preparing to submit</option>
+                <option value="submitted">Submitted</option>
+                <option value="processing">Processing</option>
+                <option value="graded">Graded</option>
+                <option value="returned">Returned</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">Notes (optional)</label>
+              <textarea
+                rows={2}
+                maxLength={1000}
+                value={gradingNotes}
+                onChange={(e) => setGradingNotes(e.target.value)}
+                placeholder="e.g. Received PSA 8, mint condition..."
+                className="w-full px-3.5 py-2 text-base rounded-xl border border-border bg-bg text-ink"
+              />
+            </div>
+
+            {itemError && (
+              <p className="text-sm text-danger bg-danger/10 border border-danger/40 rounded-xl p-3">
+                {itemError}
+              </p>
+            )}
+
+            <div className="pt-2 border-t border-border flex items-center justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setGradingOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={savingGrading || !gradingDateSent || !gradingReference}>
+                {savingGrading ? 'Saving…' : 'Save submission'}
+              </Button>
+            </div>
+          </form>
+        </Sheet>
       )}
 
       {/* Report Content Sheet */}

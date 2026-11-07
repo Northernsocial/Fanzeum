@@ -158,6 +158,8 @@ export interface CollectibleItemRecord {
   panelStatus?: 'none' | 'confirmed' | 'disputed';
   panelConfirmedAt?: string;
   isDemo?: boolean;
+  preGrade?: PreGradeResult;
+  gradingSubmission?: GradingSubmission;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
@@ -213,6 +215,31 @@ export interface NotificationRecord {
   itemCategory: CategorySlug;
   read: boolean;
   createdAt?: unknown;
+}
+
+export type GradingCompany = 'PSA' | 'CGC' | 'BGS' | 'SGC' | 'PCGS' | 'NGC' | 'other';
+
+export type GradingSubmissionStatus = 'preparing' | 'submitted' | 'processing' | 'graded' | 'returned';
+
+export interface PreGradeResult {
+  centeringNotes: string;
+  cornersNotes: string;
+  edgesNotes: string;
+  surfaceNotes: string;
+  estimatedGradeRange: string; // e.g. "PSA 8 - 9" or "Near Mint 8"
+  summary: string;
+  confidence: ConfidenceLevel;
+  gradedAt: string; // ISO timestamp
+}
+
+export interface GradingSubmission {
+  company: GradingCompany;
+  dateSent: string;
+  reference: string;
+  status: GradingSubmissionStatus;
+  returnedGrade?: string;
+  notes?: string;
+  updatedAt: string; // ISO timestamp
 }
 
 export interface FreshFindRecord {

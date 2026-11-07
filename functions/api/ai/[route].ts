@@ -2,9 +2,11 @@ import { ZodError } from 'zod';
 import {
   checkIdentifyRateLimit,
   checkPanelDailyRateLimit,
+  checkPreGradeMonthlyRateLimit,
   enhanceStory,
   identifyItem,
   onboardingSuggest,
+  preGradeItem,
   processPanelChatTurn,
 } from '../../../src/server/ai/index.ts';
 
@@ -117,6 +119,37 @@ export async function onRequestPost(context: CloudflarePagesContext): Promise<Re
     if (route === 'enhance-story') {
       const result = await enhanceStory(body, apiKey);
       return jsonResponse(result, 200);
+    }
+
+    if (route === 'pre-grade') {
+      const userId = typeof body.userId === 'string' ? body.userId : '';
+      if (!userId) {
+        return jsonResponse(
+          { error: 'Sign in to run an AI condition pre-grade on your piece.' },
+          401,
+        );
+      }
+      const isPremium = Boolean(body.isPremium);
+      const limit = checkPreGradeMonthlyRateLimit({ userId, isPremium });
+
+      if (!limit.allowed) {
+        const daysLeft = Math.max(1, Math.ceil(limit.retryAfterSeconds / 86400));
+        return jsonResponse(
+          {
+            error: `You've used your 3 free condition pre-grades for this month. Upgrade to Collector Plus for unlimited pre-grades, or try again in ${daysLeft} days.`,
+          },
+          429,
+          {
+            'Retry-After': String(limit.retryAfterSeconds),
+            'X-RateLimit-Remaining': '0',
+          },
+        );
+      }
+
+      const result = await preGradeItem(body, apiKey);
+      return jsonResponse(result, 200, {
+        'X-RateLimit-Remaining': String(limit.remaining),
+      });
     }
 
     return jsonResponse({ error: `Unknown AI route: ${route || ''}` }, 404);

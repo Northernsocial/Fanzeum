@@ -4,6 +4,7 @@ import type {
   CategorySlug,
   CollectorGoal,
   PanelCard,
+  PreGradeResult,
 } from '../types/domain';
 import type { PanelChatTurnResponse } from '../server/ai/panelChat';
 
@@ -112,4 +113,26 @@ export async function generateListingDescription(params: {
     throw new Error(data?.error || 'Could not draft listing description right now.');
   }
   return data as { title: string; description: string; suggestedPriceGbp: number };
+}
+
+export async function requestItemPreGrade(params: {
+  photos: IdentifyPhotoPayload[];
+  itemTitle: string;
+  category: string;
+  userNotes?: string;
+  userId: string;
+  isPremium?: boolean;
+}): Promise<PreGradeResult> {
+  const res = await fetch('/api/ai/pre-grade', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      data?.error || 'Could not run pre-grade right now. Please check your photos and try again.',
+    );
+  }
+  return data as PreGradeResult;
 }

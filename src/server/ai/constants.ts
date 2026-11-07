@@ -8,3 +8,6 @@ export const IDENTIFY_WINDOW_MS = 60 * 60 * 1000;
 
 export const PANEL_DAILY_LIMIT = 15;
 export const PANEL_DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export const PREGRADE_FREE_MONTHLY_LIMIT = 3;
+export const PREGRADE_MONTHLY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;

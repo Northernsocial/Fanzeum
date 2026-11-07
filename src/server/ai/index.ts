@@ -9,8 +9,10 @@ export {
 export {
   checkIdentifyRateLimit,
   checkPanelDailyRateLimit,
+  checkPreGradeMonthlyRateLimit,
   type RateLimitResult,
 } from './rateLimiter.ts';
+export { preGradeItem, PreGradeRequestSchema, type PreGradeRequestInput } from './preGradeItem.ts';
 export { identifyItem, IdentifyRequestSchema, type IdentifyRequestInput } from './identifyItem.ts';
 export { onboardingSuggest, OnboardingInputSchema } from './onboardingSuggest.ts';
 export { enhanceStory, EnhanceStoryInputSchema } from './enhanceStory.ts';

@@ -1859,3 +1859,42 @@ export async function submitCommunityReport(params: {
     handleFirestoreError(error, OperationType.CREATE, `reports/${reportId}`);
   }
 }
+
+export async function saveItemPreGradeResult(params: {
+  itemId: string;
+  ownerId: string;
+  preGrade: import('../types/domain').PreGradeResult;
+}): Promise<void> {
+  const docRef = doc(db, 'items', params.itemId);
+  try {
+    await updateDoc(docRef, {
+      preGrade: params.preGrade,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `items/${params.itemId}`);
+  }
+}
+
+export async function saveItemGradingSubmission(params: {
+  itemId: string;
+  ownerId: string;
+  gradingSubmission: import('../types/domain').GradingSubmission | null;
+}): Promise<void> {
+  const docRef = doc(db, 'items', params.itemId);
+  try {
+    if (params.gradingSubmission === null) {
+      await updateDoc(docRef, {
+        gradingSubmission: deleteField(),
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await updateDoc(docRef, {
+        gradingSubmission: params.gradingSubmission,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `items/${params.itemId}`);
+  }
+}
