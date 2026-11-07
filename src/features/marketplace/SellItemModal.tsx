@@ -2,8 +2,25 @@ import React, { useState } from 'react';
 import { Sparkles, Tag, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { generateListingDescription } from '../../lib/aiClient';
-import { createMarketplaceListing } from '../../lib/firestoreRepo';
+import { createMarketplaceListing, recordPriceHistoryEntry } from '../../lib/firestoreRepo';
 import type { CollectibleItemRecord, MarketplaceListingRecord } from '../../types/domain';
+import { Button } from '../../components/ui/Button';
+import { Sheet } from '../../components/ui/Sheet';
+
+interface SellItemModalProps {
+  item: CollectibleItemRecord;
+  open: boolean;
+  onClose: () => void;
+  onCreated: (listing: MarketplaceListingRecord) => void;
+}
+
+export const SellItemModal: React.FC<SellItemModalProps> = ({
+  item,
+  open,
+  onClose,
+  onCreated,
+}) => {
+=======
 import { Button } from '../../components/ui/Button';
 import { Sheet } from '../../components/ui/Sheet';
 
@@ -73,8 +90,18 @@ export const SellItemModal: React.FC<SellItemModalProps> = ({
         priceGbp: price,
         description,
       });
+
+      await recordPriceHistoryEntry({
+        itemId: item.id,
+        category: item.category,
+        title: item.title,
+        priceGbp: price,
+        source: 'sale',
+      });
+
       onCreated(created);
       onClose();
+=======
     } catch (err) {
       console.error('Create listing error:', err);
       setError('Could not create marketplace listing. Please try again.');

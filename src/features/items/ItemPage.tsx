@@ -28,30 +28,15 @@ import {
   fetchCollectionById,
   fetchItemById,
   fetchItemPrivateRecord,
+  fetchPriceHistoryForItem,
   fetchUserProfile,
   listCollectionItems,
   listOwnerCollections,
   moveItemToCollection,
+  recordPriceHistoryEntry,
   updateCollectibleItemRecord,
   upsertItemPrivateRecord,
 } from '../../lib/firestoreRepo';
-import {
-  createItemComment,
-  deleteItemComment,
-  fetchItemComments,
-  fetchItemLikeState,
-  fetchItemSaveState,
-  submitContentReport,
-  toggleItemLike,
-  toggleItemSave,
-  updateItemComment,
-} from '../../lib/socialRepo';
-import type {
-  CollectibleItemRecord,
-  CollectionRecord,
-  ItemCommentRecord,
-  ItemPrivateRecord,
-} from '../../types/domain';
 import { useDocumentMeta } from '../../components/DocumentMeta';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -70,6 +55,30 @@ import {
   listIdCorrectionsForItem,
 } from '../../lib/interactionRepo';
 import type { IdCorrectionRecord } from '../../types/domain';
+import { PriceHistoryChart } from '../../components/ui/PriceHistoryChart';
+import { Sheet } from '../../components/ui/Sheet';
+
+export const ItemPage: React.FC = () => {
+=======
+import { useDocumentMeta } from '../../components/DocumentMeta';
+import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { CollectorImage } from '../../components/ui/CollectorImage';
+import { ConfidenceChip } from '../../components/ui/ConfidenceChip';
+import { EmptyState, Skeleton } from '../../components/ui/EmptyState';
+import { PanelConfirmedBadge } from '../../components/ui/PanelConfirmedBadge';
+import { PieceStage } from '../../components/ui/PieceStage';
+import { Placard } from '../../components/ui/Placard';
+import { ItemSignalButtons } from '../../components/ItemSignalButtons';
+import { IdCorrectionSheet } from '../../components/IdCorrectionSheet';
+import { SellItemModal } from '../../features/marketplace/SellItemModal';
+import {
+  acceptIdCorrection,
+  dismissIdCorrection,
+  listIdCorrectionsForItem,
+} from '../../lib/interactionRepo';
+import type { IdCorrectionRecord } from '../../types/domain';
+import { PriceHistoryChart } from '../../components/ui/PriceHistoryChart';
 import { Sheet } from '../../components/ui/Sheet';
 
 export const ItemPage: React.FC = () => {
@@ -83,11 +92,13 @@ export const ItemPage: React.FC = () => {
   const [ownerHideValues, setOwnerHideValues] = useState(false);
   const [privateRecord, setPrivateRecord] = useState<ItemPrivateRecord | null>(null);
   const [myCollections, setMyCollections] = useState<CollectionRecord[]>([]);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
 
   const [selectedPhotoIdx, setSelectedPhotoIdx] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copiedToast, setCopiedToast] = useState(false);
+=======
 
   // Social states: likes, saves, comments
   const [liked, setLiked] = useState(false);
@@ -182,7 +193,11 @@ export const ItemPage: React.FC = () => {
           }
         }
 
+        const history = await fetchPriceHistoryForItem(fetched.id);
+        if (active) setPriceHistory(history);
+
         if (firebaseUser?.emailVerified && firebaseUser.uid === fetched.ownerId && !fetched.isDemo) {
+=======
           const [priv, cols] = await Promise.all([
             fetchItemPrivateRecord(firebaseUser.uid, fetched.id),
             listOwnerCollections(firebaseUser.uid, firebaseUser.uid, 50),
@@ -414,6 +429,9 @@ export const ItemPage: React.FC = () => {
     try {
       const minGbp = Math.max(0, Number(editMinGbp) || 0);
       const maxGbp = Math.max(minGbp, Number(editMaxGbp) || minGbp);
+      const oldMin = item.valueMinGbp;
+      const oldMax = item.valueMaxGbp;
+
       await updateCollectibleItemRecord({
         item,
         collectionRecord,
@@ -436,11 +454,24 @@ export const ItemPage: React.FC = () => {
         privateNotes: editPrivNotes,
       });
 
+      if (minGbp !== oldMin || maxGbp !== oldMax) {
+        await recordPriceHistoryEntry({
+          itemId: item.id,
+          category: item.category,
+          title: editTitle || item.title,
+          priceGbp: Math.round((minGbp + maxGbp) / 2),
+          source: 'valuation',
+        });
+        const history = await fetchPriceHistoryForItem(item.id);
+        setPriceHistory(history);
+      }
+
       const refreshed = await fetchItemById(item.id);
       const refreshedPriv = await fetchItemPrivateRecord(firebaseUser.uid, item.id);
       if (refreshed) setItem(refreshed);
       setPrivateRecord(refreshedPriv);
       setEditOpen(false);
+=======
     } catch (err) {
       console.error('Save item error:', err);
       setItemError(getFriendlyFirebaseErrorMessage(err));
@@ -826,6 +857,13 @@ export const ItemPage: React.FC = () => {
             <p className="text-base sm:text-lg text-ink/95 leading-relaxed">{item.story}</p>
           )}
 
+          {/* Price History Chart */}
+          {!hideValues && priceHistory.length > 0 && (
+            <Card raised className="p-4 sm:p-5">
+              <PriceHistoryChart entries={priceHistory} title="Price history for this type" height={200} />
+            </Card>
+          )}
+
           {/* Valuation Rationale & Honest Disclaimer */}
           {!hideValues && (item.valueMinGbp > 0 || item.valueMaxGbp > 0) && (
             <Card raised className="p-4 sm:p-5 space-y-1.5">
@@ -843,6 +881,7 @@ export const ItemPage: React.FC = () => {
               )}
             </Card>
           )}
+=======
 
           {/* Category-Specific Specification Sheet */}
           <Card className="divide-y divide-border overflow-hidden">

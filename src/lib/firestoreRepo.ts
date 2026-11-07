@@ -1859,3 +1859,156 @@ export async function submitCommunityReport(params: {
     handleFirestoreError(error, OperationType.CREATE, `reports/${reportId}`);
   }
 }
+
+function normalizePriceHistoryDoc(id: string, raw: Record<string, unknown>): PriceHistoryEntry {
+  return {
+    entryId: id,
+    itemId: raw.itemId as string,
+    category: raw.category as CategorySlug,
+    title: raw.title as string,
+    priceGbp: (raw.priceGbp as number) || 0,
+    source: raw.source as 'sale' | 'valuation',
+    date: raw.date as string,
+    createdAt: raw.createdAt,
+  };
+}
+
+function normalizeCollectionSnapshotDoc(id: string, raw: Record<string, unknown>): CollectionSnapshotRecord {
+  return {
+    snapshotId: id,
+    userId: raw.userId as string,
+    totalMinGbp: (raw.totalMinGbp as number) || 0,
+    totalMaxGbp: (raw.totalMaxGbp as number) || 0,
+    itemsCount: (raw.itemsCount as number) || 0,
+    date: raw.date as string,
+    createdAt: raw.createdAt,
+  };
+}
+
+export async function recordPriceHistoryEntry(params: {
+  itemId: string;
+  category: CategorySlug;
+  title: string;
+  priceGbp: number;
+  source: 'sale' | 'valuation';
+}): Promise<string> {
+  const entryId = makeSafeId('ph');
+  const today = new Date().toISOString().slice(0, 10);
+  const record = {
+    entryId,
+    itemId: params.itemId,
+    category: params.category,
+    title: params.title,
+    priceGbp: Math.round(params.priceGbp),
+    source: params.source,
+    date: today,
+    createdAt: serverTimestamp(),
+  };
+  try {
+    await setDoc(doc(db, 'priceHistory', entryId), record);
+    return entryId;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, `priceHistory/${entryId}`);
+  }
+}
+
+export async function fetchPriceHistoryForCategory(category: CategorySlug, maxResults = 100): Promise<PriceHistoryEntry[]> {
+  try {
+    const q = query(
+      collection(db, 'priceHistory'),
+      where('category', '==', category),
+      orderBy('date', 'desc'),
+      limit(maxResults),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => normalizePriceHistoryDoc(d.id, d.data()));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, `priceHistory/category/${category}`);
+  }
+}
+
+export async function fetchPriceHistoryForItem(itemId: string, maxResults = 50): Promise<PriceHistoryEntry[]> {
+  try {
+    const q = query(
+      collection(db, 'priceHistory'),
+      where('itemId', '==', itemId),
+      orderBy('date', 'desc'),
+      limit(maxResults),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => normalizePriceHistoryDoc(d.id, d.data()));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, `priceHistory/item/${itemId}`);
+  }
+}
+
+export async function fetchUserCollectionSnapshots(uid: string, maxLimit = 52): Promise<CollectionSnapshotRecord[]> {
+  try {
+    const q = query(
+      collection(db, 'users', uid, 'collectionSnapshots'),
+      orderBy('date', 'desc'),
+      limit(maxLimit),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => normalizeCollectionSnapshotDoc(d.id, d.data()));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, `users/${uid}/collectionSnapshots`);
+  }
+}
+
+export async function recordCollectionSnapshot(params: {
+  uid: string;
+  totalMinGbp: number;
+  totalMaxGbp: number;
+  itemsCount: number;
+}): Promise<CollectionSnapshotRecord> {
+  const snapshotId = makeSafeId('snap');
+  const today = new Date().toISOString().slice(0, 10);
+  const record = {
+    snapshotId,
+    userId: params.uid,
+    totalMinGbp: Math.round(params.totalMinGbp),
+    totalMaxGbp: Math.round(params.totalMaxGbp),
+    itemsCount: params.itemsCount,
+    date: today,
+    createdAt: serverTimestamp(),
+  };
+  try {
+    await setDoc(doc(db, 'users', params.uid, 'collectionSnapshots', snapshotId), record);
+    return record;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, `users/${params.uid}/collectionSnapshots/${snapshotId}`);
+  }
+}
+
+export async function computeCollectionTrend(uid: string): Promise<CollectionTrend | null> {
+  const snaps = await fetchUserCollectionSnapshots(uid, 2);
+  if (snaps.length < 2) return null;
+
+  const current = snaps[0];
+  const previous = snaps[1];
+
+  const currentAvg = (current.totalMinGbp + current.totalMaxGbp) / 2;
+  const previousAvg = (previous.totalMinGbp + previous.totalMaxGbp) / 2;
+
+  const changeGbp = currentAvg - previousAvg;
+  const changePct = previousAvg > 0 ? Math.round((changeGbp / previousAvg) * 100) : 0;
+
+  let trend: 'up' | 'down' | 'flat' = 'flat';
+  if (changePct > 1) trend = 'up';
+  else if (changePct < -1) trend = 'down';
+
+  const periodLabel = `${previous.date} → ${current.date}`;
+
+  return {
+    currentTotalMin: current.totalMinGbp,
+    currentTotalMax: current.totalMaxGbp,
+    previousTotalMin: previous.totalMinGbp,
+    previousTotalMax: previous.totalMaxGbp,
+    changePct,
+    changeGbp: Math.round(changeGbp),
+    trend,
+    periodLabel,
+  };
+}
+=======

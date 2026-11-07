@@ -24,15 +24,11 @@ import {
   createPriceAlert,
   deletePriceAlert,
   fetchUserWeeklyDigest,
+  fetchUserCollectionSnapshots,
+  recordCollectionSnapshot,
+  computeCollectionTrend,
 } from '../../lib/firestoreRepo';
 import { fetchItemPrivateRecord } from '../../lib/firestoreRepo';
-import type {
-  CollectibleItemRecord,
-  CollectionRecord,
-  PriceAlertRecord,
-  ValuationSnapshotRecord,
-  WeeklyDigestRecord,
-} from '../../types/domain';
 import { useDocumentMeta } from '../../components/DocumentMeta';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -57,6 +53,7 @@ export const PortfolioValuationPage: React.FC = () => {
   const [pricePaidMap, setPricePaidMap] = useState<Record<string, number>>({});
   const [alerts, setAlerts] = useState<PriceAlertRecord[]>([]);
   const [digest, setDigest] = useState<WeeklyDigestRecord | null>(null);
+  const [trend, setTrend] = useState<CollectionTrend | null>(null);
 
   // New alert sheet
   const [alertOpen, setAlertOpen] = useState(false);
@@ -64,6 +61,40 @@ export const PortfolioValuationPage: React.FC = () => {
   const [thresholdType, setThresholdType] = useState<'below_price' | 'gain_loss_pct'>('gain_loss_pct');
   const [thresholdVal, setThresholdVal] = useState('15');
   const [savingAlert, setSavingAlert] = useState(false);
+=======
+import { useDocumentMeta } from '../../components/DocumentMeta';
+import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { CollectorImage } from '../../components/ui/CollectorImage';
+import { EmptyState, Skeleton } from '../../components/ui/EmptyState';
+import { Sheet } from '../../components/ui/Sheet';
+
+export const PortfolioValuationPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { firebaseUser, profile } = useAuth();
+  const uid = firebaseUser?.uid;
+
+  useDocumentMeta({
+    title: 'Portfolio Valuation & ROI · Fanzeum',
+    description: 'Track your showcase total value over time, gain/loss vs price paid, category splits, and price alerts.',
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [collections, setCollections] = useState<CollectionRecord[]>([]);
+  const [items, setItems] = useState<CollectibleItemRecord[]>([]);
+  const [snapshots, setSnapshots] = useState<ValuationSnapshotRecord[]>([]);
+  const [pricePaidMap, setPricePaidMap] = useState<Record<string, number>>({});
+  const [alerts, setAlerts] = useState<PriceAlertRecord[]>([]);
+  const [digest, setDigest] = useState<WeeklyDigestRecord | null>(null);
+  const [trend, setTrend] = useState<CollectionTrend | null>(null);
+
+  // New alert sheet
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState('');
+  const [thresholdType, setThresholdType] = useState<'below_price' | 'gain_loss_pct'>('gain_loss_pct');
+  const [thresholdVal, setThresholdVal] = useState('15');
+  const [savingAlert, setSavingAlert] = useState(false);
+=======
 
   useEffect(() => {
     if (!uid) {
@@ -108,6 +139,18 @@ export const PortfolioValuationPage: React.FC = () => {
           totalMaxGbp: maxTot,
           itemsCount: itms.length,
         });
+
+        // Record collection snapshot for trend
+        await recordCollectionSnapshot({
+          uid: currentUid,
+          totalMinGbp: minTot,
+          totalMaxGbp: maxTot,
+          itemsCount: itms.length,
+        });
+
+        // Compute trend
+        const computedTrend = await computeCollectionTrend(currentUid);
+        if (active) setTrend(computedTrend);
       } finally {
         if (active) setLoading(false);
       }
@@ -117,6 +160,7 @@ export const PortfolioValuationPage: React.FC = () => {
       active = false;
     };
   }, [uid]);
+=======
 
   const totals = React.useMemo(() => {
     const minVal = items.reduce((s, i) => s + (i.valueMinGbp || 0), 0);
@@ -257,6 +301,40 @@ export const PortfolioValuationPage: React.FC = () => {
           <div className="text-xs text-muted pt-1">Watching market &amp; target prices</div>
         </Card>
       </div>
+
+      {/* Collection Trend Card */}
+      {trend && (
+        <Card raised className="p-6 space-y-3 border-brass/30 bg-surface-raised">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-brass bg-brass/10">
+                {trend.trend === 'up' ? <TrendingUp className="w-5 h-5" /> : trend.trend === 'down' ? <TrendingDown className="w-5 h-5" /> : <Info className="w-5 h-5" />}
+              </div>
+              <div>
+                <div className="text-sm font-medium text-ink">Collection Trend</div>
+                <div className="text-xs text-muted">{trend.periodLabel}</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className={`text-xl font-mono font-semibold ${trend.trend === 'up' ? 'text-ok' : trend.trend === 'down' ? 'text-danger' : 'text-muted'}`}>
+                {trend.changePct >= 0 ? '+' : ''}{trend.changePct}% ({trend.changeGbp >= 0 ? '+' : ''}{formatGbp(trend.changeGbp)})
+              </div>
+              <div className="text-xs text-muted">Estimates, not guarantees</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-muted">Current range</div>
+              <div className="font-mono text-ink">{formatGbp(trend.currentTotalMin)} – {formatGbp(trend.currentTotalMax)}</div>
+            </div>
+            <div>
+              <div className="text-muted">Previous range</div>
+              <div className="font-mono text-ink">{formatGbp(trend.previousTotalMin)} – {formatGbp(trend.previousTotalMax)}</div>
+            </div>
+          </div>
+        </Card>
+      )}
+=======
 
       {/* Weekly Digest Banner */}
       {digest && (

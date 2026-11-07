@@ -34,14 +34,16 @@ import {
   createFreshFindRecord,
   listOwnerCollections,
   makeSafeId,
+  recordPriceHistoryEntry,
   upsertPanelChatRecord,
 } from '../../lib/firestoreRepo';
-import { checkAndTriggerWantAlerts } from '../../lib/interactionRepo';
+=======
 import {
   processCollectiblePhoto,
   uploadProcessedItemPhoto,
   type ProcessedCollectiblePhoto,
 } from '../../lib/imageUtils';
+import { checkAndTriggerWantAlerts } from '../../lib/interactionRepo';
 import type {
   AIConfidence,
   CollectionRecord,
@@ -447,6 +449,15 @@ export const AddPiecePage: React.FC = () => {
         panelStatus,
         panelConfirmedAt,
       });
+
+      await recordPriceHistoryEntry({
+        itemId: created.id,
+        category: currentCard.category,
+        title: currentCard.title,
+        priceGbp: Math.round((currentCard.valueMinGbp + currentCard.valueMaxGbp) / 2),
+        source: 'valuation',
+      });
+=======
 
       // Write Fresh Find if enabled
       if (shareFreshFind) {

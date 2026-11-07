@@ -437,7 +437,53 @@ export interface WeeklyDigestRecord {
   valuationDeltaGbp: number;
   createdAt?: unknown;
 }
+
+export interface PriceHistoryEntry {
+  entryId: string;
+  itemId: string;
+  category: CategorySlug;
+  title: string;
+  priceGbp: number;
+  source: 'sale' | 'valuation';
+  date: string; // YYYY-MM-DD
+  createdAt?: unknown;
+}
+
+export interface CollectionSnapshotRecord {
+  snapshotId: string;
+  userId: string;
+  totalMinGbp: number;
+  totalMaxGbp: number;
+  itemsCount: number;
+  date: string; // YYYY-MM-DD
+  createdAt?: unknown;
+}
+
+export interface CollectionTrend {
+  currentTotalMin: number;
+  currentTotalMax: number;
+  previousTotalMin: number;
+  previousTotalMax: number;
+  changePct: number;
+  changeGbp: number;
+  trend: 'up' | 'down' | 'flat';
+  periodLabel: string;
+}
+
 export interface CommunityReplyRecord {
+  id: string;
+  threadId: string;
+  authorId: string;
+  authorName: string;
+  authorHandle: string;
+  authorAvatarUrl: string;
+  text: string;
+  photoUrl?: string;
+  linkedItemId?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+=======
   id: string;
   threadId: string;
   authorId: string;

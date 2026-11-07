@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ShoppingBag, ShieldCheck, Check, ExternalLink, ArrowLeft } from 'lucide-react';
-import { fetchMarketplaceListingById, updateMarketplaceListingStatus } from '../../lib/firestoreRepo';
-import type { MarketplaceListingRecord } from '../../types/domain';
+import { fetchMarketplaceListingById, fetchPriceHistoryForCategory, updateMarketplaceListingStatus } from '../../lib/firestoreRepo';
+import type { MarketplaceListingRecord, PriceHistoryEntry } from '../../types/domain';
 import { formatGbp } from '../../lib/entitlements';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentMeta } from '../../components/DocumentMeta';
@@ -10,6 +10,10 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CollectorImage } from '../../components/ui/CollectorImage';
 import { Skeleton, EmptyState } from '../../components/ui/EmptyState';
+import { PriceHistoryChart } from '../../components/ui/PriceHistoryChart';
+
+export const MarketplaceDetailPage: React.FC = () => {
+=======
 
 export const MarketplaceDetailPage: React.FC = () => {
   const { listingId } = useParams<{ listingId: string }>();
@@ -20,6 +24,8 @@ export const MarketplaceDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>([]);
+=======
 
   useDocumentMeta({
     title: listing ? `${listing.title} · Marketplace` : 'Marketplace Listing',
@@ -48,7 +54,18 @@ export const MarketplaceDetailPage: React.FC = () => {
     };
   }, [listingId]);
 
+  useEffect(() => {
+    if (listing) {
+      let active = true;
+      fetchPriceHistoryForCategory(listing.category).then((history) => {
+        if (active) setPriceHistory(history);
+      });
+      return () => { active = false; };
+    }
+  }, [listing]);
+
   const isSeller = Boolean(firebaseUser && listing && firebaseUser.uid === listing.sellerId);
+=======
 
   const handleWithdraw = async () => {
     if (!listing) return;
@@ -198,6 +215,15 @@ export const MarketplaceDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {priceHistory.length > 0 && (
+        <div className="lg:col-span-12">
+          <Card raised className="p-4 sm:p-5">
+            <PriceHistoryChart entries={priceHistory} title={`Price history for ${listing.category.replace('_', ' ')}`} height={200} />
+          </Card>
+        </div>
+      )}
+=======
 
       {/* Checkout Coming Soon Modal */}
       {checkoutModalOpen && (

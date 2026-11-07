@@ -1721,5 +1721,41 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+    function isValidPriceHistoryEntry(data) {
+      return data.keys().hasAll(['entryId', 'itemId', 'category', 'title', 'priceGbp', 'source', 'date', 'createdAt']) &&
+        data.keys().hasOnly(['entryId', 'itemId', 'category', 'title', 'priceGbp', 'source', 'date', 'createdAt']) &&
+        data.entryId is string && data.entryId.size() <= 40 &&
+        data.itemId is string && data.itemId.size() <= 40 &&
+        data.category is string && data.category.size() <= 32 &&
+        data.title is string && data.title.size() <= 140 &&
+        data.priceGbp is int && data.priceGbp >= 0 &&
+        data.source is string && (data.source == 'sale' || data.source == 'valuation') &&
+        data.date is string && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.createdAt == request.time;
+    }
+
+    match /priceHistory/{entryId} {
+      allow get, list: if true;
+      allow create: if isVerifiedUser() && isValidId(entryId) && isValidPriceHistoryEntry(incoming());
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/collectionSnapshots/{snapshotId} {
+      allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidId(snapshotId) &&
+        incoming().keys().hasAll(['snapshotId', 'userId', 'totalMinGbp', 'totalMaxGbp', 'itemsCount', 'date', 'createdAt']) &&
+        incoming().keys().hasOnly(['snapshotId', 'userId', 'totalMinGbp', 'totalMaxGbp', 'itemsCount', 'date', 'createdAt']) &&
+        incoming().snapshotId == snapshotId &&
+        incoming().userId == userId &&
+        incoming().totalMinGbp is int && incoming().totalMinGbp >= 0 &&
+        incoming().totalMaxGbp is int && incoming().totalMaxGbp >= 0 &&
+        incoming().itemsCount is int && incoming().itemsCount >= 0 &&
+        incoming().date is string && incoming().date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+}
 }
