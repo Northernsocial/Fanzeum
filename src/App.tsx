@@ -77,6 +77,15 @@ const SwapsHubPage = lazy(() =>
 const CommunitiesPage = lazy(() =>
   import('./features/communities/CommunitiesPage').then((m) => ({ default: m.CommunitiesPage })),
 );
+const WorthHubPage = lazy(() =>
+  import('./features/worth/WorthHubPage').then((m) => ({ default: m.WorthHubPage })),
+);
+const WorthCategoryPage = lazy(() =>
+  import('./features/worth/WorthCategoryPage').then((m) => ({ default: m.WorthCategoryPage })),
+);
+const WorthItemPage = lazy(() =>
+  import('./features/worth/WorthItemPage').then((m) => ({ default: m.WorthItemPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -197,6 +206,9 @@ export default function App() {
                     <Route path="/portfolio" element={<PortfolioValuationPage />} />
                     <Route path="/swaps" element={<SwapsHubPage />} />
                     <Route path="/communities" element={<CommunitiesPage />} />
+                    <Route path="/worth" element={<WorthHubPage />} />
+                    <Route path="/worth/:categorySlug" element={<WorthCategoryPage />} />
+                    <Route path="/worth/:categorySlug/:itemSlug" element={<WorthItemPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />

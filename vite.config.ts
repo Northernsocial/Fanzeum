@@ -1,14 +1,66 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+function generateSitemapPlugin(): Plugin {
+  return {
+    name: 'fanzeum-sitemap',
+    generateBundle() {
+      try {
+        const catalogPath = path.resolve(__dirname, 'src/data/worthCatalog.json');
+        if (!fs.existsSync(catalogPath)) return;
+        const catalogData = JSON.parse(fs.readFileSync(catalogPath, 'utf-8'));
+        const urls = [
+          'https://fanzeum.com/',
+          'https://fanzeum.com/explore',
+          'https://fanzeum.com/fresh-finds',
+          'https://fanzeum.com/marketplace',
+          'https://fanzeum.com/worth',
+          'https://fanzeum.com/worth/football_cards',
+          'https://fanzeum.com/worth/trading_cards',
+          'https://fanzeum.com/worth/coins',
+          'https://fanzeum.com/worth/stamps',
+          'https://fanzeum.com/worth/comics',
+          'https://fanzeum.com/worth/vinyl',
+          'https://fanzeum.com/worth/toys',
+          'https://fanzeum.com/worth/memorabilia',
+        ];
+        if (Array.isArray(catalogData)) {
+          for (const item of catalogData) {
+            if (item.category && item.slug) {
+              urls.push(`https://fanzeum.com/worth/${item.category}/${item.slug}`);
+            }
+          }
+        }
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
+          .map(
+            (u) =>
+              `  <url>\n    <loc>${u}</loc>\n    <changefreq>${
+                u === 'https://fanzeum.com/' ? 'daily' : 'weekly'
+              }</changefreq>\n    <priority>${u === 'https://fanzeum.com/' ? '1.0' : '0.8'}</priority>\n  </url>`,
+          )
+          .join('\n')}\n</urlset>`;
+        this.emitFile({
+          type: 'asset',
+          fileName: 'sitemap.xml',
+          source: xml,
+        });
+      } catch (err) {
+        console.warn('Sitemap generation skipped:', err);
+      }
+    },
+  };
+}
 
 export default defineConfig(() => {
   return {
     plugins: [
       react(),
       tailwindcss(),
+      generateSitemapPlugin(),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: [

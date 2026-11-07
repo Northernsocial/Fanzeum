@@ -1,0 +1,546 @@
+[
+  {
+    "slug": "1958-alvorada-pele-rookie",
+    "category": "football_cards",
+    "title": "1958 Alvorada Pelé #10 Rookie",
+    "shortTitle": "1958 Pelé Rookie #10",
+    "year": "1958",
+    "maker": "Editora Alvorada",
+    "minGbp": 3500,
+    "maxGbp": 28000,
+    "medianGbp": 8500,
+    "baselineCollectorCount": 29,
+    "description": "Widely regarded as the undisputed holy grail of world football cards. Issued in Brazil following the 1958 Sweden World Cup where a 17-year-old Pelé scored twice in the final, this card was printed on thin card stock and rarely survived without paper loss or corner creasing.",
+    "keyFactors": [
+      "Thin card stock prone to paper creasing and age toning",
+      "Back stamp clarity and absence of album glue residue",
+      "Centering of the sepia-tinted portrait on obverse",
+      "Authenticity certification from PSA, SGC or BGS"
+    ],
+    "specifications": {
+      "Player": "Pelé (Edson Arantes do Nascimento)",
+      "Set": "1958 Editora Alvorada Coleção Campeões",
+      "Card Number": "#10",
+      "Year": "1958",
+      "Country": "Brazil"
+    },
+    "conditionTiers": [
+      { "grade": "Poor (PSA 1)", "priceGbp": 3500, "notes": "Heavy creasing, back paper skinning" },
+      { "grade": "Very Good (PSA 3)", "priceGbp": 6800, "notes": "Soft corners, light surface markings" },
+      { "grade": "Excellent (PSA 5)", "priceGbp": 14500, "notes": "Clean corners, honest wear" },
+      { "grade": "Near Mint (PSA 7+)", "priceGbp": 28000, "notes": "Exceptional museum-grade survivor" }
+    ],
+    "notableVariants": ["Numbered #10 with caption", "Unnumbered version"],
+    "tags": ["football", "pele", "brazil", "world cup", "rookie card", "grail"]
+  },
+  {
+    "slug": "2003-topps-chrome-cristiano-ronaldo",
+    "category": "football_cards",
+    "title": "2003 Topps Chrome Cristiano Ronaldo #11 Sporting CP",
+    "shortTitle": "2003 CR7 Sporting Rookie",
+    "year": "2003",
+    "maker": "Topps",
+    "minGbp": 800,
+    "maxGbp": 4500,
+    "medianGbp": 1850,
+    "baselineCollectorCount": 64,
+    "description": "Depicting Cristiano Ronaldo during his breakout season at Sporting Clube de Portugal prior to his £12.24m transfer to Manchester United. Topps Chrome cards from this era are susceptible to greening and surface refractor scratching.",
+    "keyFactors": [
+      "Chrome surface scratch count and centering",
+      "Refractor vs base variant finishes",
+      "Crisp green background colour without ultraviolet fading",
+      "High grade slab (PSA 9 or Gem Mint 10 command heavy premiums)"
+    ],
+    "specifications": {
+      "Player": "Cristiano Ronaldo",
+      "Club": "Sporting CP",
+      "Set": "2003-04 Topps Chrome",
+      "Card Number": "#11",
+      "Year": "2003"
+    },
+    "conditionTiers": [
+      { "grade": "Raw / Good", "priceGbp": 800, "notes": "Surface scuffs or corner touch" },
+      { "grade": "PSA 8 Near Mint-Mint", "priceGbp": 1450, "notes": "Solid eye appeal, minor edge tick" },
+      { "grade": "PSA 9 Mint", "priceGbp": 2200, "notes": "Sharp edges, crisp gloss" },
+      { "grade": "PSA 10 Gem Mint", "priceGbp": 4500, "notes": "Flawless centering and surface" }
+    ],
+    "notableVariants": ["Refractor Parallel", "Gold Refractor /99"],
+    "tags": ["ronaldo", "cr7", "sporting", "topps chrome", "manchester united", "premier league"]
+  },
+  {
+    "slug": "1970-panini-mexico-70-bobby-moore",
+    "category": "football_cards",
+    "title": "1970 Panini Mexico 70 Bobby Moore #26",
+    "shortTitle": "1970 Panini Bobby Moore #26",
+    "year": "1970",
+    "maker": "Panini",
+    "minGbp": 120,
+    "maxGbp": 650,
+    "medianGbp": 260,
+    "baselineCollectorCount": 51,
+    "description": "The quintessential sticker from Panini's maiden World Cup sticker collection. England captain Bobby Moore is shown in immaculate colour. Unstuck copies with valid backing paper are extremely scarce in the UK.",
+    "keyFactors": [
+      "Unstuck with original brown backing vs album lifted",
+      "Absence of adhesive degradation or glue bleed",
+      "Centering of the printed red border",
+      "Sharpness of die-cut sticker perimeter"
+    ],
+    "specifications": {
+      "Player": "Bobby Moore",
+      "Country": "England",
+      "Set": "Panini Mexico 70",
+      "Card Number": "#26",
+      "Year": "1970"
+    },
+    "conditionTiers": [
+      { "grade": "Neatly Lifted from Album", "priceGbp": 120, "notes": "Thin backing, slight paper skinning" },
+      { "grade": "Raw Unstuck VG", "priceGbp": 240, "notes": "Clean front, intact backing" },
+      { "grade": "PSA 7 Near Mint", "priceGbp": 420, "notes": "Original backing, crisp colour" },
+      { "grade": "PSA 8+ NM-MT", "priceGbp": 650, "notes": "Superb corners and centering" }
+    ],
+    "notableVariants": ["International version (Bis)", "Red back vs Blue back"],
+    "tags": ["bobby moore", "england", "panini", "mexico 70", "world cup"]
+  },
+  {
+    "slug": "1999-pokemon-base-set-charizard-1st-edition",
+    "category": "trading_cards",
+    "title": "1999 Pokémon Base Set 1st Edition Shadowless Charizard #4/102",
+    "shortTitle": "1st Edition Shadowless Charizard",
+    "year": "1999",
+    "maker": "Wizards of the Coast",
+    "minGbp": 2800,
+    "maxGbp": 22000,
+    "medianGbp": 6500,
+    "baselineCollectorCount": 88,
+    "description": "The definitive cornerstone of modern trading card collecting. The 1st Edition Shadowless Charizard features the coveted 1st Edition stamp to the bottom left of the portrait frame, thicker HP font, and absence of right-hand drop shadow.",
+    "keyFactors": [
+      "1st Edition black stamp clarity and absence of ink smudge",
+      "Holo foil surface scratching (swirl positioning)",
+      "Edge whitening on cobalt blue reverse border",
+      "Grading authenticity (CGC, BGS, PSA)"
+    ],
+    "specifications": {
+      "Character": "Charizard",
+      "Set": "Base Set (1st Edition)",
+      "Card Number": "#4/102",
+      "Year": "1999",
+      "Publisher": "Wizards of the Coast"
+    },
+    "conditionTiers": [
+      { "grade": "Played / Good (PSA 4)", "priceGbp": 2800, "notes": "Light silvering on edges, light foil scuffs" },
+      { "grade": "Excellent (PSA 6)", "priceGbp": 4800, "notes": "Clean front, minor corner whitening" },
+      { "grade": "Near Mint-Mint (PSA 8)", "priceGbp": 8900, "notes": "Strong eye appeal, crisp holo" },
+      { "grade": "Gem Mint (PSA 10)", "priceGbp": 22000, "notes": "Flawless centering and holo surface" }
+    ],
+    "notableVariants": ["Thick Stamp vs Thin Stamp", "Shadowless Unlimited", "Base Set Unlimited"],
+    "tags": ["pokemon", "charizard", "wotc", "tcg", "1st edition", "shadowless"]
+  },
+  {
+    "slug": "1993-magic-gathering-alpha-black-lotus",
+    "category": "trading_cards",
+    "title": "1993 Magic: The Gathering Alpha Black Lotus",
+    "shortTitle": "MTG Alpha Black Lotus",
+    "year": "1993",
+    "maker": "Wizards of the Coast",
+    "minGbp": 15000,
+    "maxGbp": 85000,
+    "medianGbp": 38000,
+    "baselineCollectorCount": 18,
+    "description": "Illustrated by the legendary Christopher Rush, the Alpha Black Lotus is the crowning jewel of Magic's Power Nine. Printed with Alpha's distinctive rounded 2mm radius corners in an initial run of just 1,100 copies worldwide.",
+    "keyFactors": [
+      "Alpha corner radius (rounded) vs Beta square cut",
+      "Surface ink gloss and absence of sleeve clouding",
+      "Centering of Christopher Rush illustration",
+      "BGS or PSA sub-grades on surface and edges"
+    ],
+    "specifications": {
+      "Card": "Black Lotus",
+      "Set": "Limited Edition Alpha",
+      "Year": "1993",
+      "Artist": "Christopher Rush",
+      "Rarity": "Rare"
+    },
+    "conditionTiers": [
+      { "grade": "Played (BGS 5)", "priceGbp": 15000, "notes": "Edge wear, light shuffle creasing" },
+      { "grade": "Fine (BGS 7)", "priceGbp": 29000, "notes": "Clean presentation, minor border tick" },
+      { "grade": "Near Mint (BGS 8.5)", "priceGbp": 48000, "notes": "Very sharp corners, clean gloss" },
+      { "grade": "Mint (BGS 9.5+)", "priceGbp": 85000, "notes": "Elite specimen of tabletop history" }
+    ],
+    "notableVariants": ["Beta Black Lotus", "Unlimited Black Lotus", "Collector's Edition"],
+    "tags": ["magic", "mtg", "black lotus", "alpha", "power nine"]
+  },
+  {
+    "slug": "1887-victoria-golden-jubilee-five-pounds",
+    "category": "coins",
+    "title": "1887 Queen Victoria Golden Jubilee Gold £5 Sovereign",
+    "shortTitle": "1887 Victoria Gold £5 Coin",
+    "year": "1887",
+    "maker": "Royal Mint, London",
+    "minGbp": 2400,
+    "maxGbp": 5800,
+    "medianGbp": 3200,
+    "baselineCollectorCount": 42,
+    "description": "Struck by the Royal Mint in 22-carat gold to commemorate Queen Victoria's Golden Jubilee. Features the Jubilee bust portrait by Sir Joseph Edgar Boehm and Benedetto Pistrucci's celebrated St George and the Dragon on the reverse.",
+    "keyFactors": [
+      "Proof vs Currency circulation strike",
+      "Absence of rim knocks, bag marks, or jewel mounts",
+      "Field reflectivity and original mint lustre",
+      "Grading by NGC or PCGS (MS-62+ carries significant markup)"
+    ],
+    "specifications": {
+      "Monarch": "Queen Victoria",
+      "Denomination": "Five Pounds (£5)",
+      "Metal": "22ct Gold (.917 fineness)",
+      "Weight": "39.94 grams",
+      "Catalogue": "Spink S.3864 / Spink S.3865"
+    },
+    "conditionTiers": [
+      { "grade": "VF / Ex-Mount", "priceGbp": 2400, "notes": "Edge test or repaired mount marks" },
+      { "grade": "EF (Extremely Fine)", "priceGbp": 2850, "notes": "Crisp hair ribbons, minor field contact" },
+      { "grade": "UNC (Uncirculated)", "priceGbp": 3600, "notes": "Full original mint lustre, sharp strike" },
+      { "grade": "Proof FDC (PCGS PR64+)", "priceGbp": 5800, "notes": "Flawless mirror fields and cameo portrait" }
+    ],
+    "notableVariants": ["Jubilee Head Proof issue", "Currency business strike"],
+    "tags": ["coins", "gold", "sovereign", "victoria", "royal mint", "jubilee", "bullion"]
+  },
+  {
+    "slug": "2009-kew-gardens-fifty-pence",
+    "category": "coins",
+    "title": "2009 Kew Gardens 50p Brilliant Uncirculated",
+    "shortTitle": "2009 Kew Gardens 50p",
+    "year": "2009",
+    "maker": "Royal Mint, Llantrisant",
+    "minGbp": 140,
+    "maxGbp": 450,
+    "medianGbp": 210,
+    "baselineCollectorCount": 112,
+    "description": "With a circulation mintage of just 210,000 coins, the 2009 Kew Gardens 50p remains the rarest and most intensely collected decimal coin in British circulation history. Designed by Christopher Le Brun RA to celebrate the 250th anniversary of the Royal Botanic Gardens.",
+    "keyFactors": [
+      "Genuine 2009 date vs 2019 anniversary re-strike",
+      "Circulated vs Royal Mint sealed presentation pack",
+      "Surface fingerprint toning and bag scuffs",
+      "Beware of cast counterfeits with thick Chinese pagoda lines"
+    ],
+    "specifications": {
+      "Monarch": "Queen Elizabeth II",
+      "Denomination": "50 Pence",
+      "Metal": "Cupro-Nickel",
+      "Mintage": "210,000 (Circulated)",
+      "Designer": "Christopher Le Brun RA"
+    },
+    "conditionTiers": [
+      { "grade": "Circulated Good", "priceGbp": 140, "notes": "Normal pocket wear, clean rims" },
+      { "grade": "Circulated Fine-VF", "priceGbp": 175, "notes": "Crisp pagoda railings, light contact marks" },
+      { "grade": "Brilliant Uncirculated Pack", "priceGbp": 240, "notes": "Unopened original Royal Mint folder" },
+      { "grade": "Proof Silver Piedfort", "priceGbp": 450, "notes": "Cased with certificate of authenticity" }
+    ],
+    "notableVariants": ["2009 Original Mintage", "2019 50 Years of the 50p Re-issue"],
+    "tags": ["coins", "50p", "kew gardens", "royal mint", "decimal", "elizabeth ii"]
+  },
+  {
+    "slug": "1840-penny-black-plate-1a",
+    "category": "stamps",
+    "title": "1840 Great Britain 1d Penny Black (Plate 1a)",
+    "shortTitle": "1840 Penny Black Plate 1a",
+    "year": "1840",
+    "maker": "Perkins, Bacon & Petch",
+    "minGbp": 180,
+    "maxGbp": 1800,
+    "medianGbp": 420,
+    "baselineCollectorCount": 73,
+    "description": "The world's first adhesive postage stamp, issued on 1 May 1840. Engraved with the youthful profile of Queen Victoria by William Wyon. Plate 1a stamps were printed prior to hardening the steel printing plate, leading to distinctive plate wear in later impressions.",
+    "keyFactors": [
+      "Four clear un-cut white margins (margin count dictates value)",
+      "Red Maltese Cross cancellation clarity and unobtrusiveness",
+      "Paper thinning, creases, or iron gall ink corrosion",
+      "Check letters and plate attribution (Plates 1a to 11)"
+    ],
+    "specifications": {
+      "Country": "Great Britain",
+      "Catalogue": "Stanley Gibbons SG 2 / SG 1",
+      "Face Value": "1d (One Penny)",
+      "Watermark": "Small Crown",
+      "Printing": "Line-engraved"
+    },
+    "conditionTiers": [
+      { "grade": "Used, 2–3 Margins", "priceGbp": 180, "notes": "Cut into design on one side, readable cross" },
+      { "grade": "Used, 4 Good Margins", "priceGbp": 380, "notes": "Clear space all four sides, neat red cancel" },
+      { "grade": "Used, 4 Large Margins Superb", "priceGbp": 750, "notes": "Exceptional centering, light central strike" },
+      { "grade": "Mint Original Gum (Unmounted)", "priceGbp": 1800, "notes": "Extremely rare in uncancelled condition" }
+    ],
+    "notableVariants": ["Plate 1a (worn state)", "Plate 11 (rare final plate)", "Black Maltese Cross cancel"],
+    "tags": ["stamps", "penny black", "victoria", "stanley gibbons", "line engraved", "postal history"]
+  },
+  {
+    "slug": "1929-puc-one-pound-black",
+    "category": "stamps",
+    "title": "1929 Postal Union Congress (PUC) £1 Black SG 438",
+    "shortTitle": "1929 PUC £1 Black",
+    "year": "1929",
+    "maker": "Waterlow & Sons",
+    "minGbp": 550,
+    "maxGbp": 1400,
+    "medianGbp": 780,
+    "baselineCollectorCount": 36,
+    "description": "Generally celebrated as the most beautiful British stamp ever designed. Issued for the London Postal Union Congress in 1929, the magnificent engraving by Harold Nelson depicts St George slaying the dragon beside King George V.",
+    "keyFactors": [
+      "Mint Never Hinged (MNH) vs Mint Mounted (MM)",
+      "Intact perforations without pulled teeth",
+      "Centering of the wide pictorial engraving",
+      "Postmark quality if used (circular datestamp preferred)"
+    ],
+    "specifications": {
+      "Country": "Great Britain",
+      "Catalogue": "Stanley Gibbons SG 438",
+      "Face Value": "£1 (One Pound)",
+      "Watermark": "Block Cypher GvR",
+      "Perforations": "Perf 12"
+    },
+    "conditionTiers": [
+      { "grade": "Fine Used (Circular Datestamp)", "priceGbp": 550, "notes": "Neat corner postmark, sound perfs" },
+      { "grade": "Mint Mounted (MM)", "priceGbp": 680, "notes": "Original gum with faint hinge mark" },
+      { "grade": "Mint Never Hinged (MNH)", "priceGbp": 1100, "notes": "Fresh unmounted original gum" },
+      { "grade": "Post Office Fresh Superb MNH", "priceGbp": 1400, "notes": "Perfect centering, pristine white paper" }
+    ],
+    "notableVariants": ["Watermark Inverted", "Specimen Overprint"],
+    "tags": ["stamps", "puc", "george v", "st george", "waterlow", "stanley gibbons"]
+  },
+  {
+    "slug": "1977-2000-ad-prog-1-space-spinner",
+    "category": "comics",
+    "title": "1977 2000 AD Prog 1 (with Space Spinner free gift)",
+    "shortTitle": "2000 AD Prog 1 with Free Gift",
+    "year": "1977",
+    "maker": "IPC Magazines",
+    "minGbp": 800,
+    "maxGbp": 2400,
+    "medianGbp": 1350,
+    "baselineCollectorCount": 31,
+    "description": "The birth of British sci-fi comics. Prog 1 introduced Dan Dare and the world that gave birth to Judge Dredd a week later in Prog 2. Surviving copies complete with the original red plastic 'Space Spinner' clicker toy are exceptionally scarce.",
+    "keyFactors": [
+      "Presence of original red Space Spinner toy intact",
+      "Spine rolling, staple rusting, and newsprint tanning",
+      "Cover gloss and absence of newsagent pencil dates",
+      "CGC slabbed copies command significant UK premiums"
+    ],
+    "specifications": {
+      "Publisher": "IPC Magazines",
+      "Title": "2000 AD",
+      "Issue": "Prog 1",
+      "Cover Date": "26 February 1977",
+      "Free Gift": "Space Spinner Toy"
+    },
+    "conditionTiers": [
+      { "grade": "Comic Only (Very Good 4.0)", "priceGbp": 220, "notes": "No free gift, minor spine split" },
+      { "grade": "Comic with Free Gift (Fine 6.0)", "priceGbp": 800, "notes": "Original toy attached, light tanning" },
+      { "grade": "Comic with Toy (VF/NM 9.0)", "priceGbp": 1600, "notes": "Crisp newsprint, unplayed spinner" },
+      { "grade": "CGC 9.6 with Gift", "priceGbp": 2400, "notes": "Highest echelon museum grade" }
+    ],
+    "notableVariants": ["Prog 1 with Space Spinner", "Prog 1 Newsagent Stamp Copy"],
+    "tags": ["comics", "2000 ad", "judge dredd", "dan dare", "ipc", "british comics"]
+  },
+  {
+    "slug": "1988-amazing-spider-man-300-venom",
+    "category": "comics",
+    "title": "1988 The Amazing Spider-Man #300 (1st full Venom)",
+    "shortTitle": "Amazing Spider-Man #300",
+    "year": "1988",
+    "maker": "Marvel Comics",
+    "minGbp": 280,
+    "maxGbp": 1900,
+    "medianGbp": 550,
+    "baselineCollectorCount": 68,
+    "description": "Featuring the iconic cover art and interior pencils of Todd McFarlane, issue #300 marks the first full appearance of Venom (Eddie Brock) and Spidey's return to his classic red-and-blue suit.",
+    "keyFactors": [
+      "CGC slab grade (9.6 and 9.8 represent 70% of market value)",
+      "Direct Edition vs Newsstand barcode variant",
+      "White page quality vs cream/off-white tanning",
+      "Spine stress ticks on the silver/white border"
+    ],
+    "specifications": {
+      "Publisher": "Marvel Comics",
+      "Series": "The Amazing Spider-Man",
+      "Issue": "#300",
+      "Year": "1988",
+      "Key Feature": "1st full appearance of Venom"
+    },
+    "conditionTiers": [
+      { "grade": "Raw Mid-Grade (FN 6.0)", "priceGbp": 280, "notes": "Spine ticks, light cover handling" },
+      { "grade": "Raw High-Grade (VF/NM 9.0)", "priceGbp": 450, "notes": "Crisp corners, gloss intact" },
+      { "grade": "CGC 9.6 White Pages", "priceGbp": 850, "notes": "Encapsulated key with superb eye appeal" },
+      { "grade": "CGC 9.8 White Pages", "priceGbp": 1900, "notes": "Virtually flawless newsstand or direct" }
+    ],
+    "notableVariants": ["Direct Edition", "Newsstand Barcode", "Mark Jewelers Insert"],
+    "tags": ["comics", "spider-man", "venom", "mcfarlane", "marvel", "copper age"]
+  },
+  {
+    "slug": "1965-frank-wilson-do-i-love-you",
+    "category": "vinyl",
+    "title": "1965 Frank Wilson – Do I Love You (Indeed I Do) 7\" Promo",
+    "shortTitle": "Frank Wilson 7\" Northern Soul",
+    "year": "1965",
+    "maker": "Soul / Tamla Motown",
+    "minGbp": 25000,
+    "maxGbp": 100000,
+    "medianGbp": 55000,
+    "baselineCollectorCount": 12,
+    "description": "The Holy Grail of Northern Soul. Recorded by Motown songwriter and producer Frank Wilson, Motown founder Berry Gordy had virtually the entire batch of demonstration discs destroyed. Only a handful of original demo copies survived.",
+    "keyFactors": [
+      "Matrix runout stamp SOUL 35019 with Nashville matrix machine stamp",
+      "Single-sided purple label promo vs bootleg pressings",
+      "Vinyl surface grade (absence of cue burn or hairlines)",
+      "Unbroken provenance from recognized Northern Soul stalwarts"
+    ],
+    "specifications": {
+      "Artist": "Frank Wilson",
+      "A-Side": "Do I Love You (Indeed I Do)",
+      "Label": "Soul Records / Tamla Motown",
+      "Catalogue": "SOUL 35019",
+      "Format": "7\" 45 RPM Single"
+    },
+    "conditionTiers": [
+      { "grade": "Good Plus (G+)", "priceGbp": 25000, "notes": "Light surface noise, playable rarity" },
+      { "grade": "Very Good (VG)", "priceGbp": 45000, "notes": "Solid audio fidelity, clean labels" },
+      { "grade": "Excellent (EX)", "priceGbp": 75000, "notes": "Pristine labels, minimal spindle traces" },
+      { "grade": "Near Mint (NM)", "priceGbp": 100000, "notes": "Auction record breaking crown jewel" }
+    ],
+    "notableVariants": ["1979 UK Tamla Motown TMG 1170 Official Reissue (£25 - £60)"],
+    "tags": ["vinyl", "northern soul", "motown", "rare 45", "grail", "tamla"]
+  },
+  {
+    "slug": "1969-led-zeppelin-uk-first-turquoise",
+    "category": "vinyl",
+    "title": "1969 Led Zeppelin I – UK 1st Pressing (Turquoise Lettering)",
+    "shortTitle": "Led Zeppelin I Turquoise 1st",
+    "year": "1969",
+    "maker": "Atlantic Records",
+    "minGbp": 1200,
+    "maxGbp": 3800,
+    "medianGbp": 2100,
+    "baselineCollectorCount": 44,
+    "description": "The landmark self-titled debut featuring the Hindenburg airship photograph. The earliest 2,000 copies printed for the UK market carried turquoise lettering on the front cover and red/plum Atlantic labels before being quickly changed to orange lettering.",
+    "keyFactors": [
+      "Turquoise front sleeve lettering vs standard orange",
+      "Matrix numbers: 588171 A//1 and 588171 B//1",
+      "Red and plum Atlantic labels with Superhype credit",
+      "Laminated MacNeill Press sleeve condition and spine firmness"
+    ],
+    "specifications": {
+      "Band": "Led Zeppelin",
+      "Album": "Led Zeppelin",
+      "Label": "Atlantic Records",
+      "Catalogue": "588171",
+      "Matrix": "A//1 B//1"
+    },
+    "conditionTiers": [
+      { "grade": "VG / VG", "priceGbp": 1200, "notes": "Lamination crease, light background tick on vinyl" },
+      { "grade": "VG+ / VG+", "priceGbp": 1850, "notes": "Strong audio fidelity, solid turquoise spine" },
+      { "grade": "EX / EX", "priceGbp": 2800, "notes": "Glossy vinyl, intact laminate, minimal ring wear" },
+      { "grade": "NM / NM Archive", "priceGbp": 3800, "notes": "Near-flawless survivor of hard rock history" }
+    ],
+    "notableVariants": ["Orange lettering 2nd press", "Uncorrected Superhype publishing credits"],
+    "tags": ["vinyl", "led zeppelin", "classic rock", "atlantic", "first pressing", "uk audio"]
+  },
+  {
+    "slug": "1978-palitoy-star-wars-boba-fett-20-back",
+    "category": "toys",
+    "title": "1978 Palitoy Star Wars Boba Fett 20-Back-A MOC",
+    "shortTitle": "Palitoy Boba Fett 20-Back",
+    "year": "1978",
+    "maker": "Palitoy, Coalville UK",
+    "minGbp": 3200,
+    "maxGbp": 9500,
+    "medianGbp": 5400,
+    "baselineCollectorCount": 26,
+    "description": "Manufactured in Coalville, Leicestershire by Palitoy. The 20-Back-A cardback offered the Boba Fett bounty hunter action figure with the iconic Palitoy logo. Unlike US Kenner cards, British Palitoy cards used a unique bubble seal and thinner card stock.",
+    "keyFactors": [
+      "Cardback integrity without price sticker tear or spider veins",
+      "Blister bubble clarity (no yellowing, lifting, or crushing)",
+      "Original blaster pistol sealed inside bubble",
+      "AFA or UKG archival grading score (80+ represents high value)"
+    ],
+    "specifications": {
+      "Toy Line": "Star Wars: A New Hope",
+      "Manufacturer": "Palitoy (UK)",
+      "Cardback": "20-Back-A",
+      "Figure": "Boba Fett",
+      "Year": "1978-1979"
+    },
+    "conditionTiers": [
+      { "grade": "Loose Complete", "priceGbp": 85, "notes": "With original blaster, no repro weapons" },
+      { "grade": "Carded Fair (AFA 60)", "priceGbp": 3200, "notes": "Creased card, bubble dented but sealed" },
+      { "grade": "Carded High-Grade (AFA 80)", "priceGbp": 5800, "notes": "Clear bubble, unpunched tab, vivid colours" },
+      { "grade": "Carded Museum (AFA 85+)", "priceGbp": 9500, "notes": "Pristine factory specimen" }
+    ],
+    "notableVariants": ["20-Back-A with Palitoy logo", "Tri-Logo Cardback (Return of the Jedi)"],
+    "tags": ["toys", "star wars", "boba fett", "palitoy", "action figure", "vintage"]
+  },
+  {
+    "slug": "1965-corgi-261-james-bond-aston-martin",
+    "category": "toys",
+    "title": "1965 Corgi 261 James Bond Aston Martin DB5 (Boxed)",
+    "shortTitle": "1965 Corgi James Bond DB5",
+    "year": "1965",
+    "maker": "Corgi Toys, Swansea UK",
+    "minGbp": 280,
+    "maxGbp": 850,
+    "medianGbp": 450,
+    "baselineCollectorCount": 59,
+    "description": "Released following Goldfinger, this die-cast masterpiece won Toy of the Year in 1965. Features an operational ejector seat, front machine guns, rear bullet-proof shield, and rotating registration plates.",
+    "keyFactors": [
+      "Presence of unopened 'Top Secret' instruction envelope",
+      "Spare villain bandit figure included",
+      "Box condition with inner pictorial display plinth",
+      "Original gold paintwork without roof scuffs"
+    ],
+    "specifications": {
+      "Manufacturer": "Corgi Toys (Mettoy Playcraft)",
+      "Model Number": "No. 261",
+      "Vehicle": "Aston Martin DB5",
+      "Franchise": "James Bond 007",
+      "Year": "1965"
+    },
+    "conditionTiers": [
+      { "grade": "Playworn Loose", "priceGbp": 45, "notes": "Paint chips, mechanism working" },
+      { "grade": "Boxed with Inner Plinth (Good)", "priceGbp": 280, "notes": "Flaps repaired, ejected figure present" },
+      { "grade": "Boxed Complete (Excellent)", "priceGbp": 490, "notes": "Intact secret envelope and badge" },
+      { "grade": "Mint in Box (MIB Unused)", "priceGbp": 850, "notes": "Factory fresh gold paint and crisp card box" }
+    ],
+    "notableVariants": ["1965 Gold paint finish", "1968 Corgi 271 Silver finish with tyre shredders"],
+    "tags": ["toys", "corgi", "james bond", "aston martin", "diecast", "goldfinger"]
+  },
+  {
+    "slug": "1966-world-cup-final-programme",
+    "category": "memorabilia",
+    "title": "1966 World Cup Final Programme (England vs West Germany)",
+    "shortTitle": "1966 World Cup Final Programme",
+    "year": "1966",
+    "maker": "The Football Association / McCorquodale",
+    "minGbp": 80,
+    "maxGbp": 350,
+    "medianGbp": 160,
+    "baselineCollectorCount": 94,
+    "description": "The official matchday programme for Saturday 30 July 1966 at Wembley Stadium. Featuring the Union Jack cover design, team line-ups, and tournament statistics. Genuine originals have distinct paper weight and cover gloss.",
+    "keyFactors": [
+      "Original 1966 printing vs later 1970/1996 commercial reprints",
+      "Uncompleted centre-page team lineup (unmarked/unwritten)",
+      "Spine rust around original copper staples",
+      "Absence of horizontal folding from pocket carriage"
+    ],
+    "specifications": {
+      "Event": "FIFA World Cup Final 1966",
+      "Teams": "England vs West Germany",
+      "Venue": "Wembley Stadium, London",
+      "Date": "30 July 1966",
+      "Printer": "McCorquodale & Co. Ltd"
+    },
+    "conditionTiers": [
+      { "grade": "Pocket Folded / Scored", "priceGbp": 80, "notes": "Centre page filled in in ballpoint ink" },
+      { "grade": "Very Good Unmarked", "priceGbp": 140, "notes": "Clean team sheets, light corner touch" },
+      { "grade": "Near Mint Unfolded", "priceGbp": 240, "notes": "No writing, no folds, crisp white pages" },
+      { "grade": "Signed by 1966 Winners", "priceGbp": 350, "notes": "Autographed by Geoff Hurst or Martin Peters" }
+    ],
+    "notableVariants": ["Genuine original McCorquodale print", "Official 1970 FA Reprint"],
+    "tags": ["memorabilia", "1966", "world cup", "wembley", "england", "programme"]
+  }
+]
