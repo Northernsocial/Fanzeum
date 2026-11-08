@@ -21,6 +21,17 @@
     "Mistral": 50,
     "Thinker": 0
    }
+  },
+  {
+   "issue": "74",
+   "title": "F1 Set checklists and missing items",
+   "winner": null,
+   "scores": {
+    "Gemini Flash": 0,
+    "DeepSeek": 0,
+    "Mistral": 0,
+    "Thinker": 0
+   }
   }
  ],
  "table": {
@@ -44,7 +55,7 @@
   },
   "Thinker": {
    "gold": 0,
-   "entries": 2,
+   "entries": 3,
    "green": 0,
    "points": 0
   }
