@@ -1,0 +1,41 @@
+{
+ "rounds": [
+  {
+   "issue": "76",
+   "title": "F3 Price history and collection value trend",
+   "winner": null,
+   "scores": {
+    "Gemini Flash": 50,
+    "DeepSeek": 50,
+    "Mistral": 50,
+    "Thinker": 0
+   }
+  }
+ ],
+ "table": {
+  "Gemini Flash": {
+   "gold": 0,
+   "entries": 1,
+   "green": 1,
+   "points": 50
+  },
+  "DeepSeek": {
+   "gold": 0,
+   "entries": 1,
+   "green": 1,
+   "points": 50
+  },
+  "Mistral": {
+   "gold": 0,
+   "entries": 1,
+   "green": 1,
+   "points": 50
+  },
+  "Thinker": {
+   "gold": 0,
+   "entries": 1,
+   "green": 0,
+   "points": 0
+  }
+ }
+}
