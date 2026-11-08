@@ -1,4 +1,4 @@
-name: AI manager (free model team)
+name: AI manager (free model team, AI Olympics)
 on:
   issues:
     types: [labeled]
@@ -15,7 +15,7 @@ jobs:
   build:
     if: github.event_name != 'issues' || github.event.label.name == 'ai-build'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 300
     steps:
       - name: Pick next queued issue (oldest first, one at a time like CertServe)
         id: pick
@@ -86,5 +86,10 @@ jobs:
           if [ "${{ job.status }}" != "success" ]; then
             gh issue comment "$N" --body "Build ran out of time or errored; parked for a human look." || true
             gh issue edit "$N" --remove-label ai-build --add-label needs-review || true
+          fi
+          if [ -f /tmp/oly/LEADERBOARD.md ]; then
+            git checkout -q main && git reset -q --hard origin/main && git pull -q origin main && mkdir -p olympics
+            cp /tmp/oly/leaderboard.json /tmp/oly/LEADERBOARD.md olympics/
+            git add olympics && git commit -qm "AI Olympics: leaderboard after #$N" && git push -q origin main || true
           fi
           gh workflow run ai-manager.yml --ref main || true
