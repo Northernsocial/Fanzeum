@@ -5,14 +5,46 @@
    "title": "F3 Price history and collection value trend",
    "winner": null,
    "scores": {
+    "Gemini Flash": 50,
+    "DeepSeek": 50,
+    "Mistral": 50,
+    "Thinker": 0
+   }
+  },
+  {
+   "issue": "33",
+   "title": "The core hook: instant AI identification and valuation, gated by sign-up.",
+   "winner": null,
+   "scores": {
+    "Gemini Flash": 73,
+    "DeepSeek": 50,
+    "Mistral": 50,
     "Thinker": 0
    }
   }
  ],
  "table": {
+  "Gemini Flash": {
+   "gold": 0,
+   "entries": 2,
+   "green": 2,
+   "points": 123
+  },
+  "DeepSeek": {
+   "gold": 0,
+   "entries": 2,
+   "green": 2,
+   "points": 100
+  },
+  "Mistral": {
+   "gold": 0,
+   "entries": 2,
+   "green": 2,
+   "points": 100
+  },
   "Thinker": {
    "gold": 0,
-   "entries": 1,
+   "entries": 2,
    "green": 0,
    "points": 0
   }
