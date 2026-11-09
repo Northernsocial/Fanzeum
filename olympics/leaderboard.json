@@ -120,12 +120,23 @@
     "Mistral": 0,
     "Thinker": 50
    }
+  },
+  {
+   "issue": "33",
+   "title": "The core hook: instant AI identification and valuation, gated by sign-up.",
+   "winner": null,
+   "scores": {
+    "Gemini Flash": 0,
+    "DeepSeek": 0,
+    "Mistral": 0,
+    "Thinker": 0
+   }
   }
  ],
  "table": {
   "Gemini Flash": {
    "gold": 0,
-   "entries": 9,
+   "entries": 10,
    "green": 5,
    "points": 297
   },
@@ -143,7 +154,7 @@
   },
   "Thinker": {
    "gold": 0,
-   "entries": 10,
+   "entries": 11,
    "green": 2,
    "points": 110
   }
