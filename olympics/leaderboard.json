@@ -32,14 +32,25 @@
     "Mistral": 0,
     "Thinker": 0
    }
+  },
+  {
+   "issue": "75",
+   "title": "F2 AI condition pre-grade and grading tracker",
+   "winner": null,
+   "scores": {
+    "Gemini Flash": 50,
+    "DeepSeek": 0,
+    "Mistral": 0,
+    "Thinker": 0
+   }
   }
  ],
  "table": {
   "Gemini Flash": {
    "gold": 0,
-   "entries": 2,
-   "green": 2,
-   "points": 123
+   "entries": 3,
+   "green": 3,
+   "points": 173
   },
   "DeepSeek": {
    "gold": 0,
@@ -55,7 +66,7 @@
   },
   "Thinker": {
    "gold": 0,
-   "entries": 3,
+   "entries": 4,
    "green": 0,
    "points": 0
   }
