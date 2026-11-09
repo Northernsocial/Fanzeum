@@ -2,12 +2,13 @@
 
 | Rank | Model | Gold | Points | Passing entries | Entries |
 |---|---|---|---|---|---|
-| 1 | Gemini Flash | 0 | 173 | 3 | 3 |
+| 1 | Gemini Flash | 0 | 173 | 3 | 4 |
 | 2 | DeepSeek | 0 | 100 | 2 | 2 |
 | 3 | Mistral | 0 | 100 | 2 | 2 |
-| 4 | Thinker | 0 | 0 | 0 | 4 |
+| 4 | Thinker | 0 | 0 | 0 | 5 |
 
 ## Rounds
+- #77 F4 Collector-to-collector trades: no winner
 - #75 F2 AI condition pre-grade and grading tracker: no winner
 - #74 F1 Set checklists and missing items: no winner
 - #33 The core hook: instant AI identification and valuation, gated by sign-up.: no winner

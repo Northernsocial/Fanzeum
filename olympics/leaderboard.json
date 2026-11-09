@@ -43,12 +43,23 @@
     "Mistral": 0,
     "Thinker": 0
    }
+  },
+  {
+   "issue": "77",
+   "title": "F4 Collector-to-collector trades",
+   "winner": null,
+   "scores": {
+    "Gemini Flash": 0,
+    "DeepSeek": 0,
+    "Mistral": 0,
+    "Thinker": 0
+   }
   }
  ],
  "table": {
   "Gemini Flash": {
    "gold": 0,
-   "entries": 3,
+   "entries": 4,
    "green": 3,
    "points": 173
   },
@@ -66,7 +77,7 @@
   },
   "Thinker": {
    "gold": 0,
-   "entries": 4,
+   "entries": 5,
    "green": 0,
    "points": 0
   }
