@@ -51,6 +51,7 @@ export interface UserProfile {
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
+  waitlistPremium?: boolean;
 }
 
 export type FollowTargetType = 'category' | 'user';
@@ -160,6 +161,15 @@ export interface CollectibleItemRecord {
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
+  // Valuation snapshot for tracking over time
+  valuation?: {
+    minGbp: number;
+    maxGbp: number;
+    currency: 'GBP';
+    confidence: ConfidenceLevel;
+    reason: string;
+    date: string; // ISO date
+  };
 }
 
 export type IdCorrectionStatus = 'pending' | 'accepted' | 'dismissed';

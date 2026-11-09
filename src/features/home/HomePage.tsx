@@ -30,6 +30,7 @@ import { PieceStage } from '../../components/ui/PieceStage';
 import { FreshFindsFeed } from '../../components/FreshFindsFeed';
 import { FreshFindsStrip } from '../../components/FreshFindsStrip';
 import { Placard } from '../../components/ui/Placard';
+import { HomeIdentifyHero } from '../../components/HomeIdentifyHero';
 
 export const HomePage: React.FC = () => {
   const { firebaseUser, profile, openAuthModal } = useAuth();

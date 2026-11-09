@@ -25,6 +25,7 @@ import {
   type PersonaConfig,
 } from '../../config/panel';
 import { useAuth } from '../../contexts/AuthContext';
+import { openAuthModal } from '../../contexts/AuthContext';
 import { sendPanelChatTurn, type IdentifyPhotoPayload } from '../../lib/aiClient';
 import { formatGbpRange } from '../../lib/entitlements';
 import { getFriendlyFirebaseErrorMessage } from '../../lib/firebase';
@@ -35,6 +36,7 @@ import {
   listOwnerCollections,
   makeSafeId,
   upsertPanelChatRecord,
+  updateCollectibleItemValuation,
 } from '../../lib/firestoreRepo';
 import { checkAndTriggerWantAlerts } from '../../lib/interactionRepo';
 import {
@@ -54,6 +56,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CategoryIcon } from '../../components/ui/CategoryIcon';
 import { ConfidenceChip } from '../../components/ui/ConfidenceChip';
+import { RouteGuard } from '../../components/RouteGuard';
 
 interface StagedSlot {
   id: string;
@@ -63,8 +66,10 @@ interface StagedSlot {
   processed: ProcessedCollectiblePhoto;
 }
 
-export const AddPiecePage: React.FC = () => {
-  const { firebaseUser, profile, openAuthModal, refreshProfile } = useAuth();
+// Inner component that contains the actual page logic (wrapped by RouteGuard)
+const AddPiecePageInner: React.FC = () => {
+  const { firebaseUser, profile, refreshProfile, openAuthModal: openAuthModalCtx } = useAuth();
+  const openAuthModal = openAuthModalCtx;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedColId = searchParams.get('collectionId') || '';
@@ -140,6 +145,158 @@ export const AddPiecePage: React.FC = () => {
       active = false;
     };
   }, [firebaseUser?.uid, firebaseUser?.emailVerified, preselectedColId]);
+
+  // Load photo from sessionStorage if coming from HomeIdentifyHero
+  useEffect(() => {
+    const storedPhoto = sessionStorage.getItem('fanzeum_identify_photo');
+    const storedFilename = sessionStorage.getItem('fanzeum_identify_filename');
+    const storedMimetype = sessionStorage.getItem('fanzeum_identify_mimetype');
+    if (storedPhoto && storedFilename && storedMimetype && slots.length === 0 && !panelStarted) {
+      // Convert base64 to blob and process
+      const base64 = storedPhoto.split(',')[1] || storedPhoto;
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: storedMimetype });
+      const file = new File([blob], storedFilename, { type: storedMimetype });
+      processCollectiblePhoto(file, { rotationDeg: 0, label: 'Front' }).then((processed) => {
+        setSlots([
+          {
+            id: makeSafeId('slot'),
+            file,
+            label: 'Front',
+            rotationDeg: 0,
+            processed,
+          },
+        ]);
+        // Clear sessionStorage after use
+        sessionStorage.removeItem('fanzeum_identify_photo');
+        sessionStorage.removeItem('fanzeum_identify_filename');
+        sessionStorage.removeItem('fanzeum_identify_mimetype');
+      }).catch((err) => {
+        console.error('Failed to process stored photo:', err);
+        sessionStorage.removeItem('fanzeum_identify_photo');
+        sessionStorage.removeItem('fanzeum_identify_filename');
+        sessionStorage.removeItem('fanzeum_identify_mimetype');
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+=======
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedColId = searchParams.get('collectionId') || '';
+
+  useDocumentMeta({
+    title: 'AI Expert Panel Chat · Fanzeum',
+    description:
+      'Chat directly with specialist AI personas (The Philatelist, The Numismatist, The Card Grader, etc.) to identify your piece and build your showcase card.',
+  });
+
+  // Persistent itemId for the session
+  const [chatItemId] = useState(() => makeSafeId('item_chat'));
+
+  // Step state: 'setup' (photos upload) -> 'chat' (interactive expert panel & live card)
+  const [panelStarted, setPanelStarted] = useState(false);
+
+  // Photos state
+  const [slots, setSlots] = useState<StagedSlot[]>([]);
+  const [processingPhoto, setProcessingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // Panel chat state
+  const [messages, setMessages] = useState<PanelChatMessage[]>([]);
+  const [currentCard, setCurrentCard] = useState<PanelCard | null>(null);
+  const [rollingSummary, setRollingSummary] = useState('');
+  const [activePersonaId, setActivePersonaId] = useState<string>('lead');
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingPersona, setTypingPersona] = useState<PersonaConfig>(LEAD_APPRAISER_PERSONA);
+  const [inputText, setInputText] = useState('');
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [rateLimitBanner, setRateLimitBanner] = useState<string | null>(null);
+
+  // New photo attachment for ongoing chat
+  const [attachedCloseUp, setAttachedCloseUp] = useState<ProcessedCollectiblePhoto | null>(null);
+
+  // Saving to cabinet modal / inline state
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [myCollections, setMyCollections] = useState<CollectionRecord[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState(preselectedColId);
+  const [creatingInlineCol, setCreatingInlineCol] = useState(false);
+  const [newColTitle, setNewColTitle] = useState('');
+  const [isGrail, setIsGrail] = useState(false);
+  const [acquiredPriceGbp, setAcquiredPriceGbp] = useState('');
+  const [acquiredDate, setAcquiredDate] = useState('');
+  const [privateNotes, setPrivateNotes] = useState('');
+  const [shareFreshFind, setShareFreshFind] = useState(true);
+  const [includeValueRangeInFreshFind, setIncludeValueRangeInFreshFind] = useState(true);
+  const [savingItem, setSavingItem] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Mobile tab state
+  const [mobileTab, setMobileTab] = useState<'chat' | 'card'>('chat');
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!firebaseUser?.emailVerified) return;
+    let active = true;
+    listOwnerCollections(firebaseUser.uid, firebaseUser.uid, 50).then((cols) => {
+      if (!active) return;
+      setMyCollections(cols);
+      if (preselectedColId && cols.some((c) => c.id === preselectedColId)) {
+        setSelectedCollectionId(preselectedColId);
+      } else if (cols.length > 0) {
+        setSelectedCollectionId(cols[0].id);
+      } else {
+        setCreatingInlineCol(true);
+        setNewColTitle('My First Collection');
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [firebaseUser?.uid, firebaseUser?.emailVerified, preselectedColId]);
+
+  // Load photo from sessionStorage if coming from HomeIdentifyHero
+  useEffect(() => {
+    const storedPhoto = sessionStorage.getItem('fanzeum_identify_photo');
+    const storedFilename = sessionStorage.getItem('fanzeum_identify_filename');
+    const storedMimetype = sessionStorage.getItem('fanzeum_identify_mimetype');
+    if (storedPhoto && storedFilename && storedMimetype && slots.length === 0 && !panelStarted) {
+      // Convert base64 to blob and process
+      const base64 = storedPhoto.split(',')[1] || storedPhoto;
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: storedMimetype });
+      const file = new File([blob], storedFilename, { type: storedMimetype });
+      processCollectiblePhoto(file, { rotationDeg: 0, label: 'Front' }).then((processed) => {
+        setSlots([
+          {
+            id: makeSafeId('slot'),
+            file,
+            label: 'Front',
+            rotationDeg: 0,
+            processed,
+          },
+        ]);
+        // Clear sessionStorage after use
+        sessionStorage.removeItem('fanzeum_identify_photo');
+        sessionStorage.removeItem('fanzeum_identify_filename');
+        sessionStorage.removeItem('fanzeum_identify_mimetype');
+      }).catch((err) => {
+        console.error('Failed to process stored photo:', err);
+        sessionStorage.removeItem('fanzeum_identify_photo');
+        sessionStorage.removeItem('fanzeum_identify_filename');
+        sessionStorage.removeItem('fanzeum_identify_mimetype');
+      });
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

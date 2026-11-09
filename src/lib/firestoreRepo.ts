@@ -1859,3 +1859,29 @@ export async function submitCommunityReport(params: {
     handleFirestoreError(error, OperationType.CREATE, `reports/${reportId}`);
   }
 }
+
+export async function updateUserWaitlistPremium(uid: string, waitlist: boolean): Promise<void> {
+  const userRef = doc(db, 'users', uid);
+  await updateDoc(userRef, {
+    waitlistPremium: waitlist,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function updateCollectibleItemValuation(
+  itemId: string,
+  valuation: {
+    minGbp: number;
+    maxGbp: number;
+    currency: 'GBP';
+    confidence: ConfidenceLevel;
+    reason: string;
+    date: string;
+  }
+): Promise<void> {
+  const itemRef = doc(db, 'items', itemId);
+  await updateDoc(itemRef, {
+    valuation,
+    updatedAt: serverTimestamp(),
+  });
+}
