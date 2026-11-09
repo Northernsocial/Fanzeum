@@ -1,4 +1,4 @@
-name: AI manager (free model team, AI Olympics)
+name: AI manager (free model team, AI ensemble)
 on:
   issues:
     types: [labeled]
@@ -89,7 +89,7 @@ jobs:
           fi
           if [ -f /tmp/oly/LEADERBOARD.md ]; then
             git checkout -q main && git reset -q --hard origin/main && git pull -q origin main && mkdir -p olympics
-            cp /tmp/oly/leaderboard.json /tmp/oly/LEADERBOARD.md olympics/
+            cp /tmp/oly/*.json /tmp/oly/LEADERBOARD.md olympics/
             git add olympics && git commit -qm "AI Olympics: leaderboard after #$N" && git push -q origin main || true
           fi
           gh workflow run ai-manager.yml --ref main || true
