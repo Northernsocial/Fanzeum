@@ -109,14 +109,25 @@
     "Mistral": 0,
     "Thinker": 0
    }
+  },
+  {
+   "issue": "78",
+   "title": "F5 Public 'What's it worth' pages",
+   "winner": null,
+   "scores": {
+    "Gemini Flash": 50,
+    "DeepSeek": 0,
+    "Mistral": 0,
+    "Thinker": 50
+   }
   }
  ],
  "table": {
   "Gemini Flash": {
    "gold": 0,
-   "entries": 8,
-   "green": 4,
-   "points": 247
+   "entries": 9,
+   "green": 5,
+   "points": 297
   },
   "DeepSeek": {
    "gold": 0,
@@ -132,9 +143,9 @@
   },
   "Thinker": {
    "gold": 0,
-   "entries": 9,
-   "green": 1,
-   "points": 60
+   "entries": 10,
+   "green": 2,
+   "points": 110
   }
  }
 }
