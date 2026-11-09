@@ -189,13 +189,19 @@ else: panel.append(("Fast judge", "team/fast", POOL, None))
 if GEMINI_KEY: panel.append(("Gemini judge", "gemini-flash-latest", GEMINI, GEMINI_KEY))
 for e in entries:
     if not (e["green"] and e["safe"] and e["full"].strip()): continue
-    d = e["full"][:45000] + ("\n[diff cut only to fit this review; do not report truncation as a defect.]" if len(e["full"]) > 45000 else "")
+    d = e["full"][:20000] + ("\n[diff cut only to fit this review; do not report truncation as a defect.]" if len(e["full"]) > 20000 else "")
     rp = ("You are a sceptical senior judge in the AI Olympics for Fanzeum (UK collectors PWA). Judge this entry for bugs, security holes, Firestore writes that do not match firestore.rules, "
           "Gemini calls or keys in client code, claims that AI results authenticate items, broken layouts, and whether it fully completes the task. "
           "Reply under 150 words: first line exactly PASS or FAIL, second line QUALITY: <1-10>, then up to 5 findings.\n\nTask:\n" + task +
           "\n\nDIFF STAT:\n" + e["stat"] + "\nLINES DELETED: " + str(e["dels"]) + "\n\nDiff:\n" + d)
     for jn, m, u, k in panel:
-        r = chat(m, [{"role": "user", "content": rp}], url=u, key=k, max_tokens=1500)
+        r = ""
+        for a in range(3):
+            r = chat(m, [{"role": "user", "content": rp}], url=u, key=k, max_tokens=4000)
+            if r.strip(): break
+            time.sleep(30 * (a + 1))
+        if not r.strip(): e["notes"].append(f"**{jn}: no reply (abstained)**"); continue
+        e["votes"] = e.get("votes", 0) + 1
         v = r.strip().upper().lstrip("*# ").startswith("PASS"); e["passes"] += v
         q = re.search(r"QUALITY:\s*(\d+)", r, re.I); e["quality"] += min(int(q.group(1)), 10) if q else 0
         e["notes"].append(f"**{jn}: {'PASS' if v else 'FAIL'}** {r.strip()[:600]}")
@@ -203,7 +209,7 @@ for e in entries:
     if not e["full"].strip(): e["green"] = False  # no code produced = no-show, never points for an untouched build
     e["score"] = (50 if e["green"] else 0) + 15 * e["passes"] + e["quality"]
 ranked = sorted(entries, key=lambda e: (-e["score"], e["mins"]))
-win = next((e for e in ranked if e["green"] and e["safe"] and e["passes"] * 2 >= len(panel)), None)
+win = next((e for e in ranked if e["green"] and e["safe"] and e.get("votes", 0) >= 2 and e["passes"] * 2 > e.get("votes", 0)), None)
 
 os.makedirs("/tmp/oly", exist_ok=True); lbp = "olympics/leaderboard.json"
 lb = json.load(open(lbp)) if os.path.exists(lbp) else {"rounds": [], "table": {}}
@@ -221,7 +227,7 @@ open("/tmp/oly/LEADERBOARD.md", "w").write(md)
 
 report = f"## AI Olympics, round for #{NUM}\n" + (f"**Gold: {win['name']}**\n\n" if win else "**No winner this round.** Best entry pushed to the branch for a human look.\n\n")
 report += f"| Place | Model | Tests | Judges | Quality | Score | Minutes |\n|---|---|---|---|---|---|---|\n"
-report += "".join(f"| {i+1} | {e['name']} | {'no entry' if not e['full'].strip() else ('pass' if e['green'] else 'fail')}{'' if e['safe'] else ' (blocked)'} | {e['passes']}/{len(panel)} | {e['quality']} | {e['score']} | {e['mins']} |\n" for i, e in enumerate(ranked))
+report += "".join(f"| {i+1} | {e['name']} | {'no entry' if not e['full'].strip() else ('pass' if e['green'] else 'fail')}{'' if e['safe'] else ' (blocked)'} | {e['passes']}/{e.get('votes', 0)} replied | {e['quality']} | {e['score']} | {e['mins']} |\n" for i, e in enumerate(ranked))
 if win: report += "\n### Judges on the winner\n" + "\n\n".join(win["notes"])
 open("/tmp/report.md", "w").write(report)
 pick = win or ranked[0]
