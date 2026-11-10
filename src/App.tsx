@@ -77,6 +77,9 @@ const SwapsHubPage = lazy(() =>
 const CommunitiesPage = lazy(() =>
   import('./features/communities/CommunitiesPage').then((m) => ({ default: m.CommunitiesPage })),
 );
+const CheckoutSuccessPage = lazy(() =>
+  import('./features/checkout/CheckoutSuccessPage').then((m) => ({ default: m.CheckoutSuccessPage })),
+);
 
 const LegacyExhibitionRedirect: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -197,6 +200,7 @@ export default function App() {
                     <Route path="/portfolio" element={<PortfolioValuationPage />} />
                     <Route path="/swaps" element={<SwapsHubPage />} />
                     <Route path="/communities" element={<CommunitiesPage />} />
+                    <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/privacy" element={<SettingsPage />} />
                     <Route path="/showcase" element={<ShowcaseRoute />} />

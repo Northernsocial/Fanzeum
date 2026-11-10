@@ -1721,5 +1721,90 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'listingId', 'itemId', 'buyerId', 'buyerHandle', 'sellerId', 'sellerHandle', 'title', 'priceGbp', 'platformCommissionRate', 'platformCommissionGbp', 'sellerPayoutDue', 'stripeSessionId', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'listingId', 'itemId', 'buyerId', 'buyerHandle', 'sellerId', 'sellerHandle', 'title', 'priceGbp', 'platformCommissionRate', 'platformCommissionGbp', 'sellerPayoutDue', 'stripeSessionId', 'status', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        isValidId(data.listingId) &&
+        isValidId(data.itemId) &&
+        isValidId(data.buyerId) &&
+        data.buyerHandle is string && data.buyerHandle.size() >= 2 && data.buyerHandle.size() <= 32 &&
+        isValidId(data.sellerId) &&
+        data.sellerHandle is string && data.sellerHandle.size() >= 2 && data.sellerHandle.size() <= 32 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.priceGbp is number && data.priceGbp >= 0 && data.priceGbp <= 10000000 &&
+        data.platformCommissionRate is number && data.platformCommissionRate >= 0 && data.platformCommissionRate <= 1 &&
+        data.platformCommissionGbp is number && data.platformCommissionGbp >= 0 &&
+        data.sellerPayoutDue is number && data.sellerPayoutDue >= 0 &&
+        (data.sellerPayoutDue + data.platformCommissionGbp) == data.priceGbp &&
+        data.stripeSessionId is string && data.stripeSessionId.size() >= 1 && data.stripeSessionId.size() <= 256 &&
+        data.status in ['pending_payment', 'paid', 'payment_failed', 'cancelled', 'refunded'] &&
+        data.createdAt == request.time &&
+        data.updatedAt == request.time;
+    }
+
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId) && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        isAdmin() ||
+        (
+          request.query.limit <= 100 &&
+          request.query.filters.size() == 1 &&
+          request.query.filters[0].field == 'buyerId' &&
+          request.query.filters[0].op == '==' &&
+          request.query.filters[0].value == request.auth.uid
+        ) ||
+        (
+          request.query.limit <= 100 &&
+          request.query.filters.size() == 1 &&
+          request.query.filters[0].field == 'sellerId' &&
+          request.query.filters[0].op == '==' &&
+          request.query.filters[0].value == request.auth.uid
+        )
+      );
+
+      allow create: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().id == orderId &&
+        incoming().buyerId == request.auth.uid &&
+        incoming().buyerId != incoming().sellerId &&
+        incoming().status == 'pending_payment' &&
+        exists(/databases/$(database)/documents/marketplace/$(incoming().listingId)) &&
+        get(/databases/$(database)/documents/marketplace/$(incoming().listingId)).data.status == 'active' &&
+        get(/databases/$(database)/documents/marketplace/$(incoming().listingId)).data.sellerId == incoming().sellerId &&
+        get(/databases/$(database)/documents/marketplace/$(incoming().listingId)).data.itemId == incoming().itemId &&
+        get(/databases/$(database)/documents/marketplace/$(incoming().listingId)).data.priceGbp == incoming().priceGbp &&
+        get(/databases/$(database)/documents/marketplace/$(incoming().listingId)).data.title == incoming().title;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        existing().sellerId == request.auth.uid &&
+        (
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+            incoming().status == 'paid' &&
+            existing().status == 'pending_payment' &&
+            incoming().updatedAt == request.time
+          ) ||
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+            incoming().status == 'cancelled' &&
+            existing().status in ['pending_payment', 'payment_failed'] &&
+            incoming().updatedAt == request.time
+          )
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid || isAdmin()) &&
+        existing().status in ['pending_payment', 'payment_failed', 'cancelled'];
+    }
+}
 }

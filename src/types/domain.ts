@@ -450,3 +450,42 @@ export interface CommunityReplyRecord {
   createdAt?: unknown;
   updatedAt?: unknown;
 }
+
+export type OrderStatus = 'pending_payment' | 'paid' | 'payment_failed' | 'cancelled' | 'refunded';
+
+export interface OrderRecord {
+  id: string;
+  listingId: string;
+  itemId: string;
+  buyerId: string;
+  buyerHandle: string;
+  sellerId: string;
+  sellerHandle: string;
+  title: string;
+  priceGbp: number;
+  platformCommissionRate: number;
+  platformCommissionGbp: number;
+  sellerPayoutDue: number;
+  stripeSessionId: string;
+  status: OrderStatus;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface CheckoutSessionRecord {
+  id: string;
+  orderId: string;
+  listingId: string;
+  itemId: string;
+  buyerId: string;
+  sellerId: string;
+  title: string;
+  priceGbp: number;
+  platformCommissionGbp: number;
+  sellerPayoutDue: number;
+  stripeSessionId: string;
+  stripeCheckoutUrl: string;
+  status: 'pending' | 'complete' | 'expired';
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
