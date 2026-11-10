@@ -1,6 +1,6 @@
 {
  "credits": {
-  "Coder": 5,
+  "Coder": 6,
   "Thinker": 4,
   "Writer": 1
  },
@@ -27,6 +27,12 @@
    "issue": "39",
    "kept": 2,
    "of": 5,
+   "merged": false
+  },
+  {
+   "issue": "47",
+   "kept": 1,
+   "of": 4,
    "merged": false
   }
  ]
