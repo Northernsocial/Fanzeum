@@ -8,7 +8,7 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { DEMO_COLLECTIONS, DEMO_FRESH_FINDS, DEMO_ITEMS, DEMO_USERS } from '../data/demoCatalog';
+import { DEMO_COLLECTIONS, DEMO_FRESH_FINDS, DEMO_ITEMS, DEMO_SETS, DEMO_USERS } from '../data/demoCatalog';
 import { db, handleFirestoreError, OperationType } from './firebase';
 import { setBuiltinDemoHidden } from './firestoreRepo';
 
@@ -18,7 +18,7 @@ import { setBuiltinDemoHidden } from './firestoreRepo';
  */
 export async function seedDemoDataToFirestore(
   onProgress?: (message: string) => void,
-): Promise<{ users: number; collections: number; items: number; freshFinds: number }> {
+): Promise<{ users: number; collections: number; items: number; freshFinds: number; sets: number }> {
   setBuiltinDemoHidden(false);
 
   onProgress?.('Writing 6 demo collector profiles…');
@@ -160,12 +160,35 @@ export async function seedDemoDataToFirestore(
     handleFirestoreError(error, OperationType.WRITE, 'freshFinds');
   }
 
+  // 5. Demo Sets
+  onProgress?.(`Writing ${DEMO_SETS.length} demo sets…`);
+  try {
+    const setBatch = writeBatch(db);
+    for (const set of DEMO_SETS) {
+      const payload: Record<string, unknown> = {
+        title: set.title,
+        category: set.category,
+        description: set.description,
+        totalItems: set.totalItems,
+        items: set.items,
+        isDemo: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      setBatch.set(doc(db, 'sets', set.id), payload);
+    }
+    await setBatch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'sets');
+  }
+
   onProgress?.('Demo data loaded.');
   return {
     users: DEMO_USERS.length,
     collections: DEMO_COLLECTIONS.length,
     items: DEMO_ITEMS.length,
     freshFinds: DEMO_FRESH_FINDS.length,
+    sets: DEMO_SETS.length,
   };
 }
 
@@ -177,7 +200,7 @@ export async function removeDemoDataFromFirestore(
 ): Promise<{ deletedCount: number }> {
   let deletedCount = 0;
 
-  for (const colName of ['freshFinds', 'items', 'collections', 'users'] as const) {
+  for (const colName of ['sets', 'freshFinds', 'items', 'collections', 'users'] as const) {
     onProgress?.(`Removing demo records from ${colName}…`);
     try {
       const q =
@@ -211,4 +234,34 @@ export async function removeDemoDataFromFirestore(
   setBuiltinDemoHidden(true);
   onProgress?.('All demo data removed.');
   return { deletedCount };
+}
+
+/**
+ * Seeds demo sets into Firestore (idempotent, uses deterministic IDs).
+ */
+export async function seedDemoSetsToFirestore(
+  onProgress?: (message: string) => void,
+): Promise<{ sets: number }> {
+  onProgress?.(`Writing ${DEMO_SETS.length} demo sets…`);
+  try {
+    const setBatch = writeBatch(db);
+    for (const set of DEMO_SETS) {
+      const payload: Record<string, unknown> = {
+        title: set.title,
+        category: set.category,
+        description: set.description,
+        totalItems: set.totalItems,
+        items: set.items,
+        isDemo: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      setBatch.set(doc(db, 'sets', set.id), payload);
+    }
+    await setBatch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'sets');
+  }
+  onProgress?.('Demo sets loaded.');
+  return { sets: DEMO_SETS.length };
 }
