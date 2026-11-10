@@ -1168,7 +1168,13 @@ service cloud.firestore {
         incoming().reporterId == request.auth.uid &&
         incoming().createdAt == request.time;
 
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() &&
+        incoming().keys().hasOnly(['status','hidden','updatedAt']) &&
+        incoming().status in ['open','resolved','dismissed'] &&
+        incoming().hidden is bool &&
+        incoming().updatedAt == request.time;
+
+      allow delete: if isAdmin();
     }
 
     // 9. Fresh Finds (Public reads, owner-only create & delete, no edits by others or anyone)
@@ -1720,6 +1726,66 @@ service cloud.firestore {
         allow delete: if isVerifiedUser() &&
           (existing().authorId == request.auth.uid || isAdmin());
       }
+    }
+
+    function isValidAdminUserUpdate(data) {
+      return data.keys().hasOnly(['role','plan','updatedAt']) &&
+        data.role is string && data.role.size() <= 32 &&
+        data.plan is string && data.plan.size() <= 32 &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidReportUpdate(data) {
+      return data.keys().hasOnly(['status','hidden','updatedAt']) &&
+        data.status in ['open','resolved','dismissed'] &&
+        data.hidden is bool &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidCategoryUpdate(data) {
+      return data.keys().hasOnly(['displayName','updatedAt']) &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidFeaturedItem(data) {
+      return data.keys().hasAll(['id','itemId','featured','createdAt','updatedAt']) &&
+        data.keys().hasOnly(['id','itemId','featured','createdAt','updatedAt']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.itemId is string && isValidId(data.itemId) &&
+        data.featured is bool &&
+        data.createdAt == request.time &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidFeaturedItemUpdate(data) {
+      return data.keys().hasOnly(['featured','updatedAt']) &&
+        data.featured is bool &&
+        data.updatedAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get, list: if isAdmin() && isValidId(userId);
+      allow update: if isAdmin() && isValidId(userId) && isValidAdminUserUpdate(incoming());
+    }
+
+    match /categories/{categoryId} {
+      allow get, list: if isValidId(categoryId);
+      allow create: if false;
+      allow update: if isAdmin() && isValidId(categoryId) && isValidCategoryUpdate(incoming());
+      allow delete: if false;
+    }
+
+    match /featured/{itemId} {
+      allow get, list: if isValidId(itemId);
+      allow create: if isAdmin() && isValidId(itemId) && incoming().id == itemId && isValidFeaturedItem(incoming());
+      allow update: if isAdmin() && isValidId(itemId) && isValidFeaturedItemUpdate(incoming());
+      allow delete: if isAdmin() && isValidId(itemId);
+    }
+
+    match /usage/{docId} {
+      allow get, list: if isAdmin() && isValidId(docId);
+      allow create, update, delete: if false;
     }
   }
 }
