@@ -1,8 +1,8 @@
 {
  "credits": {
-  "Coder": 9,
-  "Thinker": 6,
-  "Writer": 1
+  "Coder": 14,
+  "Thinker": 8,
+  "Writer": 2
  },
  "pieces": [
   {
@@ -37,6 +37,12 @@
   },
   {
    "issue": "69",
+   "kept": 5,
+   "of": 5,
+   "merged": false
+  },
+  {
+   "issue": "70",
    "kept": 5,
    "of": 5,
    "merged": false

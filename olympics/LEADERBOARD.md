@@ -4,11 +4,12 @@ Movements each player helped land (lead or fixer):
 
 | Player | Movements |
 |---|---|
-| Coder | 9 |
-| Thinker | 6 |
-| Writer | 1 |
+| Coder | 14 |
+| Thinker | 8 |
+| Writer | 2 |
 
 ## Pieces
+- #70: 5/5 movements
 - #69: 5/5 movements
 - #47: 1/4 movements
 - #39: 2/5 movements
