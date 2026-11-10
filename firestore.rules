@@ -1721,5 +1721,72 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+    function isValidWorthItem(data) {
+      return data.keys().hasAll(['id', 'slug', 'category', 'name', 'valueMinGbp', 'valueMaxGbp', 'collectorCount', 'salesCount', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'slug', 'category', 'name', 'valueMinGbp', 'valueMaxGbp', 'collectorCount', 'salesCount', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 120 &&
+        data.slug is string && data.slug.size() >= 1 && data.slug.size() <= 120 &&
+        isValidCategory(data.category) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 200 &&
+        data.valueMinGbp is number && data.valueMinGbp >= 0 &&
+        data.valueMaxGbp is number && data.valueMaxGbp >= 0 &&
+        data.valueMaxGbp >= data.valueMinGbp &&
+        data.collectorCount is number && data.collectorCount >= 0 &&
+        data.salesCount is number && data.salesCount >= 0 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidWorthSale(data) {
+      return data.keys().hasAll(['id', 'itemId', 'priceGbp', 'condition', 'soldAt', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'itemId', 'priceGbp', 'condition', 'source', 'soldAt', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 80 &&
+        data.itemId is string && data.itemId.size() >= 1 && data.itemId.size() <= 120 &&
+        data.priceGbp is number && data.priceGbp >= 0 &&
+        data.condition is string && data.condition.size() >= 1 && data.condition.size() <= 80 &&
+        (!('source' in data) || (data.source is string && data.source.size() <= 200)) &&
+        data.soldAt is timestamp &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    match /worthItems/{itemId} {
+      allow get, list: if isValidId(itemId);
+
+      allow create: if isAdmin() &&
+        isValidId(itemId) &&
+        isValidWorthItem(incoming()) &&
+        incoming().id == itemId &&
+        incoming().slug == itemId;
+
+      allow update: if isAdmin() &&
+        isValidId(itemId) &&
+        isValidWorthItem(incoming()) &&
+        incoming().id == itemId &&
+        incoming().slug == itemId;
+
+      allow delete: if isAdmin() && isValidId(itemId);
+
+      match /sales/{saleId} {
+        allow get, list: if isValidId(itemId) && isValidId(saleId);
+
+        allow create: if isAdmin() &&
+          isValidId(itemId) &&
+          isValidId(saleId) &&
+          isValidWorthSale(incoming()) &&
+          incoming().id == saleId &&
+          incoming().itemId == itemId;
+
+        allow update: if isAdmin() &&
+          isValidId(itemId) &&
+          isValidId(saleId) &&
+          isValidWorthSale(incoming()) &&
+          incoming().id == saleId &&
+          incoming().itemId == itemId;
+
+        allow delete: if isAdmin() && isValidId(itemId) && isValidId(saleId);
+      }
+    }
+}
 }

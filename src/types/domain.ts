@@ -450,3 +450,15 @@ export interface CommunityReplyRecord {
   createdAt?: unknown;
   updatedAt?: unknown;
 }
+
+export interface WorthItem {
+  slug: string;
+  category: CategorySlug;
+  name: string;
+}
+
+export interface WorthCategory {
+  slug: CategorySlug;
+  name: string;
+  itemCount: number;
+}
