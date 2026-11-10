@@ -4,6 +4,7 @@ import type {
   CategorySlug,
   CollectorGoal,
   PanelCard,
+  PreGradeResult,
 } from '../types/domain';
 import type { PanelChatTurnResponse } from '../server/ai/panelChat';
 
@@ -93,6 +94,25 @@ export async function polishCollectionStory(params: {
     throw new Error(data?.error || 'Could not tidy up your story right now.');
   }
   return String(data.story || params.draftStory);
+}
+
+export async function preGradeItem(params: {
+  itemId: string;
+  category?: string;
+  title?: string;
+  photoUrls: string[];
+  userNotes?: string;
+}): Promise<PreGradeResult> {
+  const res = await fetch('/api/ai/pre-grade', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || 'Could not run AI pre-grade right now. Please try again shortly.');
+  }
+  return data as PreGradeResult;
 }
 
 export async function generateListingDescription(params: {

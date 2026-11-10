@@ -157,6 +157,7 @@ export interface CollectibleItemRecord {
   helpedBy?: string; // Collector handle or note of who contributed ID correction
   panelStatus?: 'none' | 'confirmed' | 'disputed';
   panelConfirmedAt?: string;
+  preGrade?: PreGradeResult;
   isDemo?: boolean;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -450,3 +451,42 @@ export interface CommunityReplyRecord {
   createdAt?: unknown;
   updatedAt?: unknown;
 }
+
+export type GradingCompany = 'PSA' | 'CGC' | 'BGS' | 'SGC' | 'PCGS' | 'NGC' | 'other';
+
+export type GradingSubmissionStatus = 'prepared' | 'sent' | 'in_progress' | 'returned' | 'cancelled';
+
+export interface PreGradeAspectNote {
+  observation: string;
+  scoreEstimate?: string;
+  flaws: string[];
+}
+
+export interface PreGradeResult {
+  centring: PreGradeAspectNote;
+  corners: PreGradeAspectNote;
+  edges: PreGradeAspectNote;
+  surface: PreGradeAspectNote;
+  estimatedGradeRange: string;
+  summary: string;
+  confidence: ConfidenceLevel;
+  disclaimer: string;
+  gradedAt: string; // ISO string
+}
+
+export interface GradingSubmission {
+  id: string;
+  itemId: string;
+  userId: string;
+  company: GradingCompany;
+  customCompanyName?: string;
+  dateSent: string; // YYYY-MM-DD
+  reference: string;
+  status: GradingSubmissionStatus;
+  returnedGrade?: string;
+  notes?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export type GradingSubmissionRecord = GradingSubmission;

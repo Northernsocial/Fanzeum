@@ -1721,5 +1721,42 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+      // Pre-grade field validation
+      function isValidPreGrade(pg) {
+        return pg.keys().hasAll(['centring', 'corners', 'edges', 'surface', 'estimatedGradeRange', 'summary', 'confidence', 'disclaimer', 'gradedAt']) &&
+          pg.keys().hasOnly(['centring', 'corners', 'edges', 'surface', 'estimatedGradeRange', 'summary', 'confidence', 'disclaimer', 'gradedAt']) &&
+          typeof pg.centring.observation == 'string' &&
+          typeof pg.centring.scoreEstimate == 'string' &&
+          pg.centring.flaws is list &&
+          typeof pg.corners.observation == 'string' &&
+          typeof pg.corners.scoreEstimate == 'string' &&
+          pg.corners.flaws is list &&
+          typeof pg.edges.observation == 'string' &&
+          typeof pg.edges.scoreEstimate == 'string' &&
+          pg.edges.flaws is list &&
+          typeof pg.surface.observation == 'string' &&
+          typeof pg.surface.scoreEstimate == 'string' &&
+          pg.surface.flaws is list &&
+          typeof pg.estimatedGradeRange == 'string' &&
+          typeof pg.summary == 'string' &&
+          pg.confidence in ['high', 'medium', 'low'] &&
+          typeof pg.disclaimer == 'string' &&
+          typeof pg.gradedAt == 'string';
+      }
+
+      function isValidGradingSubmission(sub) {
+        return sub.keys().hasAll(['company', 'dateSent', 'reference', 'status']) &&
+          sub.keys().hasOnly(['company', 'dateSent', 'reference', 'status', 'returnedGrade']) &&
+          sub.company in ['PSA', 'CGC', 'BGS', 'SGC', 'PCGS', 'NGC', 'other'] &&
+          typeof sub.dateSent == 'string' &&
+          typeof sub.reference == 'string' &&
+          sub.status in ['prepared', 'sent', 'in_progress', 'returned', 'cancelled'] &&
+          (!('returnedGrade' in sub) || typeof sub.returnedGrade == 'string');
+      }
+
+      function isValidGradingSubmissionsArray(arr) {
+        return arr is list && arr.every(sub => isValidGradingSubmission(sub));
+      }
+}
 }

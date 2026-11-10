@@ -1,10 +1,11 @@
 import type { PlanTier, UserProfile } from '../types/domain';
 
-export type GatedFeature = 'identify' | 'create_collection' | 'bulk_upload';
+export type GatedFeature = 'identify' | 'create_collection' | 'bulk_upload' | 'pre_grade';
 
 export interface PlanEntitlements {
   maxCollections: number;
   hourlyAiIdentifications: number;
+  monthlyPreGrades: number;
   canBulkUpload: boolean;
   commissionRatePercent: number;
   label: string;
@@ -14,6 +15,7 @@ const PLAN_LIMITS: Record<PlanTier, PlanEntitlements> = {
   free: {
     maxCollections: 1,
     hourlyAiIdentifications: 20,
+    monthlyPreGrades: 3,
     canBulkUpload: false,
     commissionRatePercent: 8.5,
     label: 'Collector (Free)',
@@ -21,6 +23,7 @@ const PLAN_LIMITS: Record<PlanTier, PlanEntitlements> = {
   premium: {
     maxCollections: 9999,
     hourlyAiIdentifications: 100,
+    monthlyPreGrades: 9999,
     canBulkUpload: true,
     commissionRatePercent: 4.5,
     label: 'Collector Plus',
@@ -28,6 +31,7 @@ const PLAN_LIMITS: Record<PlanTier, PlanEntitlements> = {
   store: {
     maxCollections: 9999,
     hourlyAiIdentifications: 500,
+    monthlyPreGrades: 9999,
     canBulkUpload: true,
     commissionRatePercent: 3.5,
     label: 'Dealer & Store',
@@ -44,10 +48,32 @@ export function getEntitlements(profile: UserProfile | null | undefined): PlanEn
   return PLAN_LIMITS[tier];
 }
 
+export function canPreGrade(
+  user: UserProfile | null | undefined,
+  monthlyCountUsed = 0,
+): { allowed: boolean; remaining: number; reason?: string } {
+  if (!user) {
+    return { allowed: false, remaining: 0, reason: 'Sign in to run an AI pre-grade on your piece.' };
+  }
+  const limits = getEntitlements(user);
+  if (isPremium(user)) {
+    return { allowed: true, remaining: 9999 };
+  }
+  const remaining = Math.max(0, limits.monthlyPreGrades - monthlyCountUsed);
+  if (remaining <= 0) {
+    return {
+      allowed: false,
+      remaining: 0,
+      reason: `You have reached your limit of ${limits.monthlyPreGrades} pre-grades this month. Upgrade to Collector Plus for unlimited AI pre-grades.`,
+    };
+  }
+  return { allowed: true, remaining };
+}
+
 export function canUse(
   feature: GatedFeature,
   user: UserProfile | null | undefined,
-  context?: { currentCollectionsCount?: number },
+  context?: { currentCollectionsCount?: number; preGradesThisMonth?: number },
 ): { allowed: boolean; reason?: string } {
   if (!user) {
     return { allowed: false, reason: 'Sign in first to use this feature.' };
@@ -78,6 +104,11 @@ export function canUse(
       };
     }
     return { allowed: true };
+  }
+
+  if (feature === 'pre_grade') {
+    const check = canPreGrade(user, context?.preGradesThisMonth ?? 0);
+    return { allowed: check.allowed, reason: check.reason };
   }
 
   return { allowed: true };

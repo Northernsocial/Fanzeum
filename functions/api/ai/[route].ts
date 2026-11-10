@@ -5,6 +5,7 @@ import {
   enhanceStory,
   identifyItem,
   onboardingSuggest,
+  preGradeItem,
   processPanelChatTurn,
 } from '../../../src/server/ai/index.ts';
 
@@ -116,6 +117,20 @@ export async function onRequestPost(context: CloudflarePagesContext): Promise<Re
 
     if (route === 'enhance-story') {
       const result = await enhanceStory(body, apiKey);
+      return jsonResponse(result, 200);
+    }
+
+    if (route === 'pre-grade') {
+      const preGradeInput = {
+        itemId: typeof body.itemId === 'string' ? body.itemId : '',
+        category: typeof body.category === 'string' ? body.category : undefined,
+        title: typeof body.title === 'string' ? body.title : undefined,
+        photoUrls: Array.isArray(body.photoUrls)
+          ? body.photoUrls.filter((x): x is string => typeof x === 'string')
+          : [],
+        userNotes: typeof body.userNotes === 'string' ? body.userNotes : undefined,
+      };
+      const result = await preGradeItem(preGradeInput);
       return jsonResponse(result, 200);
     }
 
