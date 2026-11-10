@@ -3,7 +3,7 @@
   "Coder": 26,
   "Thinker": 11,
   "Writer": 6,
-  "Mistral": 1,
+  "Mistral": 2,
   "Gemini Flash": 1
  },
  "pieces": [
@@ -76,6 +76,12 @@
   {
    "issue": "78",
    "kept": 2,
+   "of": 4,
+   "merged": false
+  },
+  {
+   "issue": "35",
+   "kept": 1,
    "of": 4,
    "merged": false
   }
