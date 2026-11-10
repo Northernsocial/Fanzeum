@@ -1,10 +1,19 @@
 {
- "credits": {},
+ "credits": {
+  "Coder": 3,
+  "Thinker": 2
+ },
  "pieces": [
   {
    "issue": "33",
    "kept": 0,
    "of": 5,
+   "merged": false
+  },
+  {
+   "issue": "35",
+   "kept": 3,
+   "of": 4,
    "merged": false
   }
  ]
