@@ -212,17 +212,47 @@ panel = [("Thinker", "team/thinker", POOL, None), ("Writer", "team/writer", POOL
 if GROQ_KEY: panel.append(("Groq", "openai/gpt-oss-120b", GROQ, GROQ_KEY))
 else: panel.append(("Fast", "team/fast", POOL, None))
 if GEMINI_KEY: panel.append(("Gemini", "gemini-flash-latest", GEMINI, GEMINI_KEY))
-reviews = []; passes = votes = 0
-if green:
+def review(rp):
+    rv = []; ps = vs = 0
     for jn, m, u, k in panel:
         r = ""
         for a in range(3):
             r = _call(m, [{"role": "user", "content": rp}], u, k, 4000, 600)
             if r.strip(): break
             time.sleep(30 * (a + 1))
-        if not r.strip(): reviews.append(f"### {jn}: no reply (abstained)"); continue
-        votes += 1; v = r.strip().upper().lstrip("*# ").startswith("PASS"); passes += v
-        reviews.append(f"### {jn}: {'PASS' if v else 'FAIL'}\n{r.strip()[:1200]}")
+        if not r.strip(): rv.append(f"### {jn}: no reply (abstained)"); continue
+        vs += 1; v = r.strip().upper().lstrip("*# ").startswith("PASS"); ps += v
+        rv.append(f"### {jn}: {'PASS' if v else 'FAIL'}\n{r.strip()[:1200]}")
+    return rv, ps, vs
+reviews = []; passes = votes = 0
+if green: reviews, passes, votes = review(rp)
+# encore: if the panel heard real problems, the ensemble fixes them together and plays it once more
+for enc in range(2):
+    if not (green and votes >= 2 and passes * 2 <= votes): break
+    findings = "\n\n".join(x for x in reviews if ": FAIL" in x)[:8000]
+    changed = [l[3:] for l in sh("git status --porcelain --untracked-files=all").splitlines()][:14]
+    checkpoint(ck); REJECTED.clear()
+    fx, out = play([sys_msg, {"role": "user", "content": files_block(changed + (["firestore.rules"] if os.path.isfile("firestore.rules") else [])) +
+                    f"\n\nTask:\n{task}\n\nThe review panel found these problems in the team's work:\n{findings}\n\nFix every real problem (security, missing rules wiring, missing parts of the spec). "
+                    "Use EDIT or APPEND blocks; output only what changes."}], start=enc + 1)
+    write(out)
+    for r in range(2):
+        lg = sh(TEST)
+        if is_green(lg): break
+        ch2 = [l[3:] for l in sh("git status --porcelain --untracked-files=all").splitlines()]
+        write(play([sys_msg, {"role": "user", "content": files_block(ch2) + "\n\nTypecheck/test output:\n" + lg[-12000:] + "\n\nFix every error. Output only what changes."}], start=enc + 2 + r)[1])
+    sh("git add -A"); full2 = sh("git diff --cached -- . ':!*.mp3' ':!*.mp4' ':!*.lock'")
+    if not (full2.strip() and is_green(sh(TEST))): reset_to(ck); break
+    if fx: CREDITS[fx] = CREDITS.get(fx, 0) + 1
+    full = full2; stat = sh("git diff --cached --stat -- . ':!*.mp3' ':!*.mp4' ':!*.lock'")
+    dels = sum(1 for l in full.splitlines() if l.startswith("-") and not l.startswith("---"))
+    added = [l[1:] for l in full.splitlines() if l.startswith("+") and not l.startswith("+++")]
+    markers = any(re.match(r"(<<<<<<<|>>>>>>>)", l) or l == "=======" for l in added)
+    if os.path.isfile("firestore.rules"):
+        rt = open("firestore.rules", errors="ignore").read(); rules_bad = rt.count("{") != rt.count("}")
+    d = full[:20000]
+    rp = rp.split("\n\nDiff:\n")[0].split("\n\nDIFF STAT:")[0] + "\n\nDIFF STAT:\n" + stat + "\nLINES DELETED: " + str(dels) + "\n\nDiff:\n" + d
+    reviews, passes, votes = review(rp); log_lines.append(f"| encore {enc+1} | fixes from review | {fx or '-'} | - | re-reviewed: {passes}/{votes} PASS |")
 complete = done == len(movements)
 safe = dels <= 120 and not markers and not rules_bad
 ok = green and complete and safe and votes >= 2 and passes * 2 > votes
