@@ -1721,5 +1721,34 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+    function isValidCategoryFollow(data) {
+      return data.keys().hasAll(['followerId', 'targetType', 'targetId', 'createdAt']) &&
+        data.keys().hasOnly(['followerId', 'targetType', 'targetId', 'createdAt']) &&
+        data.followerId is string &&
+        data.targetType == 'category' &&
+        data.targetId is string &&
+        data.targetId.size() >= 1 &&
+        data.targetId.size() <= 64 &&
+        data.createdAt == request.time;
+    }
+
+    match /category_follows/{followId} {
+      allow get: if isSignedIn() && isValidId(followId) &&
+        (resource.data.followerId == request.auth.uid || isAdmin());
+
+      allow list: if isSignedIn() &&
+        resource.data.followerId == request.auth.uid;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(followId) &&
+        isValidCategoryFollow(incoming()) &&
+        incoming().followerId == request.auth.uid;
+
+      allow update: if false;
+
+      allow delete: if isVerifiedUser() && isValidId(followId) &&
+        (existing().followerId == request.auth.uid || isAdmin());
+    }
+}
 }
