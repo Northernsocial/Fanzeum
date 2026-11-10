@@ -6,9 +6,11 @@ Movements each player helped land (lead or fixer):
 |---|---|
 | Coder | 14 |
 | Thinker | 8 |
-| Writer | 2 |
+| Writer | 4 |
+| Mistral | 1 |
 
 ## Pieces
+- #74: 1/5 movements
 - #70: 5/5 movements
 - #69: 5/5 movements
 - #47: 1/4 movements

@@ -2,7 +2,8 @@
  "credits": {
   "Coder": 14,
   "Thinker": 8,
-  "Writer": 2
+  "Writer": 4,
+  "Mistral": 1
  },
  "pieces": [
   {
@@ -44,6 +45,12 @@
   {
    "issue": "70",
    "kept": 5,
+   "of": 5,
+   "merged": false
+  },
+  {
+   "issue": "74",
+   "kept": 1,
    "of": 5,
    "merged": false
   }
