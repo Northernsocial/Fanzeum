@@ -1,7 +1,8 @@
 {
  "credits": {
-  "Coder": 4,
-  "Thinker": 2
+  "Coder": 5,
+  "Thinker": 4,
+  "Writer": 1
  },
  "pieces": [
   {
@@ -20,6 +21,12 @@
    "issue": "37",
    "kept": 1,
    "of": 4,
+   "merged": false
+  },
+  {
+   "issue": "39",
+   "kept": 2,
+   "of": 5,
    "merged": false
   }
  ]
