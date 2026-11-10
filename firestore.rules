@@ -1721,5 +1721,82 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+    function isValidListingWatch(data) {
+      return data.keys().hasAll(['userId', 'listingId', 'createdAt']) &&
+        data.keys().hasOnly(['userId', 'listingId', 'createdAt']) &&
+        data.userId is string && isValidId(data.userId) &&
+        data.listingId is string && isValidId(data.listingId) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidListingOffer(data) {
+      return data.keys().hasAll(['id', 'listingId', 'buyerUid', 'sellerUid', 'amount', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'listingId', 'buyerUid', 'sellerUid', 'amount', 'message', 'status', 'createdAt', 'updatedAt']) &&
+        data.id is string && isValidId(data.id) &&
+        data.listingId is string && isValidId(data.listingId) &&
+        data.buyerUid is string && isValidId(data.buyerUid) &&
+        data.sellerUid is string && isValidId(data.sellerUid) &&
+        data.amount is number && data.amount > 0 &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 500)) &&
+        data.status is string && data.status in ['pending', 'accepted', 'declined'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    match /listingWatches/{watchId} {
+      allow get: if isSignedIn() && isValidId(watchId) && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(watchId) &&
+        isValidListingWatch(incoming()) &&
+        watchId == incoming().userId + '_' + incoming().listingId &&
+        incoming().userId == request.auth.uid &&
+        exists(/databases/$(database)/documents/marketplace/$(incoming().listingId));
+
+      allow update: if false;
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(watchId) &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    match /listingOffers/{offerId} {
+      allow get: if isSignedIn() && isValidId(offerId) && (
+        resource.data.buyerUid == request.auth.uid ||
+        resource.data.sellerUid == request.auth.uid ||
+        isAdmin()
+      );
+      allow list: if isSignedIn() && (
+        resource.data.buyerUid == request.auth.uid ||
+        resource.data.sellerUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isVerifiedUser() &&
+        isValidId(offerId) &&
+        isValidListingOffer(incoming()) &&
+        incoming().id == offerId &&
+        incoming().buyerUid == request.auth.uid &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/marketplace/$(incoming().listingId)) &&
+        get(/databases/$(database)/documents/marketplace/$(incoming().listingId)).data.sellerId == incoming().sellerUid;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(offerId) &&
+        existing().sellerUid == request.auth.uid &&
+        existing().status == 'pending' &&
+        incoming().keys().hasOnly(['status', 'updatedAt']) &&
+        incoming().status in ['accepted', 'declined'] &&
+        incoming().status != existing().status &&
+        incoming().updatedAt == request.time;
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(offerId) &&
+        (existing().buyerUid == request.auth.uid || existing().sellerUid == request.auth.uid || isAdmin());
+    }
+}
 }
