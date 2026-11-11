@@ -1721,5 +1721,56 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+      match /priceHistory/{itemTypeId}/entries/{entryId} {
+        allow get: if isValidId(itemTypeId) && isValidId(entryId);
+        allow list: if isValidId(itemTypeId);
+
+        allow create: if isVerifiedUser() &&
+          isValidId(itemTypeId) &&
+          isValidId(entryId) &&
+          incoming().keys().hasAll(['id', 'itemTypeId', 'type', 'date', 'value', 'source', 'createdAt']) &&
+          incoming().keys().hasOnly(['id', 'itemTypeId', 'type', 'date', 'value', 'source', 'createdAt']) &&
+          incoming().id == entryId &&
+          incoming().itemTypeId == itemTypeId &&
+          incoming().type is string && incoming().type.size() >= 1 && incoming().type.size() <= 50 &&
+          incoming().date is timestamp &&
+          incoming().value is number && incoming().value >= 0 &&
+          incoming().source is string && incoming().source.size() >= 1 && incoming().source.size() <= 50 &&
+          incoming().createdAt == request.time;
+
+        allow update: if false;
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(itemTypeId) &&
+          isValidId(entryId) &&
+          exists(/databases/$(database)/documents/priceHistory/$(itemTypeId)/entries/$(entryId));
+      }
+
+      match /userCollectionSnapshots/{userId}/weekly/{weekId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(weekId) &&
+          (request.auth.uid == userId || isAdmin());
+        allow list: if isSignedIn() && isValidId(userId) &&
+          (request.auth.uid == userId || isAdmin());
+
+        allow create: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(weekId) &&
+          request.auth.uid == userId &&
+          incoming().keys().hasAll(['id', 'userId', 'weekId', 'totalValue', 'itemCount', 'valuationCount', 'createdAt']) &&
+          incoming().keys().hasOnly(['id', 'userId', 'weekId', 'totalValue', 'itemCount', 'valuationCount', 'createdAt']) &&
+          incoming().id == weekId &&
+          incoming().userId == userId &&
+          incoming().weekId == weekId &&
+          incoming().totalValue is number && incoming().totalValue >= 0 &&
+          incoming().itemCount is number && incoming().itemCount >= 0 &&
+          incoming().valuationCount is number && incoming().valuationCount >= 0 &&
+          incoming().createdAt == request.time;
+
+        allow update: if false;
+
+        allow delete: if isVerifiedUser() && isValidId(userId) && isValidId(weekId) &&
+          (request.auth.uid == userId || isAdmin());
+      }
+}
 }

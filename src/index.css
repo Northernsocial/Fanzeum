@@ -120,3 +120,13 @@
     scroll-behavior: auto !important;
   }
 }
+
+.chart-container {
+  overflow: hidden;
+}
+
+.chart-axis {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
