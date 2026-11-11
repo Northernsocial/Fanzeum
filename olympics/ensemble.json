@@ -1,7 +1,7 @@
 {
  "credits": {
-  "Coder": 27,
-  "Thinker": 13,
+  "Coder": 28,
+  "Thinker": 18,
   "Writer": 6,
   "Mistral": 2,
   "Gemini Flash": 1
@@ -89,6 +89,12 @@
    "issue": "69",
    "kept": 1,
    "of": 4,
+   "merged": false
+  },
+  {
+   "issue": "70",
+   "kept": 4,
+   "of": 5,
    "merged": false
   }
  ]
