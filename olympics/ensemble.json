@@ -1,6 +1,6 @@
 {
  "credits": {
-  "Coder": 28,
+  "Coder": 30,
   "Thinker": 18,
   "Writer": 6,
   "Mistral": 2,
@@ -94,6 +94,12 @@
   {
    "issue": "70",
    "kept": 4,
+   "of": 5,
+   "merged": false
+  },
+  {
+   "issue": "76",
+   "kept": 2,
    "of": 5,
    "merged": false
   }
