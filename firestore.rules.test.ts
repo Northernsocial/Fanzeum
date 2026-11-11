@@ -304,5 +304,168 @@ if (emulatorReady) {
       );
       await assertFails(getDocs(collection(bobDb, 'collections')));
     });
+
+    it('Enforces free plan limits: 1 collection, 20 items', async () => {
+      const freeDb = verifiedCtx('user_free').firestore();
+      const premiumDb = verifiedCtx('user_premium').firestore();
+
+      // Create free user profile
+      await assertSucceeds(setDoc(doc(freeDb, 'users', 'user_free'), validUserPayload('user_free', { plan: 'free', collectionsCount: 0, piecesCount: 0 })));
+
+      // Create premium user profile
+      await assertSucceeds(setDoc(doc(premiumDb, 'users', 'user_premium'), validUserPayload('user_premium', { plan: 'premium', collectionsCount: 0, piecesCount: 0 })));
+
+      // Free user creates first collection - should succeed
+      await assertSucceeds(setDoc(doc(freeDb, 'collections', 'col_1'), {
+        id: 'col_1',
+        ownerId: 'user_free',
+        ownerName: 'Free User',
+        ownerHandle: 'user_free_uk',
+        title: 'First Collection',
+        story: '',
+        coverImageUrl: '',
+        category: 'stamps',
+        visibility: 'public',
+        itemCount: 0,
+        setTargetCount: 10,
+        estimatedTotalMinGbp: 0,
+        estimatedTotalMaxGbp: 0,
+        featured: false,
+        isDemo: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+
+      // Free user tries to create second collection - should fail
+      await assertFails(setDoc(doc(freeDb, 'collections', 'col_2'), {
+        id: 'col_2',
+        ownerId: 'user_free',
+        ownerName: 'Free User',
+        ownerHandle: 'user_free_uk',
+        title: 'Second Collection',
+        story: '',
+        coverImageUrl: '',
+        category: 'coins',
+        visibility: 'public',
+        itemCount: 0,
+        setTargetCount: 10,
+        estimatedTotalMinGbp: 0,
+        estimatedTotalMaxGbp: 0,
+        featured: false,
+        isDemo: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+
+      // Premium user creates multiple collections - should succeed
+      await assertSucceeds(setDoc(doc(premiumDb, 'collections', 'col_p1'), {
+        id: 'col_p1',
+        ownerId: 'user_premium',
+        ownerName: 'Premium User',
+        ownerHandle: 'user_premium_uk',
+        title: 'Premium Collection 1',
+        story: '',
+        coverImageUrl: '',
+        category: 'stamps',
+        visibility: 'public',
+        itemCount: 0,
+        setTargetCount: 10,
+        estimatedTotalMinGbp: 0,
+        estimatedTotalMaxGbp: 0,
+        featured: false,
+        isDemo: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+      await assertSucceeds(setDoc(doc(premiumDb, 'collections', 'col_p2'), {
+        id: 'col_p2',
+        ownerId: 'user_premium',
+        ownerName: 'Premium User',
+        ownerHandle: 'user_premium_uk',
+        title: 'Premium Collection 2',
+        story: '',
+        coverImageUrl: '',
+        category: 'coins',
+        visibility: 'public',
+        itemCount: 0,
+        setTargetCount: 10,
+        estimatedTotalMinGbp: 0,
+        estimatedTotalMaxGbp: 0,
+        featured: false,
+        isDemo: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+
+      // Update free user to have 20 items, then try to add 21st
+      await assertSucceeds(updateDoc(doc(freeDb, 'users', 'user_free'), { piecesCount: 20, updatedAt: serverTimestamp() }));
+
+      // Free user tries to create 21st item - should fail
+      await assertFails(setDoc(doc(freeDb, 'items', 'item_21'), {
+        id: 'item_21',
+        collectionId: 'col_1',
+        ownerId: 'user_free',
+        ownerHandle: 'user_free_uk',
+        category: 'stamps',
+        visibility: 'public',
+        title: 'Item 21',
+        titleLower: 'item 21',
+        story: '',
+        imageUrl: '',
+        thumbUrl: '',
+        photos: [],
+        attributes: {},
+        fieldConfidences: {},
+        year: '2024',
+        maker: 'Royal Mail',
+        setNumber: '1',
+        condition: 'Mint',
+        valueMinGbp: 10,
+        valueMaxGbp: 20,
+        valuationReason: 'Test',
+        aiConfidence: 'high',
+        grail: false,
+        tags: [],
+        customOrder: 0,
+        forSale: false,
+        isDemo: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+
+      // Premium user with 20 items can add 21st
+      await assertSucceeds(updateDoc(doc(premiumDb, 'users', 'user_premium'), { piecesCount: 20, updatedAt: serverTimestamp() }));
+      await assertSucceeds(setDoc(doc(premiumDb, 'items', 'item_p21'), {
+        id: 'item_p21',
+        collectionId: 'col_p1',
+        ownerId: 'user_premium',
+        ownerHandle: 'user_premium_uk',
+        category: 'stamps',
+        visibility: 'public',
+        title: 'Premium Item 21',
+        titleLower: 'premium item 21',
+        story: '',
+        imageUrl: '',
+        thumbUrl: '',
+        photos: [],
+        attributes: {},
+        fieldConfidences: {},
+        year: '2024',
+        maker: 'Royal Mint',
+        setNumber: '1',
+        condition: 'Mint',
+        valueMinGbp: 10,
+        valueMaxGbp: 20,
+        valuationReason: 'Test',
+        aiConfidence: 'high',
+        grail: false,
+        tags: [],
+        customOrder: 0,
+        forSale: false,
+        isDemo: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+    });
   });
 }

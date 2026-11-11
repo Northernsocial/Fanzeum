@@ -1721,5 +1721,32 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+    function FREE_MAX_COLLECTIONS() { return 1; }
+    function FREE_MAX_ITEMS() { return 20; }
+
+    function getPlan(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.plan;
+    }
+
+    function isFreePlan(uid) {
+      return getPlan(uid) == 'free';
+    }
+
+    function getUserCollectionCount(uid) {
+      return ('collectionsCount' in get(/databases/$(database)/documents/users/$(uid)).data) ? get(/databases/$(database)/documents/users/$(uid)).data.collectionsCount : 0;
+    }
+
+    function getUserItemCount(uid) {
+      return ('piecesCount' in get(/databases/$(database)/documents/users/$(uid)).data) ? get(/databases/$(database)/documents/users/$(uid)).data.piecesCount : 0;
+    }
+
+    function canCreateCollection(uid) {
+      return !isFreePlan(uid) || getUserCollectionCount(uid) < FREE_MAX_COLLECTIONS();
+    }
+
+    function canCreateItem(uid) {
+      return !isFreePlan(uid) || getUserItemCount(uid) < FREE_MAX_ITEMS();
+    }
+}
 }

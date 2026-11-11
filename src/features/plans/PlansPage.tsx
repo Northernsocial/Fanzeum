@@ -80,7 +80,7 @@ export const PlansPage: React.FC = () => {
             <ul className="space-y-3.5 text-sm text-ink/90">
               <li className="flex items-start gap-3">
                 <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
-                <span>1 collection of up to 20 items</span>
+                <span>1 showcase, 20 items</span>
               </li>
               <li className="flex items-start gap-3">
                 <Check className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
@@ -134,7 +134,7 @@ export const PlansPage: React.FC = () => {
             <ul className="space-y-3.5 text-sm text-ink/90">
               <li className="flex items-start gap-3">
                 <Zap className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />
-                <span><strong>Unlimited collections</strong> &amp; storage space</span>
+                <span><strong>Unlimited showcases, unlimited items</strong></span>
               </li>
               <li className="flex items-start gap-3">
                 <Zap className="w-4 h-4 text-brass shrink-0 mt-0.5" strokeWidth={2} />

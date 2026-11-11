@@ -1,3 +1,4 @@
+import { FREE_MAX_COLLECTIONS, FREE_MAX_ITEMS } from '../config/planLimits';
 import type { PlanTier, UserProfile } from '../types/domain';
 
 export type GatedFeature = 'identify' | 'create_collection' | 'bulk_upload';
@@ -60,7 +61,7 @@ export function canUse(
     if (count >= limits.maxCollections) {
       return {
         allowed: false,
-        reason: `Free collectors get ${limits.maxCollections} collection of up to 20 items. Go Premium for unlimited.`,
+        reason: `Free collectors get ${FREE_MAX_COLLECTIONS} showcase with up to ${FREE_MAX_ITEMS} items. Go Premium for unlimited.`,
       };
     }
     return { allowed: true };
@@ -106,4 +107,29 @@ export function sanitizeHandle(raw: string): string {
     .replace(/^_|_$/g, '')
     .slice(0, 28);
   return cleaned.length >= 2 ? cleaned : `collector_${Math.floor(100 + Math.random() * 900)}`;
+}
+
+export function canAddItem(
+  profile: UserProfile | null | undefined,
+  currentItemCount: number,
+): boolean {
+  if (!profile) return false;
+  if (isPremium(profile)) return true;
+  return currentItemCount < FREE_MAX_ITEMS;
+}
+
+export function getUsageText(
+  profile: UserProfile | null | undefined,
+  currentItemCount: number,
+): string | null {
+  if (!profile || isPremium(profile)) return null;
+  return `${Math.min(currentItemCount, FREE_MAX_ITEMS)} of ${FREE_MAX_ITEMS} items`;
+}
+
+export function getCollectionUsageText(
+  profile: UserProfile | null | undefined,
+  currentCollectionCount: number,
+): string | null {
+  if (!profile || isPremium(profile)) return null;
+  return `${Math.min(currentCollectionCount, FREE_MAX_COLLECTIONS)} of ${FREE_MAX_COLLECTIONS} showcase`;
 }

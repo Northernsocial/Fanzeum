@@ -19,7 +19,7 @@ import { CATEGORIES, CATEGORY_LIST, type CategorySlug } from '../../config/categ
 import { useAuth } from '../../contexts/AuthContext';
 import { polishCollectionStory } from '../../lib/aiClient';
 import { getFriendlyFirebaseErrorMessage } from '../../lib/firebase';
-import { formatGbpRange } from '../../lib/entitlements';
+import { formatGbpRange, getUsageText, canAddItem, isPremium } from '../../lib/entitlements';
 import {
   deleteEntireCollection,
   fetchCollectionById,
@@ -54,6 +54,7 @@ export const CollectionPage: React.FC = () => {
   const [collectionRecord, setCollectionRecord] = useState<CollectionRecord | null>(null);
   const [items, setItems] = useState<CollectibleItemRecord[]>([]);
   const [ownerHideValues, setOwnerHideValues] = useState(false);
+  const [ownerPiecesCount, setOwnerPiecesCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [viewMode, setViewMode] = useState<GalleryViewMode>('grid');
@@ -108,6 +109,8 @@ export const CollectionPage: React.FC = () => {
           if (!active) return;
           setItems(colItems);
           setOwnerHideValues(Boolean(ownerProf?.hideValues));
+          setOwnerPiecesCount(ownerProf?.piecesCount || 0);
+          setOwnerPiecesCount(ownerProf?.piecesCount || 0);
         }
       } finally {
         if (active) setLoading(false);
@@ -353,6 +356,11 @@ export const CollectionPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {isOwner && viewerProfile && !isPremium(viewerProfile) && (
+              <span className="inline-flex items-center px-3 py-1.5 rounded-full border border-border bg-surface-raised text-xs font-mono text-muted">
+                {getUsageText(viewerProfile, ownerPiecesCount)}
+              </span>
+            )}
             <Button variant="secondary" size="sm" onClick={handleShare}>
               {copiedToast ? (
                 <>
@@ -423,6 +431,18 @@ export const CollectionPage: React.FC = () => {
             </Link>
           </div>
         </Card>
+
+        {isOwner && viewerProfile && !canAddItem(viewerProfile, items.length) && (
+          <Card
+            raised
+            className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-brass/30 bg-brass/5"
+          >
+            <p className="text-sm sm:text-base text-ink">
+              You’ve filled your free showcase. Go Premium for unlimited collections and items.
+            </p>
+            <Button onClick={() => navigate('/plans')}>Go Premium</Button>
+          </Card>
+        )}
       </div>
 
       {/* View Mode & Sort Toolbar */}

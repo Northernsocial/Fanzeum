@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Sun,
   Trash2,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -21,6 +22,7 @@ import {
   updateUserPrivacySettings,
   updateUserPublicProfile,
 } from '../../lib/firestoreRepo';
+import { getUsageText, isPremium } from '../../lib/entitlements';
 import { useDocumentMeta } from '../../components/DocumentMeta';
 import { PWAInstallButton } from '../../components/PWAInstallButton';
 import { Button } from '../../components/ui/Button';
@@ -206,6 +208,23 @@ export const SettingsPage: React.FC = () => {
                 <span>Sign out</span>
               </Button>
             </div>
+
+            {!isPremium(profile) && (
+              <div className="p-4 rounded-xl bg-brass/5 border border-brass/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Zap className="w-5 h-5 text-brass shrink=0" strokeWidth={1.5} />
+                  <div>
+                    <p className="text-sm font-medium text-ink">Free showcase usage</p>
+                    <p className="text-xs text-muted font-mono">
+                      {getUsageText(profile, profile.piecesCount || 0)}
+                    </p>
+                  </div>
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => navigate('/plans')}>
+                  Upgrade to Collector Plus
+                </Button>
+              </div>
+            )}
 
             <div className="divide-y divide-border">
               <label className="py-3.5 flex items-center justify-between gap-4 cursor-pointer">
