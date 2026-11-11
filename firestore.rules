@@ -1721,5 +1721,27 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
-  }
+
+    function isValidSellerVerification(data) {
+      return data.keys().hasAll(['status', 'updatedAt']) &&
+        data.keys().hasOnly(['status', 'updatedAt']) &&
+        data.status is string &&
+        data.status in ['pending', 'approved', 'declined'] &&
+        data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming()) &&
+        (request.auth.uid == userId || isAdmin()) &&
+        (!('sellerVerification' in incoming()) || isValidSellerVerification(incoming().sellerVerification));
+    }
+
+    match /users/{userId}/private/sellerVerification {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+}
 }
