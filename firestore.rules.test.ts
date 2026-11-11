@@ -306,3 +306,34 @@ if (emulatorReady) {
     });
   });
 }
+
+  it('13. Enforces strict schema and permissions on trades collection', () => {
+    expect(rulesSource).toContain('isValidTrade(incoming())');
+    expect(rulesSource).toContain('isValidTradeItemList(');
+    expect(rulesSource).toContain('isValidTradeItem(item)');
+    expect(rulesSource).toContain('isValidTradeRating(rating)');
+    expect(rulesSource).toContain('isValidTradeTransition()');
+    expect(rulesSource).toContain('resource.data.initiatorId == request.auth.uid');
+    expect(rulesSource).toContain('resource.data.recipientId == request.auth.uid');
+    expect(rulesSource).toContain("incoming().state == 'pending'");
+    expect(rulesSource).toContain("incoming().state in ['accepted', 'countered', 'declined']");
+    expect(rulesSource).toContain("incoming().state == 'confirmed_sent'");
+    expect(rulesSource).toContain("incoming().state == 'completed'");
+    expect(rulesSource).toContain('incoming().initiatorConfirmedSent == true');
+    expect(rulesSource).toContain('incoming().recipientConfirmedSent == true');
+    expect(rulesSource).toContain('ratings.recipient');
+    expect(rulesSource).toContain('ratings.initiator');
+    expect(rulesSource).toContain('incoming().createdAt == request.time');
+    expect(rulesSource).toContain('incoming().updatedAt == request.time');
+    expect(rulesSource).toContain('incoming().gbpTopUpNote.size() <= 500');
+    expect(rulesSource).toContain('items.size() >= 1 && items.size() <= 20');
+    expect(rulesSource).toContain('rating.rating >= 1 && rating.rating <= 5');
+    // New validations
+    expect(rulesSource).toContain('data.initiatorId != data.recipientId');
+    expect(rulesSource).toContain('get(/databases/$(database)/documents/items/$(item.itemId)).data.ownerId == request.auth.uid');
+    expect(rulesSource).toContain('resource.data.state == \'countered\' && resource.data.initiatorId == request.auth.uid && incoming().state == \'accepted\'');
+    expect(rulesSource).toContain('resource.data.initiatorConfirmedSent == true && resource.data.recipientConfirmedSent == true');
+    expect(rulesSource).toContain('!(\'ratings.recipient\' in resource.data.ratings)');
+    expect(rulesSource).toContain('!(\'ratings.initiator\' in resource.data.ratings)');
+    expect(rulesSource).toContain('resource.data.state in [\'pending\', \'declined\', \'completed\']');
+  });

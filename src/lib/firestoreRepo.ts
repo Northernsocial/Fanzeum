@@ -6,6 +6,7 @@ import {
   getDocs,
   limit,
   query,
+  orderBy,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -1858,4 +1859,20 @@ export async function submitCommunityReport(params: {
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, `reports/${reportId}`);
   }
+}
+
+export async function getTradeById(tradeId: string): Promise<import('../types/domain').TradeRecord | null> {
+  const snap = await getDoc(doc(db, 'trades', tradeId));
+  if (!snap.exists()) return null;
+  return { tradeId: snap.id, ...snap.data() } as import('../types/domain').TradeRecord;
+}
+
+export async function getUserTrades(uid: string): Promise<import('../types/domain').TradeRecord[]> {
+  const q = query(
+    collection(db, 'trades'),
+    where('participants', 'array-contains', uid),
+    orderBy('createdAt', 'desc')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ tradeId: d.id, ...d.data() } as import('../types/domain').TradeRecord));
 }

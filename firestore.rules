@@ -1721,5 +1721,116 @@ service cloud.firestore {
           (existing().authorId == request.auth.uid || isAdmin());
       }
     }
+
+  function isValidTrade(data) {
+    return data.keys().hasAll([
+      'initiatorId', 'recipientId', 'initiatorItems', 'recipientItems',
+      'gbpTopUpNote', 'state', 'createdAt', 'updatedAt',
+      'initiatorConfirmedSent', 'recipientConfirmedSent',
+      'initiatorConfirmedReceived', 'recipientConfirmedReceived',
+      'ratings'
+    ]) && data.keys().hasOnly([
+      'initiatorId', 'recipientId', 'initiatorItems', 'recipientItems',
+      'gbpTopUpNote', 'state', 'createdAt', 'updatedAt',
+      'initiatorConfirmedSent', 'recipientConfirmedSent',
+      'initiatorConfirmedReceived', 'recipientConfirmedReceived',
+      'ratings'
+    ]) &&
+      data.initiatorId is string && isValidId(data.initiatorId) &&
+      data.recipientId is string && isValidId(data.recipientId) &&
+      data.initiatorItems is list && data.initiatorItems.size() >= 1 && data.initiatorItems.size() <= 20 &&
+      data.recipientItems is list && data.recipientItems.size() >= 1 && data.recipientItems.size() <= 20 &&
+      (!('gbpTopUpNote' in data) || (data.gbpTopUpNote is string && data.gbpTopUpNote.size() <= 500)) &&
+      data.state in ['pending', 'accepted', 'countered', 'declined', 'confirmed_sent', 'completed'] &&
+      data.createdAt is string && data.createdAt.size() <= 64 &&
+      data.updatedAt is string && data.updatedAt.size() <= 64 &&
+      data.initiatorConfirmedSent is bool &&
+      data.recipientConfirmedSent is bool &&
+      data.initiatorConfirmedReceived is bool &&
+      data.recipientConfirmedReceived is bool &&
+      data.ratings is map &&
+      (!('ratings.initiator' in data.ratings) || data.ratings.initiator is map) &&
+      (!('ratings.recipient' in data.ratings) || data.ratings.recipient is map);
   }
+
+  function isValidTradeItem(item) {
+    return item.keys().hasAll(['itemId', 'title', 'imageUrl', 'valueMinGbp', 'valueMaxGbp']) &&
+      item.keys().hasOnly(['itemId', 'title', 'imageUrl', 'valueMinGbp', 'valueMaxGbp']) &&
+      item.itemId is string && isValidId(item.itemId) &&
+      item.title is string && item.title.size() >= 1 && item.title.size() <= 200 &&
+      item.imageUrl is string && item.imageUrl.size() <= 2048 &&
+      item.valueMinGbp is number && item.valueMinGbp >= 0 &&
+      item.valueMaxGbp is number && item.valueMaxGbp >= 0;
+  }
+
+  function isValidTradeRating(rating) {
+    return rating.keys().hasAll(['rating', 'reviewerId', 'tradeId', 'createdAt']) &&
+      rating.keys().hasOnly(['rating', 'reviewerId', 'tradeId', 'createdAt']) &&
+      rating.rating is number && rating.rating >= 1 && rating.rating <= 5 &&
+      rating.reviewerId is string && isValidId(rating.reviewerId) &&
+      rating.tradeId is string && isValidId(rating.tradeId) &&
+      rating.createdAt is string && rating.createdAt.size() <= 64;
+  }
+
+  function isValidTradeTransition() {
+    return incoming().diff(existing()).affectedKeys().hasOnly([
+      'state', 'gbpTopUpNote', 'initiatorConfirmedSent', 'recipientConfirmedSent',
+      'initiatorConfirmedReceived', 'recipientConfirmedReceived', 'ratings', 'updatedAt'
+    ]);
+  }
+
+  match /trades/{tradeId} {
+    allow get, list: if isSignedIn() && isValidId(tradeId) && (
+      resource.data.initiatorId == request.auth.uid ||
+      resource.data.recipientId == request.auth.uid ||
+      isAdmin()
+    );
+
+    allow create: if isVerifiedUser() &&
+      isValidId(tradeId) &&
+      isValidTrade(incoming()) &&
+      incoming().initiatorId == request.auth.uid &&
+      incoming().initiatorItems.every(item => isValidTradeItem(item)) &&
+      incoming().recipientItems.every(item => isValidTradeItem(item)) &&
+      incoming().state == 'pending' &&
+      incoming().createdAt == request.time &&
+      incoming().updatedAt == request.time;
+
+    allow update: if isVerifiedUser() && isValidTradeTransition() && isValidId(tradeId) && (
+      (resource.data.initiatorId == request.auth.uid || resource.data.recipientId == request.auth.uid) ||
+      isAdmin()
+    ) && (
+      (resource.data.state == 'pending' && incoming().state in ['accepted', 'countered', 'declined']) ||
+      (resource.data.state in ['accepted', 'countered'] && incoming().state == 'confirmed_sent') ||
+      (resource.data.state == 'declined' && false) ||
+      (resource.data.state == 'confirmed_sent' && incoming().state == 'completed') ||
+      (resource.data.initiatorId == request.auth.uid &&
+        resource.data.state in ['accepted', 'countered', 'confirmed_sent'] &&
+        incoming().initiatorConfirmedSent == true &&
+        incoming().initiatorConfirmedReceived == resource.data.initiatorConfirmedReceived) ||
+      (resource.data.recipientId == request.auth.uid &&
+        resource.data.state in ['accepted', 'countered', 'confirmed_sent'] &&
+        incoming().recipientConfirmedSent == true &&
+        incoming().recipientConfirmedReceived == resource.data.recipientConfirmedReceived) ||
+      (resource.data.initiatorId == request.auth.uid &&
+        resource.data.state == 'completed' &&
+        'ratings.recipient' in incoming().ratings &&
+        isValidTradeRating(incoming().ratings.recipient) &&
+        incoming().ratings.recipient.tradeId == tradeId &&
+        incoming().ratings.recipient.reviewerId == request.auth.uid) ||
+      (resource.data.recipientId == request.auth.uid &&
+        resource.data.state == 'completed' &&
+        'ratings.initiator' in incoming().ratings &&
+        isValidTradeRating(incoming().ratings.initiator) &&
+        incoming().ratings.initiator.tradeId == tradeId &&
+        incoming().ratings.initiator.reviewerId == request.auth.uid)
+    );
+
+    allow delete: if isVerifiedUser() && isValidId(tradeId) && (
+      resource.data.initiatorId == request.auth.uid ||
+      resource.data.recipientId == request.auth.uid ||
+      isAdmin()
+    );
+  }
+}
 }

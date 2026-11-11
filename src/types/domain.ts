@@ -450,3 +450,43 @@ export interface CommunityReplyRecord {
   createdAt?: unknown;
   updatedAt?: unknown;
 }
+
+export type TradeState = 'pending' | 'accepted' | 'countered' | 'declined' | 'confirmed_sent' | 'completed';
+
+export interface TradeItem {
+  itemId: string;
+  title: string;
+  imageUrl: string;
+  valueMinGbp: number;
+  valueMaxGbp: number;
+}
+
+export interface TradeRating {
+  rating: number; // 1-5 stars
+  reviewerId: string;
+  reviewedId: string;
+  tradeId: string;
+  createdAt?: unknown;
+}
+
+export interface TradeRecord {
+  tradeId: string;
+  initiatorId: string;
+  initiatorHandle: string;
+  recipientId: string;
+  recipientHandle: string;
+  initiatorItems: TradeItem[];
+  recipientItems: TradeItem[];
+  gbpTopUpNote: string;
+  state: TradeState;
+  initiatorConfirmedSent: boolean;
+  recipientConfirmedSent: boolean;
+  initiatorConfirmedReceived: boolean;
+  recipientConfirmedReceived: boolean;
+  ratings?: {
+    initiator?: TradeRating;
+    recipient?: TradeRating;
+  };
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
