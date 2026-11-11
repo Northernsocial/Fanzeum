@@ -4,13 +4,14 @@ Movements each player helped land (lead or fixer):
 
 | Player | Movements |
 |---|---|
-| Coder | 26 |
-| Thinker | 11 |
+| Coder | 27 |
+| Thinker | 13 |
 | Writer | 6 |
 | Mistral | 2 |
 | Gemini Flash | 1 |
 
 ## Pieces
+- #69: 1/4 movements
 - #35: 1/4 movements
 - #78: 2/4 movements
 - #77: 3/4 movements
